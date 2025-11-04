@@ -1,0 +1,2 @@
+[2025-11-04 16:32]
+I established the baseline of the system, just including the student table and login, logout function. Using redis to store session information. Next step would be think the architecture of the whole system strcutrely so that I'll feel more comfortable when adding new features.
