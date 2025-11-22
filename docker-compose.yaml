@@ -10,14 +10,14 @@ services:
       - group7_pgdata:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     restart: "no"
 
   redis:
     image: redis:7
     container_name: group7_redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     restart: "no"
 
   backend:
@@ -38,7 +38,7 @@ services:
     command: uvicorn app.interfaces.api:app --host 0.0.0.0 --port 8000
 
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
     # 不要自動啟動 (避免 Wayland/GNOME 還沒啟動就搶資源)
     restart: "no"

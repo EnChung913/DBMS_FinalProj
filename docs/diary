@@ -24,3 +24,12 @@ This system would be built on docker to sync the development environment.
 I constructed the whole file structure for docker. But it just contains some folders and empty files now, just a skeleton structure.
 
 Next step would be generate the ORM model files and establish the docker environment and make sure the backend can run inside the docker container.
+
+[2025-11-21 16:18]
+I tried to establish a simple register function, but there's lot of bugs to fix.
+
+WTF a typing error waste me a half hour to fix. I just wrote "cofig.py" instead of "config.py". Such a silly mistake.
+
+There's still some errors in the relation rules of the ORM model, need to fix them later.
+The problem is, our relationships are too complex, and some relationships are many-to-many relationships, which makes the ORM model confusing. Thus, I decided to remove the relationship rules in the ORM model, just utilize SQL to handle the relationships.
+

@@ -12,4 +12,9 @@ typer>=0.9,<1.0
 redis>=5.0,<6.0
 
 python-dotenv>=1.0,<2.0
-    
+
+# 加上固定版本，避免 passlib 與 bcrypt 不相容
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+pydantic[email]

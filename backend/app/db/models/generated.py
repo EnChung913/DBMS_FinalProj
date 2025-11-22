@@ -3,7 +3,7 @@ import datetime
 import uuid
 
 from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Double, ForeignKeyConstraint, Integer, PrimaryKeyConstraint, String, Text, UniqueConstraint, Uuid, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     pass
@@ -28,16 +28,6 @@ class User(Base):
     registered_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     is_deleted: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text('false'))
 
-    achievement: Mapped[list['Achievement']] = relationship('Achievement', back_populates='user')
-    company_profile: Mapped[list['CompanyProfile']] = relationship('CompanyProfile', back_populates='user')
-    department_profile: Mapped[list['DepartmentProfile']] = relationship('DepartmentProfile', back_populates='user')
-    student_course_record: Mapped[list['StudentCourseRecord']] = relationship('StudentCourseRecord', back_populates='user')
-    student_gpa: Mapped[list['StudentGpa']] = relationship('StudentGpa', back_populates='user')
-    student_department: Mapped[list['StudentDepartment']] = relationship('StudentDepartment', back_populates='user')
-    application: Mapped[list['Application']] = relationship('Application', back_populates='user')
-    push_record: Mapped[list['PushRecord']] = relationship('PushRecord', foreign_keys='[PushRecord.pusher_id]', back_populates='pusher')
-    push_record_: Mapped[list['PushRecord']] = relationship('PushRecord', foreign_keys='[PushRecord.receiver_id]', back_populates='receiver')
-
 
 class Achievement(Base):
     __tablename__ = 'achievement'
@@ -56,7 +46,6 @@ class Achievement(Base):
     category: Mapped[Optional[str]] = mapped_column(String(20))
     creation_date: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
-    user: Mapped[Optional['User']] = relationship('User', back_populates='achievement')
 
 
 class CompanyProfile(Base):
@@ -71,9 +60,6 @@ class CompanyProfile(Base):
     contact_person: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
     industry: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    user: Mapped['User'] = relationship('User', back_populates='company_profile')
-    resource: Mapped[list['Resource']] = relationship('Resource', back_populates='company_supplier')
-
 
 class DepartmentProfile(Base):
     __tablename__ = 'department_profile'
@@ -85,12 +71,6 @@ class DepartmentProfile(Base):
     department_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     department_name: Mapped[str] = mapped_column(String(100), nullable=False)
     contact_person: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-
-    user: Mapped['User'] = relationship('User', back_populates='department_profile')
-    resource: Mapped[list['Resource']] = relationship('Resource', back_populates='department_supplier')
-    student_department: Mapped[list['StudentDepartment']] = relationship('StudentDepartment', back_populates='department')
-    student_profile: Mapped[list['StudentProfile']] = relationship('StudentProfile', back_populates='department')
-    resource_condition: Mapped[list['ResourceCondition']] = relationship('ResourceCondition', back_populates='department')
 
 
 class StudentCourseRecord(Base):
@@ -107,7 +87,6 @@ class StudentCourseRecord(Base):
     course_name: Mapped[str] = mapped_column(String(100), nullable=False)
     score: Mapped[Optional[float]] = mapped_column(Double(53))
 
-    user: Mapped['User'] = relationship('User', back_populates='student_course_record')
 
 
 class StudentGpa(Base):
@@ -122,7 +101,6 @@ class StudentGpa(Base):
     semester: Mapped[str] = mapped_column(String(10), primary_key=True)
     gpa: Mapped[Optional[float]] = mapped_column(Double(53))
 
-    user: Mapped['User'] = relationship('User', back_populates='student_gpa')
 
 
 class Resource(Base):
@@ -148,12 +126,6 @@ class Resource(Base):
     deadline: Mapped[Optional[datetime.date]] = mapped_column(Date)
     is_deleted: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text('false'))
 
-    company_supplier: Mapped[Optional['CompanyProfile']] = relationship('CompanyProfile', back_populates='resource')
-    department_supplier: Mapped[Optional['DepartmentProfile']] = relationship('DepartmentProfile', back_populates='resource')
-    application: Mapped[list['Application']] = relationship('Application', back_populates='resource')
-    push_record: Mapped[list['PushRecord']] = relationship('PushRecord', back_populates='resource')
-    resource_condition: Mapped[list['ResourceCondition']] = relationship('ResourceCondition', back_populates='resource')
-
 
 class StudentDepartment(Base):
     __tablename__ = 'student_department'
@@ -169,9 +141,6 @@ class StudentDepartment(Base):
     role: Mapped[str] = mapped_column(String(20), primary_key=True)
     start_semester: Mapped[str] = mapped_column(String(10), primary_key=True)
     end_semester: Mapped[Optional[str]] = mapped_column(String(10))
-
-    department: Mapped['DepartmentProfile'] = relationship('DepartmentProfile', back_populates='student_department')
-    user: Mapped['User'] = relationship('User', back_populates='student_department')
 
 
 class StudentProfile(User):
@@ -189,8 +158,6 @@ class StudentProfile(User):
     entry_year: Mapped[int] = mapped_column(Integer, nullable=False)
     grade: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    department: Mapped['DepartmentProfile'] = relationship('DepartmentProfile', back_populates='student_profile')
-
 
 class Application(Base):
     __tablename__ = 'application'
@@ -206,8 +173,6 @@ class Application(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     apply_date: Mapped[Optional[datetime.date]] = mapped_column(Date, server_default=text('CURRENT_DATE'))
 
-    resource: Mapped['Resource'] = relationship('Resource', back_populates='application')
-    user: Mapped['User'] = relationship('User', back_populates='application')
 
 
 class PushRecord(Base):
@@ -225,9 +190,6 @@ class PushRecord(Base):
     resource_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
     push_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
-    pusher: Mapped[Optional['User']] = relationship('User', foreign_keys=[pusher_id], back_populates='push_record')
-    receiver: Mapped[Optional['User']] = relationship('User', foreign_keys=[receiver_id], back_populates='push_record_')
-    resource: Mapped[Optional['Resource']] = relationship('Resource', back_populates='push_record')
 
 
 class ResourceCondition(Base):
@@ -245,6 +207,3 @@ class ResourceCondition(Base):
     avg_gpa: Mapped[Optional[float]] = mapped_column(Double(53))
     current_gpa: Mapped[Optional[float]] = mapped_column(Double(53))
     is_poor: Mapped[Optional[bool]] = mapped_column(Boolean)
-
-    department: Mapped['DepartmentProfile'] = relationship('DepartmentProfile', back_populates='resource_condition')
-    resource: Mapped['Resource'] = relationship('Resource', back_populates='resource_condition')
