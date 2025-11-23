@@ -38,3 +38,6 @@ This project is too complex with FastAPI. I decided to switch to NestJS for the 
 
 [2025-11-23 11:21]
 Lyy finished a simple frontend interface of login and register, but she havn't connected the backend api yet. There's some error of the ports(the local psql and container's psql port are conflicted), so I changed the container's psql port to 6666, and redis port to 6667.
+
+[2025-11-23 11:55]
+Fix the env error of missing JWT_SECRET variable.
