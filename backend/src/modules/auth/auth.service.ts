@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import Redis from 'ioredis';
 
@@ -35,27 +36,33 @@ export class AuthService {
   /* -----------------------------------------------------------
       產生 access + refresh tokens
     -----------------------------------------------------------*/
-  async generateTokens(user: User) {
-    const payload = { sub: user.user_id, role: user.role };
+	async generateTokens(user: User) {
+		const payload = { sub: user.user_id, role: user.role };
 
-    const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '15m',
-    });
+		const accessToken = await this.jwtService.signAsync(payload, {
+			expiresIn: '15m',
+		});
 
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '7d',
-    });
+		const refreshToken = await this.jwtService.signAsync(payload, {
+			expiresIn: '7d',
+		});
 
-    // 寫入 Redis session
-    await this.redis.set(
-      `refresh:${refreshToken}`,
-      String(user.user_id),
-      'EX',
-      7 * 24 * 3600,
-    );
+		// === 新增：產生 refresh token hash ===
+		const hashedRT = crypto
+			.createHash('sha256')
+			.update(refreshToken)
+			.digest('hex');
 
-    return { accessToken, refreshToken };
-  }
+		// === 寫入 Redis（用 hash 當 key，而不是 token 原文） ===
+		await this.redis.set(
+			`refresh:${hashedRT}`,
+			String(user.user_id),
+			'EX',
+			7 * 24 * 3600,
+		);
+
+		return { accessToken, refreshToken };
+	}
 
   private async checkProfileFilled(user: User) {
     if (user.role === 'student') {
@@ -166,43 +173,59 @@ export class AuthService {
   /* -----------------------------------------------------------
       Refresh token → 發新 access token
     -----------------------------------------------------------*/
-  async refresh(refreshToken: string) {
-    // Step 1：查 Redis session
-    const userId = await this.redis.get(`refresh:${refreshToken}`);
-    if (!userId) {
-      throw new UnauthorizedException('Session expired');
-    }
+	async refresh(refreshToken: string) {
+		// === Step 0：先把 refresh token 做 hash ===
+		const hashedRT = crypto
+			.createHash('sha256')
+			.update(refreshToken)
+			.digest('hex');
 
-    // Step 2：驗證 refresh token 的有效性
-    let payload: any;
-    try {
-      payload = await this.jwtService.verifyAsync(refreshToken);
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+		// Step 1：查 Redis session
+		const userId = await this.redis.get(`refresh:${hashedRT}`);
+		if (!userId) {
+			throw new UnauthorizedException('Session expired or invalid');
+		}
 
-    // Step 3：查 user
-    const user = await this.userRepo.findOne({ where: { user_id: userId } });
-    if (!user) throw new UnauthorizedException('User no longer exists');
+		// Step 2：驗證 refresh token 的 JWT 有效性
+		let payload: any;
+		try {
+			payload = await this.jwtService.verifyAsync(refreshToken);
+		} catch {
+			throw new UnauthorizedException('Invalid refresh token');
+		}
 
-    // Step 4：刷新 tokens
-    const newTokens = await this.generateTokens(user);
+		// Step 3：查 user
+		const user = await this.userRepo.findOne({ where: { user_id: userId } });
+		if (!user) throw new UnauthorizedException('User no longer exists');
 
-    // Step 5：刪掉舊 refresh token session
-    await this.redis.del(`refresh:${refreshToken}`);
-    const profileFilled = await this.checkProfileFilled(user);
-    return {
-      ...newTokens,
-      role: user.role,
-      needProfile: !profileFilled,
-    };
-  }
+		// Step 4：刪掉舊 refresh token session（Rotation）
+		await this.redis.del(`refresh:${hashedRT}`);
+
+		// Step 5：重新簽新的 tokens（自動寫入新的 refresh token session）
+		const { accessToken, refreshToken: newRefreshToken } =
+			await this.generateTokens(user);
+
+		const profileFilled = await this.checkProfileFilled(user);
+
+		return {
+			accessToken,
+			refreshToken: newRefreshToken,
+			role: user.role,
+			needProfile: !profileFilled,
+		};
+	}
+
 
   /* -----------------------------------------------------------
       登出（刪除 session）
     -----------------------------------------------------------*/
-  async logout(refreshToken: string) {
-    await this.redis.del(`refresh:${refreshToken}`);
-    return { success: true };
-  }
+	async logout(refreshToken: string) {
+		const hashedRT = crypto
+			.createHash('sha256')
+			.update(refreshToken)
+			.digest('hex');
+
+		await this.redis.del(`refresh:${hashedRT}`);
+		return { success: true };
+	}
 }

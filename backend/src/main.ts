@@ -20,7 +20,14 @@ async function bootstrap() {
   );
   //app.useGlobalGuards(new JwtAuthGuard());
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 3000;
+  const host =
+    process.env.NODE_ENV === 'local'
+      ? '127.0.0.1' // local, localhost only
+      : '0.0.0.0';  // docker 
+
+  await app.listen(port, host);
+
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log(`JWT_SECRET: ${process.env.JWT_SECRET}`);
 }
