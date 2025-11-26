@@ -66,3 +66,6 @@ I change the schema again, deleting the is_deleted boolean column and adding del
 
 [2025-11-27 00:54]
 I forgot to set JWT_SECRET in the generateToken function in auth.service.ts. This bug bothers me for several hours. Finally I found the problem and fixed it.
+
+[2025-11-27 01:13]
+There's an error of relation in student profile entity. I marked it and will fix it tomorrow. I'll merge the dev branch to main branch after fixing that bug.

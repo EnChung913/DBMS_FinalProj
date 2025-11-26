@@ -15,6 +15,7 @@ export class ProfileService {
     private readonly userRepo: Repository<User>,
     ) {}
 
+  //TODO: there's some issue with relations, should be fixed later
   async getProfile(userId: string) {
     return this.studentProfileRepo.findOne({
       where: { user_id: userId },
