@@ -13,6 +13,8 @@ CREATE TABLE "user" (
     nickname VARCHAR(50) NOT NULL,
     role VARCHAR(20) CHECK(role IN ('student','department','company')),
     is_admin BOOLEAN DEFAULT FALSE,
+    otp_secret VARCHAR(64),
+    is_2fa_enabled BOOLEAN DEFAULT FALSE,
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE
 );

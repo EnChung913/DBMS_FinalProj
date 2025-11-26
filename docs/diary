@@ -54,3 +54,6 @@ I wrote 7 hours today on this project. But there's still a lot of work to do. Ne
 [20285-11-25 22:43]
 I've finished all the auth functions including register, login, logout and refresh token. The JWT authentication works well now. I utilize rotating refresh token strategy to enhance the security of the system. Besides, if frontend ask for a new access token, he sould also provide the expired access token and his refresh token to verify his identity.
 Next step would be the student profile management functions.
+
+[2025-11-26 10:18]
+I decided to add 2FA function to enhance the security of the system. So I modified the user table to add otp_secret and is_2fa_enabled columns. The other function still needs more time to implement.

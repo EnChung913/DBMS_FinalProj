@@ -23,6 +23,12 @@ export class User {
   @Column({ length: 20 })
   role: string;
 
+  @Column({ length: 64, nullable: true })
+  otp_secret: string | null;
+
+  @Column({ default: false })
+  is_2fa_enabled: boolean;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   registered_at: Date;
 
