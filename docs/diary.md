@@ -57,3 +57,6 @@ Next step would be the student profile management functions.
 
 [2025-11-26 10:18]
 I decided to add 2FA function to enhance the security of the system. So I modified the user table to add otp_secret and is_2fa_enabled columns. The other function still needs more time to implement.
+
+[2025-11-26 11:35]
+There are several bugs after modifying the user entity. I fixed them one by one. I shouldn't push the temporary broken code to the main repository.

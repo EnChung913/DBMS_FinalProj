@@ -1,50 +1,53 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { StudentProfile } from '../../entities/student-profile.entity';
 import { User } from '../../entities/user.entity';
-import { UpsertStudentProfileDto } from './dto/upsert-student-profile.dto';
+import { ProfileService } from './profile/profile.service';
 
 @Injectable()
 export class StudentService {
   constructor(
-    @InjectRepository(StudentProfile)
-    private readonly studentProfileRepo: Repository<StudentProfile>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly profileService: ProfileService,
   ) {}
 
-  async upsertProfile(userId: string, dto: UpsertStudentProfileDto) {
+  async ensureStudent(userId: string) {
     const user = await this.userRepo.findOne({
       where: { user_id: userId, is_deleted: false },
     });
+
     if (!user) throw new NotFoundException('User not found');
-
     if (user.role !== 'student') {
-      throw new ForbiddenException('Only student can edit student profile');
+      throw new ForbiddenException('Only student allowed');
     }
 
-    let profile = await this.studentProfileRepo.findOne({
-      where: { user_id: userId },
-      relations: ['user'],
-    });
+    return user;
+  }
 
-    if (!profile) {
-      profile = this.studentProfileRepo.create({
-        user_id: userId,
-        ...dto,
-        // 不要在這裡動 isOtpVerified
-      });
-    } else {
-      profile.student_id = dto.student_id;
-      profile.department = dto.department;
-      profile.grade = dto.grade;
-      profile.phone = dto.phone ?? profile.phone;
-      if (typeof dto.wantsOtp === 'boolean') {
-        profile.wantsOtp = dto.wantsOtp;
-      }
+  async hasCompletedProfile(userId: string): Promise<boolean> {
+    const profile = await this.profileService.getProfile(userId);
+    if (!profile) return false;
+
+    return (
+      !!profile.student_id &&
+      !!profile.department_id &&
+      !!profile.entry &&
+      !!profile.grade 
+    );
+  }
+
+  async canApplyForInternship(userId: string): Promise<boolean> {
+    const profile = await this.profileService.getProfile(userId);
+    if (!profile) return false;
+
+    return parseFloat(profile.grade) >= 2;
+  }
+
+  async ensureOwnSubmission(userId: string, ownerId: string) {
+    if (userId !== ownerId) {
+      throw new ForbiddenException('Not your data');
     }
-
-    return this.studentProfileRepo.save(profile);
+    return true;
   }
 }

@@ -1,34 +1,20 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsInt,
-  Min,
-  Max,
-  IsOptional,
-  IsBoolean,
-  IsPhoneNumber,
-} from 'class-validator';
+import { IsString, Length, IsOptional, IsInt, Min } from 'class-validator';
 
 export class UpsertStudentProfileDto {
   @IsString()
-  @IsNotEmpty()
+  @Length(1, 10)
   student_id: string;
 
   @IsString()
-  @IsNotEmpty()
-  department: string;
+  @Length(1, 10)
+  department_id: string;
 
+  @IsOptional()
+  @IsString()
+  entry?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(8)
-  grade: number;
-
-  @IsOptional()
-  @IsPhoneNumber('TW')
-  phone?: string;
-
-  // 表單上的「是否啟用 OTP 驗證」選項
-  @IsOptional()
-  @IsBoolean()
-  wantsOtp?: boolean;
+  grade?: number;
 }
