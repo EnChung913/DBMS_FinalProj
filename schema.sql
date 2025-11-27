@@ -23,7 +23,7 @@ CREATE TABLE "user" (
 -- Profile tables
 -------------------------------------------------
 CREATE TABLE department_profile (
-    department_id UUID PRIMARY KEY,
+    department_id VARCHAR(10) PRIMARY KEY,
     department_name VARCHAR(100) NOT NULL,
     contact_person UUID NOT NULL REFERENCES "user"(user_id) -- who manages this department
 );
@@ -31,13 +31,13 @@ CREATE TABLE department_profile (
 CREATE TABLE student_profile (
     user_id UUID PRIMARY KEY REFERENCES "user"(user_id), -- 1:1
     student_id VARCHAR(10) UNIQUE NOT NULL,
-    department_id UUID NOT NULL REFERENCES department_profile(department_id),
+    department_id VARCHAR(10) NOT NULL REFERENCES department_profile(department_id),
     entry_year INT NOT NULL,
     grade INT NOT NULL
 );
 
 CREATE TABLE company_profile (
-    company_id UUID PRIMARY KEY,
+    company_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name VARCHAR(100) NOT NULL,
     contact_person UUID NOT NULL REFERENCES "user"(user_id), -- who manages this company
     industry VARCHAR(50) NOT NULL
@@ -48,7 +48,7 @@ CREATE TABLE company_profile (
 -------------------------------------------------
 CREATE TABLE student_department (
     user_id UUID REFERENCES "user"(user_id),
-    department_id UUID NOT NULL REFERENCES department_profile(department_id),
+    department_id VARCHAR(10) NOT NULL REFERENCES department_profile(department_id),
     role VARCHAR(20) CHECK(role IN ('major','minor','double_major')),
     start_semester VARCHAR(10) NOT NULL,
     end_semester VARCHAR(10),
@@ -95,7 +95,7 @@ CREATE TABLE resource (
     resource_type VARCHAR(20) CHECK(resource_type IN ('Scholarship','Internship','Lab','Others')),
     quota INT NOT NULL CHECK(quota >= 0),
     
-    department_supplier_id UUID REFERENCES department_profile(department_id),
+    department_supplier_id VARCHAR(10) REFERENCES department_profile(department_id),
     company_supplier_id UUID REFERENCES company_profile(company_id),
     
     -- XOR check: make sure that only one of the two supplier IDs is NOT NULL
@@ -116,7 +116,7 @@ CREATE TABLE resource (
 -------------------------------------------------
 CREATE TABLE resource_condition (
     resource_id UUID REFERENCES resource(resource_id),
-    department_id UUID NOT NULL REFERENCES department_profile(department_id),
+    department_id VARCHAR(10) NOT NULL REFERENCES department_profile(department_id),
     avg_gpa FLOAT CHECK(avg_gpa BETWEEN 0 AND 4.3), -- NULL means no limit
     current_gpa FLOAT CHECK(current_gpa BETWEEN 0 AND 4.3), -- NULL means no limit
     is_poor BOOLEAN,

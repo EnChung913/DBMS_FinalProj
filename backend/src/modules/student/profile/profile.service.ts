@@ -44,8 +44,11 @@ export class ProfileService {
   }
 
   async upsertProfile(userId: string, dto: UpsertStudentProfileDto) {
+    console.log(`Requested userId: ${userId}`);
+    console.log(`Request timestamp: ${new Date().toISOString()}`);
+    console.log(`Received DTO: ${JSON.stringify(dto)}`);
     const user = await this.userRepo.findOne({
-      where: { user_id: userId, is_deleted: false },
+      where: { user_id: userId, deleted_at: new Date('9999-12-31T23:59:59Z') },
     });
 
     if (!user) throw new NotFoundException('User not found');

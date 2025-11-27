@@ -72,3 +72,6 @@ There's an error of relation in student profile entity. I marked it and will fix
 
 [2025-11-27 11:55]
 I tried hard to fix this, but still need some more time.
+
+[2025-11-27 16:05]
+Finally I fixed the problem, now I can upsert student profile by api calls. User has to manually add a default user and add this user's department in student_department table first, then he can upsert his profile because the foreign key constraint needs to be satisfied. It's a little bit inconvenient now, but in pratical there won't be such situation that start up with an empty databse.

@@ -33,8 +33,8 @@ export class User {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   registered_at: Date;
 
-  @Column({ default: false })
-  is_deleted: boolean;
+  @Column({ type: 'timestamp', default: () => '9999-12-31 23:59:59' })
+  deleted_at: Date;
 
   @OneToOne(() => StudentProfile, (profile) => profile.user)
   studentProfile: StudentProfile;

@@ -16,7 +16,7 @@ export class StudentProfile {
   @Column({ length: 10 })
   department_id: string;
 
-  @Column({ type: 'int' })
+  @Column({ name: 'entry_year', type: 'int' })
   entry: number;
 
   @Column({ type: 'int' })

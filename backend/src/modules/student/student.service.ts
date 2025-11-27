@@ -14,7 +14,7 @@ export class StudentService {
 
   async ensureStudent(userId: string) {
     const user = await this.userRepo.findOne({
-      where: { user_id: userId, is_deleted: false },
+      where: { user_id: userId, deleted_at: new Date('9999-12-31 23:59:59') },
     });
 
     if (!user) throw new NotFoundException('User not found');
@@ -37,12 +37,6 @@ export class StudentService {
     );
   }
 
-  async canApplyForInternship(userId: string): Promise<boolean> {
-    const profile = await this.profileService.getProfile(userId);
-    if (!profile) return false;
-
-    return parseFloat(profile.grade) >= 2;
-  }
 
   async ensureOwnSubmission(userId: string, ownerId: string) {
     if (userId !== ownerId) {

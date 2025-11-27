@@ -17,6 +17,7 @@ export class StudentController {
     @Req() req: any,
   ) {
     const userId = req.user.sub;
+    console.log('Upsert profile for userId:', userId);
     return this.profileService.upsertProfile(userId, dto);
   }
 
