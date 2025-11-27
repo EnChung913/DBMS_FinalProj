@@ -11,7 +11,7 @@ export interface User {
   username: string;
   real_name: string;
   role: UserRole;
-  is_setup_done: boolean;
+  needProfile: boolean;
 }
 
 export interface Resource {
@@ -43,5 +43,7 @@ export interface GPA {
 export interface AuthResponse {
   success: boolean;
   access_token: string;
+  refresh_token: string;
+  needProfile: boolean;
   user: User;
 }

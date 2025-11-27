@@ -2,9 +2,11 @@
 import { computed } from 'vue';
 import { RouterView, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import apiClient from '@/api/axios';
 
 const router = useRouter();
 const authStore = useAuthStore();
+
 
 // 計算 Dashboard 連結
 const dashboardLink = computed(() => {
@@ -12,6 +14,24 @@ const dashboardLink = computed(() => {
   if (authStore.role === 'company') return '/company/dashboard';
   return '/student/dashboard';
 });
+
+async function handleLogout() {
+  const router = useRouter();
+  const authStore = useAuthStore();
+
+  try {
+    await apiClient.post(
+      '/api/auth/logout',
+      { },
+      { withCredentials: true }
+    );
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    authStore.clearUser();
+    location.replace('/login')
+  }
+}
 </script>
 
 <template>
@@ -31,7 +51,7 @@ const dashboardLink = computed(() => {
 
           <template v-else>
             <router-link :to="dashboardLink">Dashboard</router-link>
-            <a href="#" @click.prevent="authStore.clearAuth()">Log out</a>
+            <a href="#" @click.prevent="handleLogout">Log out</a>
           </template>
         </nav>
       </div>

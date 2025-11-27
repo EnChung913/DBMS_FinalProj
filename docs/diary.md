@@ -75,3 +75,10 @@ I tried hard to fix this, but still need some more time.
 
 [2025-11-27 16:05]
 Finally I fixed the problem, now I can upsert student profile by api calls. User has to manually add a default user and add this user's department in student_department table first, then he can upsert his profile because the foreign key constraint needs to be satisfied. It's a little bit inconvenient now, but in pratical there won't be such situation that start up with an empty databse.
+
+[2025-11-27 22:32]
+I decided to put JWT in http-only cookie, which means I cann't use the expiredAccess token and refresh token for double security check. But putting JWT in http-only cookie is more secure. Remember that this project should use HTTPS in production environment to enhance security. This should be mentioned in the report.
+
+The user information previously stored in pinia, if the page is refreshed, the user information would be lost. So I add a function to load user information from localStorage when the app is initialized. This can enhance user experience. Besides, I finish the logout function in frontend. Now the JWTs would be deleted from http-only cookie when user logout, and the refresh token session would be deleted from redis too.
+
+This branch is ready to merge to main branch, cheers!

@@ -3,53 +3,47 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import apiClient from '@/api/axios';
-import type { AuthResponse, UserRole } from '@/types';
+import type { UserRole } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const isLoading = ref(false);
 
 const formData = ref({
-  real_name: '', email: '', username: '', password: '', nickname: '', role: 'student' as UserRole
+  real_name: '',
+  email: '',
+  username: '',
+  password: '',
+  nickname: '',
+  role: 'student' as UserRole
 });
 
 const handleRegister = async () => {
   if (isLoading.value) return;
   isLoading.value = true;
-  
+
   try {
-    // ----------------------------------------------------------------
-    // TODO: [POST] /api/auth/register
-    // ----------------------------------------------------------------
-    
-    /*
-    const response = await apiClient.post<AuthResponse>('/auth/register', formData.value);
+    // ---- 向後端發送註冊請求 ----
+    const response = await apiClient.post(
+      '/api/auth/register',
+      formData.value,
+      { withCredentials: true } // 必須帶 cookie
+    );
+
     const data = response.data;
-    */
+    console.log('Registration success:', data);
 
-    // --- Mock Data Start ---
-    console.log('[Mock] Registering:', formData.value);
-    await new Promise(r => setTimeout(r, 800));
+    // 設定 login 後的使用者資訊
+    authStore.setUser(data.user);
+    authStore.setNeedProfile(data.needProfile);
 
-    const data: AuthResponse = {
-      success: true,
-      access_token: 'mock_token_' + Date.now(),
-      user: {
-        user_id: 'u_new',
-        username: formData.value.username,
-        real_name: formData.value.real_name,
-        role: formData.value.role,
-        is_setup_done: false // 註冊後通常需要設定 Profile
-      }
-    };
-    // --- Mock Data End ---
-    
-    if (data.success) {
-      authStore.setAuth(data.access_token, data.user);
-      alert('Registration successful!');
-      router.push('/setup-profile');
-    }
-  } catch (error: any) {
+    alert('Registration successful!');
+
+    // 註冊後，一定要填 profile
+    router.push('/setup-profile');
+
+  } catch (error) {
+    console.error(error);
     alert('Registration failed');
   } finally {
     isLoading.value = false;

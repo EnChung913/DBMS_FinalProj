@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, LineString } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
@@ -18,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { CompanyProfile } from '../../entities/company-profile.entity';
 import { DepartmentProfile } from '../../entities/department-profile.entity';
+
 
 @Injectable()
 export class AuthService {
@@ -65,12 +66,12 @@ export class AuthService {
       secret: process.env.JWT_SECRET,
       // For development use longer expiry
       // TODO: Change to 15m in production
-      expiresIn: '1d',
+      expiresIn: '10d',
     });
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: '7d',
+      expiresIn: '70d',
     });
 
     // refresh token hash
@@ -134,24 +135,21 @@ export class AuthService {
 
   private async checkProfileFilled(user: User) {
     if (user.role === 'student') {
-      const count = await this.dataSource
+      return await this.dataSource
         .getRepository(StudentProfile)
-        .count({ where: { user_id: user.user_id } });
-      return count > 0;
+        .exists({ where: { user_id: user.user_id } });
     }
 
     if (user.role === 'company') {
-      const count = await this.dataSource
+      return await this.dataSource
         .getRepository(CompanyProfile)
-        .count({ where: { user_id: user.user_id } });
-      return count > 0;
+        .exists({ where: { user_id: user.user_id } });
     }
 
     if (user.role === 'admin') {
-      const count = await this.dataSource
+      return await this.dataSource
         .getRepository(DepartmentProfile)
-        .count({ where: { user_id: user.user_id } });
-      return count > 0;
+        .exists({ where: { user_id: user.user_id } });
     }
 
     return false;
@@ -225,7 +223,8 @@ export class AuthService {
 
     const { password: _, ...safeUser } = user;
     const profileFilled = await this.checkProfileFilled(user);
-
+    console.log(`User ${user.user_id} logged in successfully at ${new Date().toISOString()}`);
+    console.log('Profile filled status:', profileFilled);
     return {
       user: safeUser,
       ...tokens,
@@ -236,37 +235,9 @@ export class AuthService {
   /* ===========================================================
      Refresh（Token Rotation）
      ===========================================================*/
-  async refresh(refreshToken: string, expiredAccessToken: string) {
+  async refresh(refreshToken: string) {
     const hashedRT = this.hashRefreshToken(refreshToken);
-    // To debug, but should not log in production
-    // console.log('Decoded AT:', this.jwtService.decode(expiredAccessToken));
-    // console.log('Now:', Math.floor(Date.now() / 1000));
-
-    // Step 1: verify token signature, even if expired
-    let accessPayload: any;
-    try {
-      accessPayload = await this.jwtService.verifyAsync(expiredAccessToken, {
-        secret: process.env.JWT_SECRET,
-        ignoreExpiration: true,
-      });
-
-    } catch {
-      throw new UnauthorizedException('Invalid access token');
-    }
-
-    // Step 2: manually check expiration
-    const decoded: any = this.jwtService.decode(expiredAccessToken);
-
-    if (!decoded || !decoded.exp) {
-      throw new BadRequestException('Invalid access token');
-    }
-
-    const now = Math.floor(Date.now() / 1000);
-
-    if (decoded.exp > now) {
-      throw new BadRequestException('Access token is still valid');
-    }
-
+    
     // 3. 驗 refresh token
     let rtPayload: any;
     try {
@@ -286,10 +257,9 @@ export class AuthService {
 
     // 5. 確認 RT / AT / Redis user 一致
     const rtSub = String(rtPayload.sub);
-    const atSub = String(accessPayload.sub);
     const redisUserId = String(userId);
 
-    if (rtSub !== atSub || rtSub !== redisUserId) {
+    if (rtSub !== redisUserId) {
       throw new UnauthorizedException('Token payloads do not match');
     }
 
@@ -319,9 +289,17 @@ export class AuthService {
   /* ===========================================================
      Logout（刪除 session）
      ===========================================================*/
-  async logout(refreshToken: string) {
+  async logout(refreshToken?: string) {
+    if (!refreshToken) {
+      console.log('No refresh token found in cookies.');
+      return { success: true };
+    }
+
     const hashedRT = this.hashRefreshToken(refreshToken);
     await this.redis.del(`refresh:${hashedRT}`);
+
+    console.log(`Refresh token session ${hashedRT} deleted.`);
     return { success: true };
   }
+
 }
