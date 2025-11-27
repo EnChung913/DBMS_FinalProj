@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm';
+import { StudentProfile } from './student-profile.entity';
 
 @Entity('user')
 export class User {
@@ -26,7 +27,6 @@ export class User {
   @Column({ type: 'varchar', length: 64, nullable: true })
   otp_secret: string | null;
 
-
   @Column({ default: false })
   is_2fa_enabled: boolean;
 
@@ -35,4 +35,7 @@ export class User {
 
   @Column({ default: false })
   is_deleted: boolean;
+
+  @OneToOne(() => StudentProfile, (profile) => profile.user)
+  studentProfile: StudentProfile;
 }

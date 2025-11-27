@@ -4,18 +4,18 @@ import { Repository } from 'typeorm';
 import { StudentProfile } from '../../../entities/student-profile.entity';
 import { User } from '../../../entities/user.entity';
 import { UpsertStudentProfileDto } from '../dto/upsert-student-profile.dto';
+import { DeepPartial } from 'typeorm';
 
 @Injectable()
 export class ProfileService {
-    constructor(
+  constructor(
     @InjectRepository(StudentProfile)
     private readonly studentProfileRepo: Repository<StudentProfile>,
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    ) {}
+  ) {}
 
-  //TODO: there's some issue with relations, should be fixed later
   async getProfile(userId: string) {
     return this.studentProfileRepo.findOne({
       where: { user_id: userId },
@@ -25,10 +25,21 @@ export class ProfileService {
 
   async getOrCreateProfile(userId: string) {
     let profile = await this.getProfile(userId);
+
     if (!profile) {
-      profile = this.studentProfileRepo.create({ user_id: userId });
+      const user = await this.userRepo.findOne({
+        where: { user_id: userId },
+      });
+      if (!user) throw new NotFoundException('User not found');
+
+      profile = this.studentProfileRepo.create({
+        user_id: user.user_id,
+        user: user,
+      });
+
       await this.studentProfileRepo.save(profile);
     }
+
     return profile;
   }
 
@@ -36,7 +47,9 @@ export class ProfileService {
     const user = await this.userRepo.findOne({
       where: { user_id: userId, is_deleted: false },
     });
+
     if (!user) throw new NotFoundException('User not found');
+
     if (user.role !== 'student') {
       throw new ForbiddenException('Only student can edit student profile');
     }
@@ -44,22 +57,23 @@ export class ProfileService {
     let profile = await this.getProfile(userId);
 
     if (!profile) {
-      profile = this.studentProfileRepo.create({
-        user_id: userId,
+      // Create new profile
+      const data: DeepPartial<StudentProfile> = {
+        user_id: user.user_id,
+        user: user,
         student_id: dto.student_id,
         department_id: dto.department_id,
-        ...(dto.entry !== undefined && { entry: dto.entry }),
-        ...(dto.grade !== undefined && { grade: dto.grade.toString() }),
-      });
+        entry: dto.entry,
+        grade: dto.grade,
+      };
+
+      profile = this.studentProfileRepo.create(data);
     } else {
+      // Update existing profile
       profile.student_id = dto.student_id;
       profile.department_id = dto.department_id;
-      if (dto.entry !== undefined) {
-        profile.entry = dto.entry;
-      }
-      if (dto.grade !== undefined) {
-        profile.grade = dto.grade.toString();
-      }
+      profile.entry = dto.entry ?? profile.entry;
+      profile.grade = dto.grade !== undefined ? dto.grade : profile.grade;
     }
 
     return this.studentProfileRepo.save(profile);

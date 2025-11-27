@@ -69,3 +69,6 @@ I forgot to set JWT_SECRET in the generateToken function in auth.service.ts. Thi
 
 [2025-11-27 01:13]
 There's an error of relation in student profile entity. I marked it and will fix it tomorrow. I'll merge the dev branch to main branch after fixing that bug.
+
+[2025-11-27 11:55]
+I tried hard to fix this, but still need some more time.
