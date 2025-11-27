@@ -1,28 +1,44 @@
-<script setup>
-import { RouterView } from 'vue-router';
+<script setup lang="ts">
+import { computed } from 'vue';
+import { RouterView, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+// 計算 Dashboard 連結
+const dashboardLink = computed(() => {
+  if (authStore.role === 'department') return '/department/dashboard';
+  if (authStore.role === 'company') return '/company/dashboard';
+  return '/student/dashboard';
+});
 </script>
 
 <template>
   <div class="app-wrapper">
     <header class="main-header">
-      <div class="header-content">
-        <div class="logo">
+      <div class="header-content" style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+        <div class="logo" @click="router.push('/')">
           <span class="logo-icon">❖</span>
           <span class="logo-text">UniConnect - University / Unity / Universe Connect</span>
         </div>
+        
         <nav class="nav-links">
-          <router-link to="/login">Log in</router-link>
-          <router-link to="/register">Register</router-link>
+          <template v-if="!authStore.isLoggedIn">
+            <router-link to="/login">Log in</router-link>
+            <router-link to="/register">Register</router-link>
+          </template>
+
+          <template v-else>
+            <router-link :to="dashboardLink">Dashboard</router-link>
+            <a href="#" @click.prevent="authStore.clearAuth()">Log out</a>
+          </template>
         </nav>
       </div>
     </header>
 
     <main class="main-content">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <router-view />
     </main>
 
     <footer class="main-footer">
@@ -78,8 +94,10 @@ import { RouterView } from 'vue-router';
   border: 1px solid rgba(255, 255, 255, 0.3); /* 增加一點邊框質感 */
 }
 
+/* 為了讓 header-content 在膠囊內正常運作，稍微調整寬度 */
 .header-content {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1200px; /* 其實可以設 100% */
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -106,6 +124,7 @@ import { RouterView } from 'vue-router';
   color: var(--text-color);
   font-size: 0.9rem;
   transition: color 0.3s;
+  cursor: pointer; /* 加上游標手勢 */
 }
 
 .nav-links a:hover,

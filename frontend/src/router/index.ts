@@ -1,40 +1,75 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import ProfileSetup from '../views/ProfileSetup.vue'
-import StudentDashboard from '../views/Student/StudentDashboard.vue' 
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import LoginView from '../views/LoginView.vue';
+import RegisterView from '../views/RegisterView.vue';
+import ProfileSetup from '../views/ProfileSetup.vue';
+import StudentDashboard from '../views/Student/StudentDashboard.vue';
+import DepartmentDashboard from '../views/Department/DepartmentDashboard.vue';
+import CompanyDashboard from '../views/Company/CompanyDashboard.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
-      redirect: '/login' // 預設導向登入頁
-    },
-    {
-      path: '/login',
-      name: 'Login',
-      component: LoginView
-    },
-    {
-      path: '/register',
-      name: 'Register',
-      component: RegisterView
-    },
-    {
-      path: '/setup-profile',
-      name: 'ProfileSetup',
+    { path: '/', redirect: '/login' },
+    { path: '/login', name: 'Login', component: LoginView },
+    { path: '/register', name: 'Register', component: RegisterView },
+    { 
+      path: '/setup-profile', 
+      name: 'ProfileSetup', 
       component: ProfileSetup,
-      // 這裡可以加上路由守衛 (Navigation Guard) 確保只有登入者能進入
-      // meta: { requiresAuth: true } 
+      meta: { requiresAuth: true }
     },
+    // --- 角色專屬路由 ---
     {
       path: '/student/dashboard',
       name: 'StudentDashboard',
       component: StudentDashboard,
-      // meta: { requiresAuth: true, role: 'student' } 
+      meta: { requiresAuth: true, role: 'student', requiresSetup: true }
+    },
+    {
+      path: '/department/dashboard',
+      name: 'DepartmentDashboard',
+      component: DepartmentDashboard,
+      meta: { requiresAuth: true, role: 'department', requiresSetup: true }
+    },
+    {
+      path: '/company/dashboard',
+      name: 'CompanyDashboard',
+      component: CompanyDashboard,
+      meta: { requiresAuth: true, role: 'company', requiresSetup: true }
     }
   ]
-})
+});
 
-export default router
+// 全域路由守衛
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+
+  // 1. 檢查是否需要登入
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    next('/login');
+    return;
+  }
+
+  // 2. 檢查是否需要完成 Profile 設定
+  // 如果已登入但還沒設定，且正要去 Dashboard -> 強制去 Setup
+  if (to.meta.requiresSetup && !authStore.isSetupDone) {
+    next({ name: 'ProfileSetup' });
+    return;
+  }
+
+  // 3. 檢查角色權限
+  if (to.meta.role && authStore.role !== to.meta.role) {
+    alert('Access Denied: Role mismatch');
+    // 導向回正確的角色首頁
+    if (authStore.role === 'student') next('/student/dashboard');
+    else if (authStore.role === 'department') next('/department/dashboard');
+    else if (authStore.role === 'company') next('/company/dashboard');
+    else next('/login');
+    return;
+  }
+
+  next();
+});
+
+export default router;
