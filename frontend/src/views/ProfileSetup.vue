@@ -13,14 +13,13 @@ const departments = ref<{id: string, name: string}[]>([]);
 onMounted(async () => {
   if (userRole.value === 'student') {
     // ----------------------------------------------------------------
-    // TO DO: [GET] /api/common/departments (取得系所列表)
+    // TODO: [GET] /api/common/departments (取得系所列表)
     // ----------------------------------------------------------------
     
     // Mock Data
     departments.value = [
-      { id: 'd1', name: 'Computer Science' },
-      { id: 'd2', name: 'Business Administration' },
-      { id: 'd3', name: 'Design' }
+      { id: '9020', name: 'Computer Science' },
+      { id: '5080', name: 'Biomedical Engineering' }
     ];
   }
 });
@@ -65,7 +64,6 @@ const handleSubmit = async () => {
     console.log(`[Mock] POST ${endpoint}`, payload);
     
     // 更新狀態
-    //TODO: fix this bug
     authStore.setNeedProfile(false);
     alert('Profile setup complete!');
 
