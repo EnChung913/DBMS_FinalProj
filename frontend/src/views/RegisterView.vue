@@ -73,6 +73,10 @@ const handleRegister = async () => {
         <input v-model="formData.username" required />
       </div>
       <div class="form-group">
+        <label>Nickname</label>
+        <input v-model="formData.nickname" required />
+      </div>
+      <div class="form-group">
         <label>Password</label>
         <input v-model="formData.password" type="password" required />
       </div>

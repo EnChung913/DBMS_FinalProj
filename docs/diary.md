@@ -89,3 +89,5 @@ Starting a new branch to implement register function.
 [2025-11-28 16:21]
 I export the database to backup.sql, now anyone can restore the database from backup.sql to get the basic data.
 
+[2025-11-28 17:05]
+Now the register function works well. After registering, user would be automatically logged in, and the JWTs would be stored in http-only cookie.

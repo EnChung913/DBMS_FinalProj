@@ -19,9 +19,42 @@ export class AuthController {
 
 
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  @HttpCode(201)
+  async register(
+    @Body() dto: RegisterDto,
+    @Res() res: Response
+  ) {
+    const {
+      user,
+      accessToken,
+      refreshToken,
+      needProfile,
+    } = await this.authService.register(dto);
+
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // 設定 ACCESS TOKEN Cookie
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    // 設定 REFRESH TOKEN Cookie
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return res.json({
+      user,
+      needProfile,
+    });
   }
+
 
   @Post('login')
   @HttpCode(200)
