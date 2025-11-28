@@ -118,7 +118,7 @@ You can check the whole change log in diary.md for more details.
 - remove all docker and start from scratch
 ``` bash
 docker compose down
-docker volume rm pgdata
+docker volume rm dbms_finalproj_group7_pgdata
 docker compose up -d db redis
 ```
 
