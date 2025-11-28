@@ -24,18 +24,15 @@ const handleLogin = async () => {
     const response = await apiClient.post<AuthResponse>(
       '/api/auth/login',     
       credentials.value,
-      { withCredentials: true } // ⚠️ 帶 cookie
+      { withCredentials: true } // with credentials
     );
 
     const data = response.data;
     console.log('status:', response.status);
     console.log('Login successful:', data);
 
-    // ⚠️ 現在不再有 access_token / refresh_token
-    //    Token 已存在 HttpOnly Cookie，前端無權存取
     authStore.setUser(data.user);
 
-    // ⚠️ needProfile 決定是否導向填資料
     console.log('Need profile setup:', data.needProfile);
     if (data.needProfile) {
       router.push('/setup-profile');

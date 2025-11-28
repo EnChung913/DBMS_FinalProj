@@ -83,5 +83,9 @@ The user information previously stored in pinia, if the page is refreshed, the u
 
 This branch is ready to merge to main branch, cheers!
 
+[2025-11-28 11:12]
+Starting a new branch to implement register function.
+
 [2025-11-28 16:21]
 I export the database to backup.sql, now anyone can restore the database from backup.sql to get the basic data.
+

@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import apiClient from '@/api/axios';
-import type { UserRole } from '@/types';
+import type { AuthResponse, UserRole } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -21,28 +21,32 @@ const formData = ref({
 const handleRegister = async () => {
   if (isLoading.value) return;
   isLoading.value = true;
+  console.log('Sending payload:', JSON.stringify(formData.value, null, 2));
 
   try {
-    // ---- 向後端發送註冊請求 ----
-    const response = await apiClient.post(
+    // ---- 呼叫後端註冊 API ----
+    const response = await apiClient.post<AuthResponse>(
       '/api/auth/register',
       formData.value,
-      { withCredentials: true } // 必須帶 cookie
+      { withCredentials: true }
     );
 
     const data = response.data;
+    console.log('status:', response.status);
     console.log('Registration success:', data);
 
-    // 設定 login 後的使用者資訊
+    // 設定 user
     authStore.setUser(data.user);
-    authStore.setNeedProfile(data.needProfile);
 
-    alert('Registration successful!');
+    console.log('Need profile setup:', data.needProfile);
 
-    // 註冊後，一定要填 profile
-    router.push('/setup-profile');
+    // 註冊後一定要做 profile
+    if (data.needProfile) {
+      router.push('/setup-profile');
+      return;
+    }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     alert('Registration failed');
   } finally {
@@ -50,6 +54,7 @@ const handleRegister = async () => {
   }
 };
 </script>
+
 
 <template>
   <div class="container">
