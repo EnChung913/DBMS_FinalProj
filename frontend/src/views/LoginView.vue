@@ -55,6 +55,7 @@ const handleLogin = async () => {
     }
   } catch (error: any) {
     console.error(error);
+    console.log('login error response:', error.response?.data);
     alert('Login failed');
   } finally {
     isLoading.value = false;

@@ -22,7 +22,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Token 過期，強制登出
       const authStore = useAuthStore();
-      authStore.clearAuth(); 
+      authStore.clearUser(); 
     }
     return Promise.reject(error);
   }

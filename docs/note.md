@@ -94,14 +94,13 @@ values ('bmeHost', 'bme@example.com', 'bmeHost', '123456789', 'bmeHost', 'depart
  ('tsmcHost', 'tsmc@example.com', 'tsmcHost', '123456789', 'tsmcHost', 'company'),
  ('711Host', '711@example.com', '711Host', '123456789', '711Host', 'company');
 
-
-
 insert into "department_profile"(department_id, department_name, contact_person)
-values (5080, 'BME', '248c2372-03ab-4b19-a83b-9f5689c95293');
+values (5080, 'BME', '41b7a321-6e43-4b88-ba2e-29d54bfa3fc8');
+values (9020, 'CS', '303ac774-7f03-4863-85b1-3382fa4a52ca');
 
 insert into "company_profile"(company_name, contact_person, industry)
-values ('tsmc', 'b21e8ebc-613b-420f-a292-17027589a0e6', 'IC'),
- ('711', '345c8fa4-992e-4d6e-89b6-c61c35d2fa18', 'Retail Store');
+values ('tsmc', '61255770-b939-4d4b-815f-55a0f70abee2', 'IC'),
+ ('711', '250ab829-efe5-4243-8d4e-df6b4780d244', 'Retail Store');
  ```
  Note that the department_id and contact_person should match the actual user_id in your database. You can find them by querying the user table.
  ``` sql
@@ -113,3 +112,17 @@ select user_id, real_name from "user";
 Finally I fixed the problem, now I can upsert student profile by api calls. User has to manually add a default user and add this user's department in student_department table first, then he can upsert his profile because the foreign key constraint needs to be satisfied. It's a little bit inconvenient now, but in pratical there won't be such situation that start up with an empty databse.
 
 You can check the whole change log in diary.md for more details.
+
+## To reset the database to a clean state
+
+- remove all docker and start from scratch
+``` bash
+docker compose down
+docker volume rm pgdata
+docker compose up -d db redis
+```
+
+- restore database from backup.sql
+```bash
+docker exec -i group7_psql psql -U postgres -d group7_db < backup.sql
+```

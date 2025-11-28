@@ -82,3 +82,6 @@ I decided to put JWT in http-only cookie, which means I cann't use the expiredAc
 The user information previously stored in pinia, if the page is refreshed, the user information would be lost. So I add a function to load user information from localStorage when the app is initialized. This can enhance user experience. Besides, I finish the logout function in frontend. Now the JWTs would be deleted from http-only cookie when user logout, and the refresh token session would be deleted from redis too.
 
 This branch is ready to merge to main branch, cheers!
+
+[2025-11-28 16:21]
+I export the database to backup.sql, now anyone can restore the database from backup.sql to get the basic data.
