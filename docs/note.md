@@ -134,3 +134,10 @@ docker compose up -d db redis
 ```bash
 docker exec -i group7_psql psql -U postgres -d group7_db < backup.sql
 ```
+
+-insert data into database
+```
+docker cp xxxxx.sql group7_psql:/tmp/
+docker exec -it group7_psql psql -U postgres -d group7_db -f /tmp/insert_user_data.sql
+docker exec group7_psql rm /tmp/xxxxx.sql 
+```
