@@ -16,7 +16,7 @@ CREATE TABLE "user" (
     otp_secret VARCHAR(64),
     is_2fa_enabled BOOLEAN DEFAULT FALSE,
     registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ DE FAULT '9999-12-31 23:59:59'
+    deleted_at TIMESTAMPTZ DEFAULT '9999-12-31 23:59:59'
 );
 
 -------------------------------------------------
@@ -70,7 +70,8 @@ CREATE TABLE student_course_record (
     semester VARCHAR(10) NOT NULL,
     course_id VARCHAR(50) NOT NULL,
     course_name VARCHAR(100) NOT NULL,
-    score FLOAT CHECK(score BETWEEN 0 AND 100),
+    credit int CHECK(credit BETWEEN 1 AND 4),
+    score FLOAT CHECK(score BETWEEN 0 AND 4.3),
     PRIMARY KEY(user_id, semester, course_id)
 );
 
