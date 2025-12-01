@@ -1,4 +1,4 @@
--- UUID 
+-- UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -------------------------------------------------
@@ -23,15 +23,15 @@ CREATE TABLE "user" (
 -- Profile tables
 -------------------------------------------------
 CREATE TABLE department_profile (
-    department_id VARCHAR(10) PRIMARY KEY,
+    department_id VARCHAR(50) PRIMARY KEY,
     department_name VARCHAR(100) NOT NULL,
-    contact_person UUID NOT NULL REFERENCES "user"(user_id) -- who manages this department
+    contact_person UUID NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE student_profile (
-    user_id UUID PRIMARY KEY REFERENCES "user"(user_id), -- 1:1
+    user_id UUID PRIMARY KEY REFERENCES "user"(user_id) ON DELETE CASCADE,
     student_id VARCHAR(10) UNIQUE NOT NULL,
-    department_id VARCHAR(10) NOT NULL REFERENCES department_profile(department_id),
+    department_id VARCHAR(50) NOT NULL REFERENCES department_profile(department_id),
     entry_year INT NOT NULL,
     grade INT NOT NULL
 );
@@ -39,7 +39,7 @@ CREATE TABLE student_profile (
 CREATE TABLE company_profile (
     company_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name VARCHAR(100) NOT NULL,
-    contact_person UUID NOT NULL REFERENCES "user"(user_id), -- who manages this company
+    contact_person UUID NOT NULL REFERENCES "user"(user_id) ON DELETE CASCADE,
     industry VARCHAR(50) NOT NULL
 );
 
@@ -47,8 +47,8 @@ CREATE TABLE company_profile (
 -- Student affiliation 
 -------------------------------------------------
 CREATE TABLE student_department (
-    user_id UUID REFERENCES "user"(user_id),
-    department_id VARCHAR(10) NOT NULL REFERENCES department_profile(department_id),
+    user_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
+    department_id VARCHAR(50) NOT NULL REFERENCES department_profile(department_id),
     role VARCHAR(20) CHECK(role IN ('major','minor','double_major')),
     start_semester VARCHAR(10) NOT NULL,
     end_semester VARCHAR(10),
@@ -59,33 +59,53 @@ CREATE TABLE student_department (
 -- History: GPA / Courses
 -------------------------------------------------
 CREATE TABLE student_gpa (
-    user_id UUID REFERENCES "user"(user_id),
+    user_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
     semester VARCHAR(10) NOT NULL,
     gpa FLOAT CHECK(gpa BETWEEN 0 AND 4.3),
     PRIMARY KEY(user_id, semester)
 );
 
 CREATE TABLE student_course_record (
-    user_id UUID REFERENCES "user"(user_id),
+    user_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
     semester VARCHAR(10) NOT NULL,
     course_id VARCHAR(50) NOT NULL,
     course_name VARCHAR(100) NOT NULL,
-    credit int CHECK(credit BETWEEN 1 AND 4),
+    credit INT CHECK(credit BETWEEN 1 AND 4),
     score FLOAT CHECK(score BETWEEN 0 AND 4.3),
     PRIMARY KEY(user_id, semester, course_id)
 );
 
 -------------------------------------------------
--- Achievement
+-- Achievement (with intern category & date range)
 -------------------------------------------------
 CREATE TABLE achievement (
-    achievement_id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES "user"(user_id),
-    category VARCHAR(20) CHECK(category IN ('Competition','Research','Others')),
+    achievement_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
+    category VARCHAR(20) CHECK(category IN ('Competition','Research','Intern','Project','Others')),
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
+    start_date DATE,
+    end_date DATE,
     creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) CHECK(status IN ('unrecognized','recognized','rejected')) NOT NULL
+);
+
+-------------------------------------------------
+-- Achievement verification (NEW TABLE)
+-------------------------------------------------
+CREATE TABLE achievement_verification (
+    verification_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    achievement_id UUID REFERENCES achievement(achievement_id) ON DELETE CASCADE,
+    
+    verifier_type VARCHAR(20) CHECK(verifier_type IN ('department','company','professor')) NOT NULL,
+    verifier_email VARCHAR(100) NOT NULL,
+    
+    verification_status VARCHAR(20)
+        CHECK(verification_status IN ('pending','approved','rejected'))
+        DEFAULT 'pending',
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    decided_at TIMESTAMP
 );
 
 -------------------------------------------------
@@ -93,13 +113,14 @@ CREATE TABLE achievement (
 -------------------------------------------------
 CREATE TABLE resource (
     resource_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    resource_type VARCHAR(20) CHECK(resource_type IN ('Scholarship','Internship','Lab','Others')),
+    resource_type VARCHAR(20) 
+        CHECK(resource_type IN ('Scholarship','Internship','Lab','Competition','Others')),
+
     quota INT NOT NULL CHECK(quota >= 0),
     
     department_supplier_id VARCHAR(10) REFERENCES department_profile(department_id),
     company_supplier_id UUID REFERENCES company_profile(company_id),
     
-    -- XOR check: make sure that only one of the two supplier IDs is NOT NULL
     CHECK (
         (department_supplier_id IS NOT NULL AND company_supplier_id IS NULL) OR 
         (department_supplier_id IS NULL AND company_supplier_id IS NOT NULL)
@@ -116,22 +137,31 @@ CREATE TABLE resource (
 -- Eligibility rule
 -------------------------------------------------
 CREATE TABLE resource_condition (
-    resource_id UUID REFERENCES resource(resource_id),
-    department_id VARCHAR(10) NOT NULL REFERENCES department_profile(department_id),
-    avg_gpa FLOAT CHECK(avg_gpa BETWEEN 0 AND 4.3), -- NULL means no limit
-    current_gpa FLOAT CHECK(current_gpa BETWEEN 0 AND 4.3), -- NULL means no limit
+    resource_id UUID REFERENCES resource(resource_id) ON DELETE CASCADE,
+    department_id VARCHAR(50) NOT NULL REFERENCES department_profile(department_id),
+    avg_gpa FLOAT CHECK(avg_gpa BETWEEN 0 AND 4.3),
+    current_gpa FLOAT CHECK(current_gpa BETWEEN 0 AND 4.3),
     is_poor BOOLEAN,
     PRIMARY KEY(resource_id, department_id)
 );
 
 -------------------------------------------------
--- Application
+-- Application 
+-- Add: resource_status_at_apply
 -------------------------------------------------
 CREATE TABLE application (
-    user_id UUID REFERENCES "user"(user_id),
-    resource_id UUID REFERENCES resource(resource_id),
+    user_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
+    resource_id UUID REFERENCES resource(resource_id) ON DELETE CASCADE,
+    
     apply_date DATE DEFAULT CURRENT_DATE,
-    status VARCHAR(20) CHECK(status IN ('submitted','under_review','approved','rejected')) NOT NULL,
+    
+    review_status VARCHAR(20)
+        CHECK(review_status IN ('submitted','under_review','approved','rejected'))
+        NOT NULL,
+
+    resource_status_at_apply VARCHAR(20)
+        CHECK(resource_status_at_apply IN ('Canceled','Unavailable','Available','Full')),
+    
     PRIMARY KEY(user_id, resource_id)
 );
 
@@ -140,8 +170,8 @@ CREATE TABLE application (
 -------------------------------------------------
 CREATE TABLE push_record (
     push_id SERIAL PRIMARY KEY,
-    pusher_id UUID REFERENCES "user"(user_id),
-    receiver_id UUID REFERENCES "user"(user_id),
-    resource_id UUID REFERENCES resource(resource_id),
+    pusher_id UUID REFERENCES "user"(user_id) ON DELETE SET NULL,
+    receiver_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
+    resource_id UUID REFERENCES resource(resource_id) ON DELETE CASCADE,
     push_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

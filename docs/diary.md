@@ -97,3 +97,10 @@ I finished the api call for upserting department profile. Next step would be the
 
 [2025-11-29 00:35]
 Add a little function: limit the number of requests from same IP address in a certain time period to prevent brute-force attacks. (1000 requests per 10 minutes)
+
+[2025-12-1 12:04]
+From 11/4, this project has been developed for almost a month. Kill me....
+I changed the schema.sql to add cascade delete function and some achievement functions. Now when a user is deleted, all his related profiles would be deleted automatically. 
+Next step would be list the departments while registering.
+
+Hope I can finish the whole project before the deadline.....
