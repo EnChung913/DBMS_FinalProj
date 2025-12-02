@@ -146,8 +146,8 @@ CREATE TABLE resource (
 
     quota INT NOT NULL CHECK(quota >= 0),
     
-    department_supplier_id VARCHAR(10) REFERENCES department_profile(department_id),
-    company_supplier_id UUID REFERENCES company_profile(company_id),
+    department_supplier_id UUID REFERENCES user(user_id),
+    company_supplier_id UUID REFERENCES user(user_id),
     
     CHECK (
         (department_supplier_id IS NOT NULL AND company_supplier_id IS NULL) OR 
@@ -157,7 +157,7 @@ CREATE TABLE resource (
     title VARCHAR(100) NOT NULL,
     deadline DATE,
     description TEXT NOT NULL,
-    status VARCHAR(20) CHECK(status IN ('Canceled','Unavailable','Available')) NOT NULL,
+    status VARCHAR(20) CHECK(status IN ('Canceled','Unavailable','Available')) NOT NULL DEFAULT 'Unavailable',
     is_deleted BOOLEAN DEFAULT FALSE
 );
 

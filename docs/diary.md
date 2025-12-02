@@ -134,3 +134,15 @@ Ok the schema is fine in this stage. Now I'm striving to finish the function tha
 
 To efficiently filter the students, I generate a materialized view named "student_search_mv" to store the searchable fields of student profile. This can greatly enhance the performance of filtering students.
 Update the mv: REFRESH MATERIALIZED VIEW student_search_mv;
+
+[2025-12-2 17:20]
+I finish the student filtering function. Company can filter students by some conditions such as department, grade, gpa range, achievements, etc.
+Now I want to try to implement the resource posting function.
+
+A new function need to be added that department can set their student as poor student. 
+
+If a user (department or company) wants to post a resource, he need to create a resource first, all resource are unavailable by default. Then the creator need to set its conditions in resource_condition table. This step, system would estimate how many students are eligible for this resource according to the conditions set by the creator. If the conditions are too strict that no student is eligible, the creator need to relax the conditions.
+
+There should be a function that admin can add a new company. For departments, maybe later (perhaps useless).
+
+I finished the resource condition setting function. Now department or company can create a resource and set its conditions. The analysis of eligible students wouild be done later.

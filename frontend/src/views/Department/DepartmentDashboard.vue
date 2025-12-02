@@ -31,7 +31,7 @@ onMounted(async () => {
 
   try {
     // ----------------------------------------------------------------
-    // TO DO: 連接後端 API (Department Dashboard)
+    // TODO: 連接後端 API (Department Dashboard)
     // ----------------------------------------------------------------
 
     // 1. [GET] /api/department/achievements/pending
@@ -72,7 +72,7 @@ onMounted(async () => {
 
 const verifyAchievement = async (id: number, decision: boolean) => {
   // ----------------------------------------------------------------
-  // TO DO: [POST] /api/department/achievement/{id}/verify
+  // TODO: [POST] /api/department/achievement/{id}/verify
   // Body: { decision: boolean }
   // ----------------------------------------------------------------
   // await apiClient.post(`/department/achievement/${id}/verify`, { decision });

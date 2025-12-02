@@ -1,3 +1,5 @@
+//TODO: year change to roc era, force transfer student id to uppercase, there's an issue if user havn't fill in profile and try to access dashboard
+
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';

@@ -28172,7 +28172,6 @@ ALTER TABLE ONLY public.student_profile
 ALTER TABLE ONLY public.student_profile
     ADD CONSTRAINT student_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(user_id) ON DELETE CASCADE;
 
-
 --
 -- Name: student_search_mv; Type: MATERIALIZED VIEW DATA; Schema: public; Owner: postgres
 --
@@ -28184,5 +28183,15 @@ REFRESH MATERIALIZED VIEW public.student_search_mv;
 -- PostgreSQL database dump complete
 --
 
+
 \unrestrict LrwjUzvIbbbeUAgoRA3eseCh8IvtHh0eRjlTob3jIo6TCwWlfOR4X0fla36347p
 
+UPDATE public.user AS u
+SET company_id = c.company_id
+FROM public.company_profile AS c
+WHERE u.user_id = c.contact_person;
+
+UPDATE public.user AS u
+SET department_id = d.department_id
+FROM public.department_profile AS d
+WHERE u.user_id = d.contact_person;

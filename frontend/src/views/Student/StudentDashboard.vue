@@ -18,7 +18,7 @@ onMounted(async () => {
 
   try {
     // ----------------------------------------------------------------
-    // TO DO: 連接後端 API (Student Dashboard)
+    // TODO: 連接後端 API (Student Dashboard)
     // ----------------------------------------------------------------
 
     // 1. [GET] /api/student/info

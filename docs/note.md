@@ -135,6 +135,11 @@ docker compose up -d db redis
 docker exec -i group7_psql psql -U postgres -d group7_db < backup.sql
 ```
 
+- set superadmin
+```bash
+update "user" set is_admin=true where username='b12508026';
+```
+
 ## Insert data into database
 ``` bash
 docker cp insert_.sql group7_psql:/tmp/
@@ -143,3 +148,16 @@ docker exec group7_psql rm /tmp/xxxxx.sql
 docker exec group7_psql rm -rf /tmp/*
 docker exec group7_psql ls /tmp 
 ```
+
+## Here are some test accounts:
+
+- company user
+
+user_id: 9b541a87-7eec-470b-baaf-a26e952062c9 
+real_name: 公司測試 
+email: josh@mail.com
+username: testcompany
+password: 123456
+nickname: testc 
+role: company 
+

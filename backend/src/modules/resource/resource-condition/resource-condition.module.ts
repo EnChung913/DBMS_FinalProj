@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ResourceConditionController } from './resource-condition.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ResourceCondition } from '../../../entities/resource-condition.entity';
 import { ResourceConditionService } from './resource-condition.service';
 
 @Module({
-  controllers: [ResourceConditionController],
-  providers: [ResourceConditionService]
+  imports: [TypeOrmModule.forFeature([ResourceCondition])],
+  providers: [ResourceConditionService],
+  exports: [ResourceConditionService],
 })
 export class ResourceConditionModule {}

@@ -32,7 +32,7 @@ export class SearchStudentDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  courses?: string[];
+  courses_id?: string[];
 
   @IsOptional()
   @IsArray()

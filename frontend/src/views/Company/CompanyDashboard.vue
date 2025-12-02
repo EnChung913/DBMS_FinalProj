@@ -32,7 +32,7 @@ onMounted(async () => {
 
   try {
     // ----------------------------------------------------------------
-    // TO DO: 連接後端 API (Company Dashboard)
+    // TODO: 連接後端 API (Company Dashboard)
     // ----------------------------------------------------------------
     
     // 1. [GET] /api/company/jobs
