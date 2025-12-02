@@ -30,7 +30,7 @@ services:
     volumes:
       - ./backend:/app
 
-    env_file: .env.docker
+    env_file: backend/.env.docker
 
     # backend 必須在 db、redis 準備好後啟動
     depends_on:

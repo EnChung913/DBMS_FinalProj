@@ -127,5 +127,10 @@ e.g. promote username 'b12508025' to be admin can be done by calling this api:
 http://localhost:3000/api/common/set-admin/b12508025
 ```
 
-There's am issue in the schema that I forget to record the department_id or company_id in the user table. So that admin can't know which department or company he is managing. I need to modify the schema again, perhaps tomorrow. The schema should be modified and the generate code should be updated.
+There's an issue in the schema that I forget to record the department_id or company_id in the user table. So that admin can't know which department or company he is managing. I need to modify the schema again, perhaps tomorrow. The schema should be modified and the generate code should be updated.
 
+[2025-12-2 11:42]
+Ok the schema is fine in this stage. Now I'm striving to finish the function that company can filter students by certain conditions.
+
+To efficiently filter the students, I generate a materialized view named "student_search_mv" to store the searchable fields of student profile. This can greatly enhance the performance of filtering students.
+Update the mv: REFRESH MATERIALIZED VIEW student_search_mv;

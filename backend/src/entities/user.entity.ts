@@ -24,6 +24,12 @@ export class User {
   @Column({ length: 20 })
   role: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  company_id: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  department_id: string | null;
+
   @Column({ default: false })
   is_admin: boolean;
 

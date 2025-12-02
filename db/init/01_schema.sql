@@ -18,30 +18,8 @@ CREATE TABLE "user" (
     registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ DEFAULT '9999-12-31 23:59:59',
 
-    -- 各角色對應的外鍵欄位
     company_id UUID,
-    department_id UUID,
-
-    -- 外鍵：公司角色
-    CONSTRAINT fk_user_company
-        FOREIGN KEY (company_id)
-        REFERENCES company_profile(company_id)
-        ON UPDATE CASCADE
-        ON DELETE SET NULL,
-
-    -- 外鍵：科系角色
-    CONSTRAINT fk_user_department
-        FOREIGN KEY (department_id)
-        REFERENCES department_profile(department_id)
-        ON UPDATE CASCADE
-        ON DELETE SET NULL,
-
-    -- 關鍵的 role 驗證
-    CONSTRAINT role_requires_company_or_department CHECK (
-        (role = 'company' AND company_id IS NOT NULL AND department_id IS NULL) OR
-        (role = 'department' AND department_id IS NOT NULL AND company_id IS NULL) OR
-        (role = 'student' AND company_id IS NULL AND department_id IS NULL)
-    )
+    department_id VARCHAR(50),
 );
 
 -- TODO: User application table (if needed)
