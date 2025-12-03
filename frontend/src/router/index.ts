@@ -6,6 +6,7 @@ import ProfileSetup from '../views/ProfileSetup.vue';
 import StudentDashboard from '../views/Student/StudentDashboard.vue';
 import DepartmentDashboard from '../views/Department/DepartmentDashboard.vue';
 import CompanyDashboard from '../views/Company/CompanyDashboard.vue';
+import ForgotPasswordView from '../views/ForgotPasswordView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,6 +14,7 @@ const router = createRouter({
     { path: '/', redirect: '/login' },
     { path: '/login', name: 'Login', component: LoginView },
     { path: '/register', name: 'Register', component: RegisterView },
+    { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPasswordView },
     { 
       path: '/setup-profile', 
       name: 'ProfileSetup', 

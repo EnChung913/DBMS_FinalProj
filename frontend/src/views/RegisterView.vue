@@ -9,6 +9,8 @@ const router = useRouter();
 const authStore = useAuthStore();
 const isLoading = ref(false);
 
+const confirmPassword = ref('');
+
 const formData = ref({
   real_name: '',
   email: '',
@@ -20,6 +22,13 @@ const formData = ref({
 
 const handleRegister = async () => {
   if (isLoading.value) return;
+
+  // 確認密碼
+  if (formData.value.password !== confirmPassword.value) {
+    alert('Passwords do not match');
+    return;
+  }
+
   isLoading.value = true;
   console.log('Sending payload:', JSON.stringify(formData.value, null, 2));
 
@@ -81,6 +90,19 @@ const handleRegister = async () => {
         <input v-model="formData.password" type="password" required />
       </div>
       <div class="form-group">
+        <label>Confirm Password</label>
+        <input 
+          v-model="confirmPassword" 
+          type="password" 
+          required 
+          placeholder="Re-enter your password"
+          :class="{ 'error-border': confirmPassword && formData.password !== confirmPassword }"
+        />
+        <small v-if="confirmPassword && formData.password !== confirmPassword" style="color: var(--error-color);">
+          Passwords do not match
+        </small>
+      </div>
+      <div class="form-group">
         <label>Role</label>
         <select v-model="formData.role">
           <option value="student">Student</option>
@@ -95,3 +117,9 @@ const handleRegister = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.error-border {
+  border: 1px solid var(--error-color);
+}
+</style>

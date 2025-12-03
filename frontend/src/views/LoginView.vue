@@ -82,6 +82,15 @@ const handleLogin = async () => {
           required
         />
       </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input v-model="credentials.password" type="password" required />
+        <div style="text-align: right; margin-top: 5px;">
+         <router-link to="/forgot-password" style="font-size: 0.8rem; color: #888; text-decoration: none;">
+          Forgot Password ?
+         </router-link>
+        </div>
+      </div>
 
       <button
         type="submit"
