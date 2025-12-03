@@ -152,3 +152,6 @@ I generate the api manual with copilot.
 
 [2025-12-3 00:35]
 Next step would be the application of resource by students. I generated 3 entities, next day would be the api implementation.
+
+[2025-12-3 13:15]
+I export current database to backup.sql. Export the csv files of the database tables for testing purpose.

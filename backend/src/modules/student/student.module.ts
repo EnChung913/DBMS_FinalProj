@@ -6,10 +6,13 @@ import { ApplicationModule } from './application/application.module';
 import { AchievementModule } from './achievement/achievement.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
+import { StudentProfile } from '../../entities/student-profile.entity';
+import { StudentGpa } from '../../entities/student-gpa.entity';
+import { Achievement } from '../../entities/achievement.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),   // ← 必加
+    TypeOrmModule.forFeature([User, StudentProfile, StudentGpa, Achievement]),
     ProfileModule,
     ApplicationModule,
     AchievementModule,

@@ -4,12 +4,17 @@ import { UpsertStudentProfileDto } from './dto/upsert-student-profile.dto';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StudentService } from './student.service';
 
-@Controller('student/profile')
+@Controller('student')
 @Roles('student')
 export class StudentController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(
+    private readonly profileService: ProfileService, 
+    private readonly studentService: StudentService
+  ) {}
   
+  @Post('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put()
   async upsertProfile(
@@ -22,9 +27,20 @@ export class StudentController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get()
+  @Get('profile')
   async getMyProfile(@Req() req: any) {
     const userId = req.user.sub;
+    console.log("info: ", this.profileService.getProfile(userId));
     return this.profileService.getProfile(userId);
+  }
+
+  @Get('gpa')
+  getGpa(@Req() req: any) {
+    return this.studentService.getGpa(req.user.sub);
+  }
+
+  @Get('achievement')
+  getAchievement(@Req() req: any) {
+    return this.studentService.getAchievement(req.user.sub);
   }
 }
