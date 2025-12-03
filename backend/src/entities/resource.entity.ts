@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
 import { ResourceCondition } from './resource-condition.entity';
+import { User } from './user.entity';
+import { JoinColumn } from 'typeorm/decorator/relations/JoinColumn';
 
 @Entity('resource')
 export class Resource {
@@ -12,11 +14,19 @@ export class Resource {
   @Column({ type: 'int' })
   quota: number;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   department_supplier_id: string | null;
 
   @Column({ type: 'uuid', nullable: true })
   company_supplier_id: string | null;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'department_supplier_id' })
+  departmentSupplier: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'company_supplier_id' })
+  companySupplier: User;
 
   @Column({ type: 'varchar', length: 100 })
   title: string;

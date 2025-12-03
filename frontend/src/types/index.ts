@@ -22,9 +22,25 @@ export interface Resource {
   description: string;
   deadline: string;
   status: 'Available' | 'Unavailable' | 'Canceled';
-  supplier_name?: string; 
-  match_score?: number; 
+  supplier_name?: string;
+  match_score?: number;
+
+  // 後端傳來的條件欄位（可以用 null 或省略）
+  department_id?: string | null;
+  avg_gpa?: number | null;
+  current_gpa?: number | null;
+  is_poor?: boolean | null;
+
+  // 前端 enrich 用
+  eligibility?: {
+    deptOK: boolean;
+    avgGpaOK: boolean;
+    currentGpaOK: boolean;
+    poorOK: boolean;
+    overall: boolean;
+  };
 }
+
 
 export interface Achievement {
   achievement_id: number;

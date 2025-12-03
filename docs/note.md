@@ -161,3 +161,14 @@ password: 123456
 nickname: testc 
 role: company 
 
+## Misc notes
+UPDATE public.user AS u
+SET company_id = c.company_id
+FROM public.company_profile AS c
+WHERE u.user_id = c.contact_person;
+
+UPDATE public.user AS u
+SET department_id = d.department_id
+FROM public.department_profile AS d
+WHERE u.user_id = d.contact_person;
+

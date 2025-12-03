@@ -17,10 +17,13 @@ export class ProfileService {
   ) {}
 
   async getProfile(userId: string) {
-    return this.studentProfileRepo.findOne({
+    const data = await this.studentProfileRepo.findOne({
       where: { user_id: userId },
       relations: ['user'],
     });
+    if (data)
+      data.user.password = "*********";
+    return data;
   }
 
   async getOrCreateProfile(userId: string) {

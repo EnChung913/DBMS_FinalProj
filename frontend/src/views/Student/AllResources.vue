@@ -1,63 +1,69 @@
+// TODO Set the maximum resources shown per page
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
 import type { Resource } from '@/types';
+import { useStudentStore } from '@/stores/student';
 
 const router = useRouter();
 const isLoading = ref(false);
 const allResources = ref<Resource[]>([]);
 const activeTab = ref('All');
 
+
 // 篩選邏輯
 const filteredResources = computed(() => {
-  if (activeTab.value === 'All') return allResources.value;
-  return allResources.value.filter(r => r.resource_type === activeTab.value);
+  // Step 1: 依 tab 過濾
+  const list = activeTab.value === 'All'
+    ? allResources.value
+    : allResources.value.filter(r => r.resource_type === activeTab.value);
+
+  // Step 2: 使用 Map 依 resource_id 去重
+  const map = new Map<string, Resource>();
+  for (const r of list) {
+    if (!map.has(r.resource_id)) {
+      map.set(r.resource_id, r);
+    }
+  }
+
+  const uniqueList = [...map.values()];
+
+  // Step 3: enriched resource (加入 eligibility 結果)
+  return uniqueList.map(r => ({
+    ...r,
+    eligibility: meetsCondition(r)
+  }));
 });
+
+
+
+const meetsCondition = (cond: any) => {
+  const st = useStudentStore();
+
+  const deptOK = !cond.department_id || cond.department_id === st.department_id;
+  const avgGpaOK = !cond.avg_gpa || (st.avg_gpa !== null && st.avg_gpa >= cond.avg_gpa);
+  const currentGpaOK = !cond.current_gpa || (st.current_gpa !== null && st.current_gpa >= cond.current_gpa);
+  const poorOK = cond.is_poor === null || cond.is_poor === st.is_poor;
+
+  return {
+    deptOK,
+    avgGpaOK,
+    currentGpaOK,
+    poorOK,
+    overall: deptOK && avgGpaOK && currentGpaOK && poorOK
+  };
+};
+
 
 onMounted(async () => {
   isLoading.value = true;
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/student/resources
-    // ----------------------------------------------------------------
-    // const res = await apiClient.get('/student/resources');
-    // allResources.value = res.data;
+    const res = await apiClient.get('/api/resource/list');
+    allResources.value = res.data;
+    console.log('First 5 resources:', allResources.value.slice(0, 5));
 
-    // --- Mock Data ---
-    await new Promise(r => setTimeout(r, 500));
-    allResources.value = [
-      { 
-        resource_id: 'r1', title: 'Software Engineer Intern', resource_type: 'Internship', 
-        quota: 5, description: 'Python/Vue.js required. Join us to build the future of finance.', deadline: '2025-05-30', status: 'Available', 
-        supplier_name: 'TSMC', match_score: 98
-      },
-      { 
-        resource_id: 'r2', title: 'Lab Research Assistant', resource_type: 'Lab', 
-        quota: 2, description: 'Quantum Computing Lab research project focusing on error correction.', deadline: '2025-06-01', status: 'Available',
-        supplier_name: 'Prof. Chang', match_score: 88
-      },
-      { 
-        resource_id: 'r3', title: 'Merit Scholarship 2025', resource_type: 'Scholarship', 
-        quota: 10, description: 'For top 5% students with outstanding academic performance.', deadline: '2025-04-15', status: 'Available',
-        supplier_name: 'Academic Office', match_score: 45
-      },
-      { 
-        resource_id: 'r4', title: 'UI/UX Designer Intern', resource_type: 'Internship', 
-        quota: 1, description: 'Figma skills needed. Help us redesign our mobile app experience.', deadline: '2025-05-20', status: 'Available',
-        supplier_name: 'Line Taiwan', match_score: 70
-      },
-      { 
-        resource_id: 'r5', title: 'Exchange Program - Japan', resource_type: 'Others', 
-        quota: 3, description: 'Semester exchange to Tokyo Univ. N2 required.', deadline: '2025-03-01', status: 'Available',
-        supplier_name: 'Intl. Office', match_score: 30
-      },
-      { 
-        resource_id: 'r6', title: 'Data Analyst Intern', resource_type: 'Internship', 
-        quota: 2, description: 'SQL & Tableau expertise needed.', deadline: '2025-06-15', status: 'Available',
-        supplier_name: 'Shopee', match_score: 65
-      }
-    ];
+    await new Promise(r => setTimeout(r, 300));
   } catch (error) {
     console.error(error);
   } finally {
@@ -101,8 +107,19 @@ const goBack = () => router.back();
           
           <div class="card-top-row">
             <span class="type-badge">{{ res.resource_type }}</span>
-            <span v-if="res.match_score && res.match_score > 80" class="match-badge">
-              {{ res.match_score }}% Match
+
+            <span 
+              v-if="res.eligibility.overall"
+              class="match-badge eligible"
+            >
+              Eligible
+            </span>
+
+            <span 
+              v-else
+              class="match-badge not-eligible"
+            >
+              Not Eligible
             </span>
           </div>
 
@@ -112,7 +129,23 @@ const goBack = () => router.back();
             <span class="supplier">🏢 {{ res.supplier_name }}</span>
             <span class="deadline">📅 {{ res.deadline }}</span>
           </div>
-          
+          <div class="card-conditions">
+            <div class="cond-label">Eligibility Conditions</div>
+            <div class="cond-list">
+              <span v-if="res.department_id" class="cond-pill">
+                Dept: {{ res.department_id }}
+              </span>
+              <span v-if="res.avg_gpa !== null && res.avg_gpa !== undefined" class="cond-pill">
+                Avg GPA ≥ {{ res.avg_gpa }}
+              </span>
+              <span v-if="res.current_gpa !== null && res.current_gpa !== undefined" class="cond-pill">
+                Current GPA ≥ {{ res.current_gpa }}
+              </span>
+              <span v-if="res.is_poor !== null && res.is_poor !== undefined" class="cond-pill">
+                {{ res.is_poor ? 'Economically disadvantaged only' : 'Not limited by economic status' }}
+              </span>
+            </div>
+          </div>          
           <p class="card-desc">{{ res.description }}</p>
           
           <div class="card-footer">
@@ -355,4 +388,27 @@ h1 {
   animation: spin 1s linear infinite;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.card-conditions {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.cond-label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.cond-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.cond-pill {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  font-size: 0.8rem;
+}
 </style>

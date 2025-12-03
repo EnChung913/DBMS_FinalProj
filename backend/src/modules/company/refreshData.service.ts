@@ -19,6 +19,7 @@ export class RefreshService {
   }
 
   async refreshMV() {
+    console.log('Refreshing materialized view: student_search_mv');
     await this.dataSource.query(`REFRESH MATERIALIZED VIEW student_search_mv`);
     await this.redis.set(this.REDIS_KEY, '1', 'EX', 60);
   }

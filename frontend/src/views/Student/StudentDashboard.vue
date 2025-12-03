@@ -3,83 +3,105 @@
 import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
 import type { Resource, GPA, Achievement } from '@/types';
+import { useStudentStore } from '@/stores/student';
 
 // UI 狀態
 const showAnimation = ref(false);
 
-// 資料 Ref
-const studentInfo = ref({ name: '', id: '', dept: '', totalCredits: 0 });
+// 資料 Ref（為 Dashboard 本地顯示而存在）
+const studentInfo = ref({ name: '', id: '', dept: '', grade: 0 });
 const gpaRecords = ref<GPA[]>([]);
 const achievements = ref<Achievement[]>([]);
 const recommendedResources = ref<Resource[]>([]);
 
 onMounted(async () => {
-  setTimeout(() => showAnimation.value = true, 100);
+  setTimeout(() => (showAnimation.value = true), 100);
+  const studentStore = useStudentStore();
+  console.log('studentStore initialized:', studentStore);
 
   try {
-    // ----------------------------------------------------------------
-    // TODO: 連接後端 API (Student Dashboard)
-    // ----------------------------------------------------------------
+    // ===============================
+    // 1. Profile
+    // ===============================
+    if (!studentStore.hasProfile) {
+      const resInfo = await apiClient.get('/api/student/profile');
+      const info = resInfo.data;
 
-    // 1. [GET] /api/student/info
-    // const resInfo = await apiClient.get('/student/info');
-    // studentInfo.value = resInfo.data;
+      studentStore.setProfile({
+        user_id: info.user.user_id,
+        name: info.user.real_name,
+        student_id: info.student_id,
+        department_id: info.department_id,
+        grade: info.grade,
+        is_poor: info.is_poor,
+      });
+    }
 
-    // 2. [GET] /api/student/gpa
-    // const resGpa = await apiClient.get('/student/gpa');
-    // gpaRecords.value = resGpa.data;
+    // ===============================
+    // 2. GPA records
+    // ===============================
+    if (!studentStore.hasGpaRecords) {
+      const resGpa = await apiClient.get('/api/student/gpa');
+      studentStore.setGpaRecords(resGpa.data);
+    }
 
-    // 3. [GET] /api/student/achievements
-    // const resAchiev = await apiClient.get('/student/achievements');
-    // achievements.value = resAchiev.data;
-
-    // 4. [GET] /api/student/resources/recommended
-    // const resRes = await apiClient.get('/student/resources/recommended');
-    // recommendedResources.value = resRes.data;
-
-
-    // --- MOCK DATA ---
-    studentInfo.value = { 
-      name: 'Mock Student', id: 'B112001', dept: 'Computer Science', totalCredits: 87 
+    studentInfo.value = {
+      name: studentStore.name,
+      id: studentStore.student_id,
+      dept: studentStore.department_id,
+      grade: studentStore.grade,
     };
+
+    gpaRecords.value = studentStore.gpa_records;
     
-    gpaRecords.value = [
-      { semester: '110-1', gpa: 3.8 },
-      { semester: '110-2', gpa: 4.0 },
-      { semester: '111-1', gpa: 3.9 },
-      { semester: '111-2', gpa: 4.15 },
-    ];
+    // ---------------------------------------------------------
+    // 3. Achievement（不存 store，用於 Dashboard 顯示）
+    // ---------------------------------------------------------
+    const resAchiev = await apiClient.get('/api/student/achievement');
+    achievements.value = resAchiev.data;
 
-    achievements.value = [
-      { achievement_id: 1, title: 'Hackathon Winner', category: 'Competition', status: 'recognized', creation_date: '2024-10-05' },
-      { achievement_id: 2, title: 'Student Association', category: 'Service', status: 'unrecognized', creation_date: '2025-01-10' }
-    ];
-
+    // ---------------------------------------------------------
+    // 4. 推薦資源（API 尚未完成 → 保留 mock）
+    // ---------------------------------------------------------
     recommendedResources.value = [
-      { 
-        resource_id: 'r1', title: 'Software Engineer Intern', resource_type: 'Internship', 
-        quota: 5, description: 'Python/Vue.js required.', deadline: '2025-05-30', status: 'Available', 
-        supplier_name: 'TSMC', match_score: 98
+      {
+        resource_id: 'r1',
+        title: 'Software Engineer Intern',
+        resource_type: 'Internship',
+        quota: 5,
+        description: 'Python/Vue.js required.',
+        deadline: '2025-05-30',
+        status: 'Available',
+        supplier_name: 'TSMC',
+        match_score: 98,
       },
-      { 
-        resource_id: 'r2', title: 'Lab Research Assistant', resource_type: 'Lab', 
-        quota: 2, description: 'Quantum Computing Lab.', deadline: '2025-06-01', status: 'Available',
-        supplier_name: 'Prof. Chang', match_score: 88
-      }
+      {
+        resource_id: 'r2',
+        title: 'Lab Research Assistant',
+        resource_type: 'Lab',
+        quota: 2,
+        description: 'Quantum Computing Lab.',
+        deadline: '2025-06-01',
+        status: 'Available',
+        supplier_name: 'Prof. Chang',
+        match_score: 88,
+      },
     ];
-    
   } catch (error) {
-    console.error('Failed to fetch dashboard data', error);
+    console.error('Failed to fetch dashboard data:', error);
   }
 });
 
-// UI Logic
+// ---------------------------------------------------------
+// UI Helper
+// ---------------------------------------------------------
 const getStatusClass = (status: string) => {
   if (status === 'recognized') return 'status-ok';
   if (status === 'rejected') return 'status-err';
   return 'status-wait';
 };
 </script>
+
 
 <template>
   <div class="dashboard-wrapper">
@@ -91,8 +113,8 @@ const getStatusClass = (status: string) => {
         </div>
         <div class="hero-stats">
           <div class="stat-box">
-            <span class="label">Total Credits</span>
-            <span class="value">{{ studentInfo.totalCredits }}</span>
+            <span class="label">Grade</span>
+            <span class="value">{{ studentInfo.grade }}</span>
           </div>
         </div>
       </div>

@@ -2,46 +2,48 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
-import { ProfileService } from './profile/profile.service';
+import { StudentProfile } from '../../entities/student-profile.entity';
+import { StudentGpa } from '../../entities/student-gpa.entity';
+import { Achievement } from '../../entities/achievement.entity';
 
 @Injectable()
 export class StudentService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly profileService: ProfileService,
+
+    @InjectRepository(StudentProfile)
+    private readonly profileRepo: Repository<StudentProfile>,
+
+    @InjectRepository(StudentGpa)
+    private readonly gpaRepo: Repository<StudentGpa>,
+
+    @InjectRepository(Achievement)
+    private readonly achievementRepo: Repository<Achievement>,
   ) {}
 
-  async ensureStudent(userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { user_id: userId, deleted_at: new Date('9999-12-31 23:59:59') },
+  
+  async getInfo(userId: string) {
+    const user = await this.userRepo.findOne({ where: { user_id: userId } });
+    const profile = await this.profileRepo.findOne({ where: { user_id: userId } });
+
+    return { user, profile };
+  }
+
+  async getGpa(userId: string) {
+    const gpaList = await this.gpaRepo.find({
+      where: { user_id: userId },
+      order: { semester: 'ASC' },
     });
 
-    if (!user) throw new NotFoundException('User not found');
-    if (user.role !== 'student') {
-      throw new ForbiddenException('Only student allowed');
-    }
-
-    return user;
+    return gpaList;
   }
 
-  async hasCompletedProfile(userId: string): Promise<boolean> {
-    const profile = await this.profileService.getProfile(userId);
-    if (!profile) return false;
-
-    return (
-      !!profile.student_id &&
-      !!profile.department_id &&
-      !!profile.entry &&
-      !!profile.grade 
-    );
-  }
-
-
-  async ensureOwnSubmission(userId: string, ownerId: string) {
-    if (userId !== ownerId) {
-      throw new ForbiddenException('Not your data');
-    }
-    return true;
+  // ---- 3. Achievement ----
+  async getAchievement(userId: string) {
+    return this.achievementRepo.find({
+      where: { user_id: userId },
+      order: { creation_date: 'DESC' },
+    });
   }
 }

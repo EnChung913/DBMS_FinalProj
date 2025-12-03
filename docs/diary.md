@@ -149,3 +149,18 @@ I finished the resource condition setting function. Now department or company ca
 
 [2025-12-3 00:31]
 I generate the api manual with copilot.
+
+[2025-12-3 00:35]
+Next step would be the application of resource by students. I generated 3 entities, next day would be the api implementation.
+
+[2025-12-3 13:15]
+I export current database to backup.sql. Export the csv files of the database tables for testing purpose.
+
+[2025-12-3 14:51]
+The password of the generated data isn't 'ntu-2025-test'.....Waste me lot of time. I change it into '123456'
+I finished the api of get students' gpa records.
+If frontend ask for user data, the password field would be masked as '*********' for security reason.
+
+[2025-12-3 21:11]
+I fix the bug that usrt need to fill his profile again after next login even if he has filled it before. The problem is that in the auth.service.ts file, I only check if the student_profile exists, but forget to check if the department_profile exists. Now both of them are checked. Now I'm striving to finish the resource query and recommendation function.
+I've finished the list resource api and optimized the frontend that it would show if the student is eligible for that resource. Next step would be the recommendation function.

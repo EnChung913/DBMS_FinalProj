@@ -62,7 +62,7 @@ router.beforeEach((to, from, next) => {
 
   // 2. 檢查是否需要完成 Profile 設定
   // 如果已登入但還沒設定，且正要去 Dashboard -> 強制去 Setup
-  if (to.meta.requiresSetup && !authStore.isSetupDone) {
+  if (to.meta.requiresSetup && authStore.needProfile === true) {
     next({ 
       name: 'ProfileSetup', 
       query: { role: authStore.role } // <--- 加上這行

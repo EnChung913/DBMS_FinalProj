@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict LrwjUzvIbbbeUAgoRA3eseCh8IvtHh0eRjlTob3jIo6TCwWlfOR4X0fla36347p
+\restrict bpyVE51ol71Sbxucyksb7T7XIwDdqTMCe57uL1pvxUZjU7ahhLlb3nWAgmbaObc
 
 -- Dumped from database version 16.11 (Debian 16.11-1.pgdg13+1)
 -- Dumped by pg_dump version 16.11 (Debian 16.11-1.pgdg13+1)
@@ -17,6 +17,22 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS '';
+
 
 --
 -- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
@@ -50,8 +66,8 @@ CREATE TABLE public.achievement (
     end_date date,
     creation_date timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     status character varying(20) NOT NULL,
-    CONSTRAINT achievement_category_check CHECK (((category)::text = ANY ((ARRAY['Competition'::character varying, 'Research'::character varying, 'Intern'::character varying, 'Project'::character varying, 'Others'::character varying])::text[]))),
-    CONSTRAINT achievement_status_check CHECK (((status)::text = ANY ((ARRAY['unrecognized'::character varying, 'recognized'::character varying, 'rejected'::character varying])::text[])))
+    CONSTRAINT achievement_category_check CHECK (((category)::text = ANY (ARRAY[('Competition'::character varying)::text, ('Research'::character varying)::text, ('Intern'::character varying)::text, ('Project'::character varying)::text, ('Others'::character varying)::text]))),
+    CONSTRAINT achievement_status_check CHECK (((status)::text = ANY (ARRAY[('unrecognized'::character varying)::text, ('recognized'::character varying)::text, ('rejected'::character varying)::text])))
 );
 
 
@@ -69,8 +85,8 @@ CREATE TABLE public.achievement_verification (
     verification_status character varying(20) DEFAULT 'pending'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     decided_at timestamp without time zone,
-    CONSTRAINT achievement_verification_verification_status_check CHECK (((verification_status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying])::text[]))),
-    CONSTRAINT achievement_verification_verifier_type_check CHECK (((verifier_type)::text = ANY ((ARRAY['department'::character varying, 'company'::character varying, 'professor'::character varying])::text[])))
+    CONSTRAINT achievement_verification_verification_status_check CHECK (((verification_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('approved'::character varying)::text, ('rejected'::character varying)::text]))),
+    CONSTRAINT achievement_verification_verifier_type_check CHECK (((verifier_type)::text = ANY (ARRAY[('department'::character varying)::text, ('company'::character varying)::text, ('professor'::character varying)::text])))
 );
 
 
@@ -86,8 +102,8 @@ CREATE TABLE public.application (
     apply_date date DEFAULT CURRENT_DATE,
     review_status character varying(20) NOT NULL,
     resource_status_at_apply character varying(20),
-    CONSTRAINT application_resource_status_at_apply_check CHECK (((resource_status_at_apply)::text = ANY ((ARRAY['Canceled'::character varying, 'Unavailable'::character varying, 'Available'::character varying, 'Full'::character varying])::text[]))),
-    CONSTRAINT application_review_status_check CHECK (((review_status)::text = ANY ((ARRAY['submitted'::character varying, 'under_review'::character varying, 'approved'::character varying, 'rejected'::character varying])::text[])))
+    CONSTRAINT application_resource_status_at_apply_check CHECK (((resource_status_at_apply)::text = ANY (ARRAY[('Canceled'::character varying)::text, ('Unavailable'::character varying)::text, ('Available'::character varying)::text, ('Full'::character varying)::text]))),
+    CONSTRAINT application_review_status_check CHECK (((review_status)::text = ANY (ARRAY[('submitted'::character varying)::text, ('under_review'::character varying)::text, ('approved'::character varying)::text, ('rejected'::character varying)::text])))
 );
 
 
@@ -165,17 +181,17 @@ CREATE TABLE public.resource (
     resource_id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     resource_type character varying(20),
     quota integer NOT NULL,
-    department_supplier_id character varying(10),
+    department_supplier_id uuid,
     company_supplier_id uuid,
     title character varying(100) NOT NULL,
     deadline date,
     description text NOT NULL,
-    status character varying(20) NOT NULL,
+    status character varying(20) DEFAULT 'Unavailable'::character varying NOT NULL,
     is_deleted boolean DEFAULT false,
     CONSTRAINT resource_check CHECK ((((department_supplier_id IS NOT NULL) AND (company_supplier_id IS NULL)) OR ((department_supplier_id IS NULL) AND (company_supplier_id IS NOT NULL)))),
     CONSTRAINT resource_quota_check CHECK ((quota >= 0)),
-    CONSTRAINT resource_resource_type_check CHECK (((resource_type)::text = ANY ((ARRAY['Scholarship'::character varying, 'Internship'::character varying, 'Lab'::character varying, 'Competition'::character varying, 'Others'::character varying])::text[]))),
-    CONSTRAINT resource_status_check CHECK (((status)::text = ANY ((ARRAY['Canceled'::character varying, 'Unavailable'::character varying, 'Available'::character varying])::text[])))
+    CONSTRAINT resource_resource_type_check CHECK (((resource_type)::text = ANY (ARRAY[('Scholarship'::character varying)::text, ('Internship'::character varying)::text, ('Lab'::character varying)::text, ('Competition'::character varying)::text, ('Others'::character varying)::text]))),
+    CONSTRAINT resource_status_check CHECK (((status)::text = ANY (ARRAY[('Canceled'::character varying)::text, ('Unavailable'::character varying)::text, ('Available'::character varying)::text])))
 );
 
 
@@ -226,7 +242,7 @@ CREATE TABLE public.student_department (
     role character varying(20) NOT NULL,
     start_semester character varying(10) NOT NULL,
     end_semester character varying(10),
-    CONSTRAINT student_department_role_check CHECK (((role)::text = ANY ((ARRAY['major'::character varying, 'minor'::character varying, 'double_major'::character varying])::text[])))
+    CONSTRAINT student_department_role_check CHECK (((role)::text = ANY (ARRAY[('major'::character varying)::text, ('minor'::character varying)::text, ('double_major'::character varying)::text])))
 );
 
 
@@ -269,7 +285,8 @@ CREATE TABLE public.student_profile (
     student_id character varying(10) NOT NULL,
     department_id character varying(50) NOT NULL,
     entry_year integer NOT NULL,
-    grade integer NOT NULL
+    grade integer NOT NULL,
+    is_poor boolean DEFAULT false NOT NULL
 );
 
 
@@ -294,7 +311,7 @@ CREATE TABLE public."user" (
     deleted_at timestamp with time zone DEFAULT '9999-12-31 23:59:59+00'::timestamp with time zone,
     company_id uuid,
     department_id character varying(50),
-    CONSTRAINT user_role_check CHECK (((role)::text = ANY ((ARRAY['student'::character varying, 'department'::character varying, 'company'::character varying])::text[])))
+    CONSTRAINT user_role_check CHECK (((role)::text = ANY (ARRAY[('student'::character varying)::text, ('department'::character varying)::text, ('company'::character varying)::text])))
 );
 
 
@@ -517,206 +534,207 @@ COPY public.push_record (push_id, pusher_id, receiver_id, resource_id, push_date
 --
 
 COPY public.resource (resource_id, resource_type, quota, department_supplier_id, company_supplier_id, title, deadline, description, status, is_deleted) FROM stdin;
-00000000-0000-0000-0002-000000000001	Others	4	\N	00000000-0000-0000-0001-000000000122	德汎資訊有限公司其他資源	2027-02-16	德汎資訊有限公司其他資源	Available	f
-00000000-0000-0000-0002-000000000002	Others	8	6020	\N	生物環境系統工程學系其他資源	2024-07-23	生物環境系統工程學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000003	Lab	10	\N	00000000-0000-0000-0001-000000000086	ChapmanInc企業合作實驗室	2024-09-29	ChapmanInc企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000004	Internship	4	\N	00000000-0000-0000-0001-000000000114	DaviesLLC實習機會	2027-02-07	DaviesLLC實習機會	Available	f
-00000000-0000-0000-0002-000000000005	Internship	6	\N	00000000-0000-0000-0001-000000000084	Winters,NewmanandBrown實習機會	2025-03-04	Winters,NewmanandBrown實習機會	Canceled	t
-00000000-0000-0000-0002-000000000006	Others	8	5070	\N	材料科學與工程學系其他資源	2025-01-31	材料科學與工程學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000007	Lab	10	50A0	\N	工學院院學士實驗室機會	2026-03-28	工學院院學士實驗室機會	Available	f
-00000000-0000-0000-0002-000000000008	Scholarship	3	\N	00000000-0000-0000-0001-000000000120	Travis,ReedandRoss獎學金	2025-02-22	Travis,ReedandRoss獎學金	Canceled	t
-00000000-0000-0000-0002-000000000009	Others	6	\N	00000000-0000-0000-0001-000000000128	DavidLLC其他資源	2026-08-08	DavidLLC其他資源	Available	f
-00000000-0000-0000-0002-000000000010	Others	10	5090	\N	智慧工程科技全英語學士學位學程其他資源	2025-02-23	智慧工程科技全英語學士學位學程其他資源	Canceled	t
-00000000-0000-0000-0002-000000000011	Internship	9	50A0	\N	工學院院學士校內實習	2025-03-09	工學院院學士校內實習	Canceled	t
-00000000-0000-0000-0002-000000000012	Lab	10	1070	\N	日本語文學系實驗室機會	2025-12-20	日本語文學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000013	Internship	5	\N	00000000-0000-0000-0001-000000000107	台灣業糖資訊有限公司實習機會	2025-02-12	台灣業糖資訊有限公司實習機會	Canceled	t
-00000000-0000-0000-0002-000000000014	Lab	3	\N	00000000-0000-0000-0001-000000000089	Scott,MckayandMcdaniel企業合作實驗室	2025-12-12	Scott,MckayandMcdaniel企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000015	Internship	2	\N	00000000-0000-0000-0001-000000000127	月日光半導體股份有限公司實習機會	2025-08-15	月日光半導體股份有限公司實習機會	Canceled	t
-00000000-0000-0000-0002-000000000016	Internship	3	\N	00000000-0000-0000-0001-000000000113	Watson-Hines實習機會	2025-07-11	Watson-Hines實習機會	Canceled	t
-00000000-0000-0000-0002-000000000017	Scholarship	10	\N	00000000-0000-0000-0001-000000000084	Winters,NewmanandBrown獎學金	2025-05-17	Winters,NewmanandBrown獎學金	Canceled	t
-00000000-0000-0000-0002-000000000018	Others	8	1070	\N	日本語文學系其他資源	2026-06-07	日本語文學系其他資源	Available	f
-00000000-0000-0000-0002-000000000019	Lab	8	\N	00000000-0000-0000-0001-000000000081	華聯電子有限公司企業合作實驗室	2026-10-16	華聯電子有限公司企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000020	Others	10	\N	00000000-0000-0000-0001-000000000084	Winters,NewmanandBrown其他資源	2025-06-02	Winters,NewmanandBrown其他資源	Canceled	t
-00000000-0000-0000-0002-000000000021	Internship	3	\N	00000000-0000-0000-0001-000000000126	UnderwoodandSons實習機會	2024-11-29	UnderwoodandSons實習機會	Canceled	t
-00000000-0000-0000-0002-000000000022	Scholarship	7	7011	\N	工商管理學系企業管理組獎學金	2026-01-20	工商管理學系企業管理組獎學金	Available	f
-00000000-0000-0000-0002-000000000023	Lab	3	6070	\N	農業經濟學系實驗室機會	2025-06-01	農業經濟學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000024	Others	5	H050	\N	校學士其他資源	2026-08-10	校學士其他資源	Available	f
-00000000-0000-0000-0002-000000000025	Scholarship	7	3021	\N	政治學系政治理論組獎學金	2025-01-11	政治學系政治理論組獎學金	Canceled	t
-00000000-0000-0000-0002-000000000026	Internship	7	7060	\N	企業管理學系校內實習	2025-01-25	企業管理學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000027	Lab	6	O020	\N	國際學院實驗室機會	2026-03-06	國際學院實驗室機會	Available	f
-00000000-0000-0000-0002-000000000028	Scholarship	4	\N	00000000-0000-0000-0001-000000000109	CarterInc獎學金	2025-07-04	CarterInc獎學金	Canceled	t
-00000000-0000-0000-0002-000000000029	Lab	3	\N	00000000-0000-0000-0001-000000000101	Conner,LiandSantiago企業合作實驗室	2027-02-21	Conner,LiandSantiago企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000030	Others	5	6070	\N	農業經濟學系其他資源	2024-06-06	農業經濟學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000031	Internship	9	9020	\N	資訊工程學系校內實習	2025-12-02	資訊工程學系校內實習	Available	f
-00000000-0000-0000-0002-000000000032	Scholarship	3	\N	00000000-0000-0000-0001-000000000124	碩華電腦股份有限公司獎學金	2025-03-16	碩華電腦股份有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000033	Internship	7	3021	\N	政治學系政治理論組校內實習	2025-01-22	政治學系政治理論組校內實習	Canceled	t
-00000000-0000-0000-0002-000000000034	Lab	7	\N	00000000-0000-0000-0001-000000000101	Conner,LiandSantiago企業合作實驗室	2026-06-04	Conner,LiandSantiago企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000035	Scholarship	6	B010	\N	生命科學系獎學金	2024-12-17	生命科學系獎學金	Canceled	t
-00000000-0000-0000-0002-000000000036	Internship	6	30A0	\N	社會科學院院學士學位校內實習	2025-07-23	社會科學院院學士學位校內實習	Canceled	t
-00000000-0000-0000-0002-000000000037	Scholarship	6	\N	00000000-0000-0000-0001-000000000090	華中郵政資訊有限公司獎學金	2025-03-30	華中郵政資訊有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000038	Others	6	1030	\N	歷史學系其他資源	2025-02-16	歷史學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000039	Lab	2	\N	00000000-0000-0000-0001-000000000130	台日積體電路企業合作實驗室	2026-11-15	台日積體電路企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000040	Scholarship	4	\N	00000000-0000-0000-0001-000000000117	台灣雅萊（Y'ORÉAL）獎學金	2026-10-19	台灣雅萊（Y'ORÉAL）獎學金	Canceled	t
-00000000-0000-0000-0002-000000000041	Scholarship	8	\N	00000000-0000-0000-0001-000000000127	月日光半導體股份有限公司獎學金	2026-04-14	月日光半導體股份有限公司獎學金	Available	f
-00000000-0000-0000-0002-000000000042	Internship	2	\N	00000000-0000-0000-0001-000000000090	華中郵政資訊有限公司實習機會	2027-02-22	華中郵政資訊有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000043	Others	7	6080	\N	園藝暨景觀學系其他資源	2025-01-20	園藝暨景觀學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000044	Others	6	Z010	\N	創新領域學士學位學程其他資源	2024-10-24	創新領域學士學位學程其他資源	Canceled	t
-00000000-0000-0000-0002-000000000045	Lab	5	\N	00000000-0000-0000-0001-000000000095	華中航空股份有限公司企業合作實驗室	2025-01-05	華中航空股份有限公司企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000046	Internship	9	\N	00000000-0000-0000-0001-000000000112	合作庫金商業銀行資訊有限公司實習機會	2026-04-10	合作庫金商業銀行資訊有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000047	Internship	3	Z010	\N	創新領域學士學位學程校內實習	2025-04-07	創新領域學士學位學程校內實習	Canceled	t
-00000000-0000-0000-0002-000000000048	Scholarship	3	7050	\N	資訊管理學系獎學金	2026-11-14	資訊管理學系獎學金	Available	f
-00000000-0000-0000-0002-000000000049	Scholarship	6	\N	00000000-0000-0000-0001-000000000088	Vang-Schmidt獎學金	2026-09-25	Vang-Schmidt獎學金	Available	f
-00000000-0000-0000-0002-000000000050	Scholarship	8	\N	00000000-0000-0000-0001-000000000111	風微廣場獎學金	2025-09-16	風微廣場獎學金	Canceled	t
-00000000-0000-0000-0002-000000000051	Scholarship	3	\N	00000000-0000-0000-0001-000000000082	台灣電信股份有限公司獎學金	2026-11-07	台灣電信股份有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000052	Others	3	2030	\N	化學系其他資源	2026-11-29	化學系其他資源	Available	f
-00000000-0000-0000-0002-000000000053	Others	9	\N	00000000-0000-0000-0001-000000000086	ChapmanInc其他資源	2025-11-28	ChapmanInc其他資源	Canceled	t
-00000000-0000-0000-0002-000000000054	Others	9	4010	\N	醫學系其他資源	2024-08-10	醫學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000055	Lab	9	\N	00000000-0000-0000-0001-000000000100	台灣印無品良股份有限公司企業合作實驗室	2025-05-05	台灣印無品良股份有限公司企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000056	Internship	10	\N	00000000-0000-0000-0001-000000000097	隆豐大飯店（北台君悅）資訊有限公司實習機會	2026-07-12	隆豐大飯店（北台君悅）資訊有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000057	Scholarship	10	30A0	\N	社會科學院院學士學位獎學金	2027-02-25	社會科學院院學士學位獎學金	Canceled	t
-00000000-0000-0000-0002-000000000058	Scholarship	9	9020	\N	資訊工程學系獎學金	2024-12-09	資訊工程學系獎學金	Canceled	t
-00000000-0000-0000-0002-000000000059	Others	10	\N	00000000-0000-0000-0001-000000000108	Burgess-Kelly其他資源	2024-06-14	Burgess-Kelly其他資源	Canceled	t
-00000000-0000-0000-0002-000000000060	Lab	9	\N	00000000-0000-0000-0001-000000000108	Burgess-Kelly企業合作實驗室	2026-04-19	Burgess-Kelly企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000061	Internship	5	\N	00000000-0000-0000-0001-000000000109	CarterInc實習機會	2026-08-06	CarterInc實習機會	Available	f
-00000000-0000-0000-0002-000000000062	Internship	5	5070	\N	材料科學與工程學系校內實習	2026-07-18	材料科學與工程學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000063	Others	9	5080	\N	醫學工程學系其他資源	2024-12-24	醫學工程學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000064	Scholarship	9	\N	00000000-0000-0000-0001-000000000112	合作庫金商業銀行資訊有限公司獎學金	2026-07-01	合作庫金商業銀行資訊有限公司獎學金	Available	f
-00000000-0000-0000-0002-000000000065	Internship	8	3023	\N	政治學系公共行政組校內實習	2026-06-06	政治學系公共行政組校內實習	Available	f
-00000000-0000-0000-0002-000000000066	Internship	8	3030	\N	經濟學系校內實習	2025-07-01	經濟學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000067	Lab	8	8010	\N	公共衛生學系實驗室機會	2024-07-02	公共衛生學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000068	Internship	6	\N	00000000-0000-0000-0001-000000000095	華中航空股份有限公司實習機會	2026-07-05	華中航空股份有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000069	Scholarship	5	\N	00000000-0000-0000-0001-000000000092	聯燁鋼鐵有限公司獎學金	2026-09-25	聯燁鋼鐵有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000070	Others	4	\N	00000000-0000-0000-0001-000000000117	台灣雅萊（Y'ORÉAL）其他資源	2025-06-16	台灣雅萊（Y'ORÉAL）其他資源	Canceled	t
-00000000-0000-0000-0002-000000000071	Lab	9	7010	\N	工商管理學系實驗室機會	2026-02-08	工商管理學系實驗室機會	Available	f
-00000000-0000-0000-0002-000000000072	Internship	5	B020	\N	生化科技學系校內實習	2027-05-26	生化科技學系校內實習	Available	f
-00000000-0000-0000-0002-000000000073	Internship	3	\N	00000000-0000-0000-0001-000000000101	Conner,LiandSantiago實習機會	2026-11-10	Conner,LiandSantiago實習機會	Canceled	t
-00000000-0000-0000-0002-000000000074	Others	8	\N	00000000-0000-0000-0001-000000000082	台灣電信股份有限公司其他資源	2027-01-02	台灣電信股份有限公司其他資源	Available	f
-00000000-0000-0000-0002-000000000075	Scholarship	7	1040	\N	哲學系獎學金	2027-01-07	哲學系獎學金	Available	f
-00000000-0000-0000-0002-000000000076	Others	8	A013	\N	法律學系財經法學組其他資源	2025-01-05	法律學系財經法學組其他資源	Canceled	t
-00000000-0000-0000-0002-000000000077	Scholarship	2	\N	00000000-0000-0000-0001-000000000130	台日積體電路獎學金	2024-07-12	台日積體電路獎學金	Canceled	t
-00000000-0000-0000-0002-000000000078	Internship	10	5070	\N	材料科學與工程學系校內實習	2026-09-15	材料科學與工程學系校內實習	Available	f
-00000000-0000-0000-0002-000000000079	Scholarship	2	1040	\N	哲學系獎學金	2025-01-13	哲學系獎學金	Canceled	t
-00000000-0000-0000-0002-000000000080	Internship	6	\N	00000000-0000-0000-0001-000000000105	Brooks,HughesandMiller實習機會	2026-05-24	Brooks,HughesandMiller實習機會	Available	f
-00000000-0000-0000-0002-000000000081	Lab	10	6020	\N	生物環境系統工程學系實驗室機會	2026-08-09	生物環境系統工程學系實驗室機會	Available	f
-00000000-0000-0000-0002-000000000082	Lab	3	6130	\N	植物病理與微生物學系實驗室機會	2025-05-20	植物病理與微生物學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000083	Scholarship	4	\N	00000000-0000-0000-0001-000000000124	碩華電腦股份有限公司獎學金	2025-10-09	碩華電腦股份有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000084	Lab	3	\N	00000000-0000-0000-0001-000000000112	合作庫金商業銀行資訊有限公司企業合作實驗室	2026-08-30	合作庫金商業銀行資訊有限公司企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000085	Internship	6	6070	\N	農業經濟學系校內實習	2024-10-21	農業經濟學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000086	Internship	3	\N	00000000-0000-0000-0001-000000000115	York-Joseph實習機會	2026-12-25	York-Joseph實習機會	Available	f
-00000000-0000-0000-0002-000000000087	Lab	5	5050	\N	工程科學及海洋工程學系實驗室機會	2025-05-19	工程科學及海洋工程學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000088	Lab	8	B0A0	\N	生命科學院院學士實驗室機會	2025-11-22	生命科學院院學士實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000089	Others	7	7040	\N	國際企業學系其他資源	2024-08-11	國際企業學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000090	Scholarship	9	6030	\N	農業化學系獎學金	2027-02-28	農業化學系獎學金	Available	f
-00000000-0000-0000-0002-000000000091	Internship	10	2040	\N	地質科學系校內實習	2025-07-23	地質科學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000092	Others	2	\N	00000000-0000-0000-0001-000000000085	輝燁企業有限公司其他資源	2026-10-20	輝燁企業有限公司其他資源	Canceled	t
-00000000-0000-0000-0002-000000000093	Others	5	B0A0	\N	生命科學院院學士其他資源	2025-02-07	生命科學院院學士其他資源	Canceled	t
-00000000-0000-0000-0002-000000000094	Others	8	\N	00000000-0000-0000-0001-000000000093	Stanley-Tucker其他資源	2027-05-10	Stanley-Tucker其他資源	Available	f
-00000000-0000-0000-0002-000000000095	Lab	6	\N	00000000-0000-0000-0001-000000000106	ConleyPLC企業合作實驗室	2026-04-04	ConleyPLC企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000096	Scholarship	5	\N	00000000-0000-0000-0001-000000000106	ConleyPLC獎學金	2026-02-11	ConleyPLC獎學金	Available	f
-00000000-0000-0000-0002-000000000097	Others	3	\N	00000000-0000-0000-0001-000000000089	Scott,MckayandMcdaniel其他資源	2026-12-06	Scott,MckayandMcdaniel其他資源	Available	f
-00000000-0000-0000-0002-000000000098	Lab	7	2090	\N	大氣科學系實驗室機會	2025-07-26	大氣科學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000099	Internship	3	1050	\N	人類學系校內實習	2026-05-07	人類學系校內實習	Available	f
-00000000-0000-0000-0002-000000000100	Others	2	4010	\N	醫學系其他資源	2024-10-24	醫學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000101	Others	4	6100	\N	生物產業傳播暨發展學系其他資源	2027-02-01	生物產業傳播暨發展學系其他資源	Available	f
-00000000-0000-0000-0002-000000000102	Internship	2	8010	\N	公共衛生學系校內實習	2027-02-12	公共衛生學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000103	Lab	3	4030	\N	藥學系實驗室機會	2025-06-30	藥學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000104	Internship	5	6150	\N	生物科技與食品營養學士學位學程校內實習	2024-11-01	生物科技與食品營養學士學位學程校內實習	Canceled	t
-00000000-0000-0000-0002-000000000105	Others	6	7012	\N	工商管理學系科技管理組其他資源	2027-03-11	工商管理學系科技管理組其他資源	Available	f
-00000000-0000-0000-0002-000000000106	Internship	7	1010	\N	中國文學系校內實習	2024-08-27	中國文學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000107	Others	3	7011	\N	工商管理學系企業管理組其他資源	2027-01-22	工商管理學系企業管理組其他資源	Available	f
-00000000-0000-0000-0002-000000000108	Lab	7	1090	\N	戲劇學系實驗室機會	2027-02-08	戲劇學系實驗室機會	Available	f
-00000000-0000-0000-0002-000000000109	Others	3	8010	\N	公共衛生學系其他資源	2025-09-20	公共衛生學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000110	Scholarship	10	\N	00000000-0000-0000-0001-000000000125	Cabrera-Richardson獎學金	2024-11-27	Cabrera-Richardson獎學金	Canceled	t
-00000000-0000-0000-0002-000000000111	Others	4	\N	00000000-0000-0000-0001-000000000112	合作庫金商業銀行資訊有限公司其他資源	2025-04-16	合作庫金商業銀行資訊有限公司其他資源	Canceled	t
-00000000-0000-0000-0002-000000000112	Internship	4	2070	\N	心理學系校內實習	2025-04-02	心理學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000113	Internship	6	\N	00000000-0000-0000-0001-000000000111	風微廣場實習機會	2026-05-21	風微廣場實習機會	Available	f
-00000000-0000-0000-0002-000000000114	Internship	5	1030	\N	歷史學系校內實習	2024-09-30	歷史學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000115	Others	5	\N	00000000-0000-0000-0001-000000000094	SaundersLLC其他資源	2026-07-04	SaundersLLC其他資源	Available	f
-00000000-0000-0000-0002-000000000116	Others	10	4080	\N	物理治療學系其他資源	2026-04-14	物理治療學系其他資源	Available	f
-00000000-0000-0000-0002-000000000117	Lab	5	7060	\N	企業管理學系實驗室機會	2025-06-11	企業管理學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000118	Internship	3	6050	\N	森林環境暨資源學系校內實習	2024-08-11	森林環境暨資源學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000119	Lab	6	\N	00000000-0000-0000-0001-000000000082	台灣電信股份有限公司企業合作實驗室	2025-05-12	台灣電信股份有限公司企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000120	Lab	3	\N	00000000-0000-0000-0001-000000000119	Gardner,MayandTurner企業合作實驗室	2025-06-22	Gardner,MayandTurner企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000121	Others	3	4081	\N	物理治療學系其他資源	2025-03-05	物理治療學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000122	Lab	10	30A0	\N	社會科學院院學士學位實驗室機會	2025-05-21	社會科學院院學士學位實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000123	Others	7	4030	\N	藥學系其他資源	2026-07-19	藥學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000124	Lab	3	\N	00000000-0000-0000-0001-000000000107	台灣業糖資訊有限公司企業合作實驗室	2024-11-07	台灣業糖資訊有限公司企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000125	Others	8	\N	00000000-0000-0000-0001-000000000123	HughesGroup其他資源	2027-05-01	HughesGroup其他資源	Available	f
-00000000-0000-0000-0002-000000000126	Internship	6	\N	00000000-0000-0000-0001-000000000096	Miller,HarrellandReese實習機會	2024-08-10	Miller,HarrellandReese實習機會	Canceled	t
-00000000-0000-0000-0002-000000000127	Lab	7	A013	\N	法律學系財經法學組實驗室機會	2025-05-05	法律學系財經法學組實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000128	Internship	2	5050	\N	工程科學及海洋工程學系校內實習	2026-06-25	工程科學及海洋工程學系校內實習	Available	f
-00000000-0000-0000-0002-000000000129	Lab	6	7010	\N	工商管理學系實驗室機會	2026-07-13	工商管理學系實驗室機會	Available	f
-00000000-0000-0000-0002-000000000130	Others	8	6120	\N	昆蟲學系其他資源	2026-07-15	昆蟲學系其他資源	Available	f
-00000000-0000-0000-0002-000000000131	Others	4	\N	00000000-0000-0000-0001-000000000112	合作庫金商業銀行資訊有限公司其他資源	2025-02-03	合作庫金商業銀行資訊有限公司其他資源	Canceled	t
-00000000-0000-0000-0002-000000000132	Lab	10	\N	00000000-0000-0000-0001-000000000125	Cabrera-Richardson企業合作實驗室	2024-09-29	Cabrera-Richardson企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000133	Internship	10	\N	00000000-0000-0000-0001-000000000116	台灣印無品良股份有限公司實習機會	2026-09-11	台灣印無品良股份有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000134	Lab	8	\N	00000000-0000-0000-0001-000000000106	ConleyPLC企業合作實驗室	2025-12-16	ConleyPLC企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000135	Others	4	8010	\N	公共衛生學系其他資源	2026-09-10	公共衛生學系其他資源	Available	f
-00000000-0000-0000-0002-000000000136	Internship	3	1011	\N	中國文學系國際學生學士班校內實習	2027-03-22	中國文學系國際學生學士班校內實習	Available	f
-00000000-0000-0000-0002-000000000137	Others	7	B010	\N	生命科學系其他資源	2026-06-16	生命科學系其他資源	Available	f
-00000000-0000-0000-0002-000000000138	Lab	6	4020	\N	牙醫學系實驗室機會	2027-05-28	牙醫學系實驗室機會	Available	f
-00000000-0000-0000-0002-000000000139	Others	7	\N	00000000-0000-0000-0001-000000000110	LloydGroup其他資源	2024-08-14	LloydGroup其他資源	Canceled	t
-00000000-0000-0000-0002-000000000140	Internship	5	6080	\N	園藝暨景觀學系校內實習	2026-05-22	園藝暨景觀學系校內實習	Available	f
-00000000-0000-0000-0002-000000000141	Internship	2	6100	\N	生物產業傳播暨發展學系校內實習	2025-09-30	生物產業傳播暨發展學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000142	Internship	5	\N	00000000-0000-0000-0001-000000000091	Villegas,CardenasandAustin實習機會	2026-04-22	Villegas,CardenasandAustin實習機會	Available	f
-00000000-0000-0000-0002-000000000143	Scholarship	9	\N	00000000-0000-0000-0001-000000000111	風微廣場獎學金	2025-03-23	風微廣場獎學金	Canceled	t
-00000000-0000-0000-0002-000000000144	Lab	7	6090	\N	獸醫學系實驗室機會	2025-01-11	獸醫學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000145	Internship	5	\N	00000000-0000-0000-0001-000000000130	台日積體電路實習機會	2024-09-02	台日積體電路實習機會	Canceled	t
-00000000-0000-0000-0002-000000000146	Lab	2	\N	00000000-0000-0000-0001-000000000096	Miller,HarrellandReese企業合作實驗室	2027-03-31	Miller,HarrellandReese企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000147	Internship	8	7011	\N	工商管理學系企業管理組校內實習	2027-05-10	工商管理學系企業管理組校內實習	Available	f
-00000000-0000-0000-0002-000000000148	Internship	8	\N	00000000-0000-0000-0001-000000000087	Schneider-Johnson實習機會	2025-11-27	Schneider-Johnson實習機會	Canceled	t
-00000000-0000-0000-0002-000000000149	Others	9	\N	00000000-0000-0000-0001-000000000092	聯燁鋼鐵有限公司其他資源	2025-06-14	聯燁鋼鐵有限公司其他資源	Canceled	t
-00000000-0000-0000-0002-000000000150	Internship	2	O020	\N	國際學院校內實習	2025-12-09	國際學院校內實習	Available	f
-00000000-0000-0000-0002-000000000151	Internship	5	4080	\N	物理治療學系校內實習	2025-05-08	物理治療學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000152	Others	9	\N	00000000-0000-0000-0001-000000000087	Schneider-Johnson其他資源	2024-08-20	Schneider-Johnson其他資源	Canceled	t
-00000000-0000-0000-0002-000000000153	Internship	9	\N	00000000-0000-0000-0001-000000000109	CarterInc實習機會	2024-09-18	CarterInc實習機會	Canceled	t
-00000000-0000-0000-0002-000000000154	Lab	6	6010	\N	農藝學系實驗室機會	2024-10-04	農藝學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000155	Others	3	\N	00000000-0000-0000-0001-000000000127	月日光半導體股份有限公司其他資源	2025-10-07	月日光半導體股份有限公司其他資源	Canceled	t
-00000000-0000-0000-0002-000000000156	Scholarship	8	A013	\N	法律學系財經法學組獎學金	2025-01-02	法律學系財經法學組獎學金	Canceled	t
-00000000-0000-0000-0002-000000000157	Scholarship	9	\N	00000000-0000-0000-0001-000000000098	Johnson-Wood獎學金	2024-09-25	Johnson-Wood獎學金	Canceled	t
-00000000-0000-0000-0002-000000000158	Others	6	5020	\N	機械工程學系其他資源	2025-11-05	機械工程學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000159	Scholarship	7	1010	\N	中國文學系獎學金	2024-12-02	中國文學系獎學金	Canceled	t
-00000000-0000-0000-0002-000000000160	Scholarship	4	4010	\N	醫學系獎學金	2024-12-21	醫學系獎學金	Canceled	t
-00000000-0000-0000-0002-000000000161	Lab	8	50A0	\N	工學院院學士實驗室機會	2024-10-15	工學院院學士實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000162	Internship	7	\N	00000000-0000-0000-0001-000000000109	CarterInc實習機會	2027-03-06	CarterInc實習機會	Available	f
-00000000-0000-0000-0002-000000000163	Internship	5	\N	00000000-0000-0000-0001-000000000093	Stanley-Tucker實習機會	2025-09-28	Stanley-Tucker實習機會	Canceled	t
-00000000-0000-0000-0002-000000000164	Lab	3	B0A0	\N	生命科學院院學士實驗室機會	2025-11-26	生命科學院院學士實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000165	Others	6	B010	\N	生命科學系其他資源	2026-09-18	生命科學系其他資源	Available	f
-00000000-0000-0000-0002-000000000166	Others	10	B020	\N	生化科技學系其他資源	2025-05-12	生化科技學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000167	Scholarship	8	\N	00000000-0000-0000-0001-000000000088	Vang-Schmidt獎學金	2025-11-21	Vang-Schmidt獎學金	Canceled	t
-00000000-0000-0000-0002-000000000168	Lab	5	2010	\N	數學系實驗室機會	2027-04-29	數學系實驗室機會	Available	f
-00000000-0000-0000-0002-000000000169	Others	8	\N	00000000-0000-0000-0001-000000000101	Conner,LiandSantiago其他資源	2026-05-20	Conner,LiandSantiago其他資源	Available	f
-00000000-0000-0000-0002-000000000170	Internship	3	4040	\N	醫學檢驗暨生物技術學系校內實習	2026-05-08	醫學檢驗暨生物技術學系校內實習	Available	f
-00000000-0000-0000-0002-000000000171	Others	3	\N	00000000-0000-0000-0001-000000000084	Winters,NewmanandBrown其他資源	2026-03-27	Winters,NewmanandBrown其他資源	Available	f
-00000000-0000-0000-0002-000000000172	Others	4	1050	\N	人類學系其他資源	2024-07-27	人類學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000173	Others	4	A012	\N	法律學系司法組其他資源	2026-09-30	法律學系司法組其他資源	Canceled	t
-00000000-0000-0000-0002-000000000174	Internship	2	\N	00000000-0000-0000-0001-000000000122	德汎資訊有限公司實習機會	2025-12-23	德汎資訊有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000175	Scholarship	2	6060	\N	動物科學技術學系獎學金	2026-06-15	動物科學技術學系獎學金	Available	f
-00000000-0000-0000-0002-000000000176	Lab	2	\N	00000000-0000-0000-0001-000000000086	ChapmanInc企業合作實驗室	2025-08-22	ChapmanInc企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000177	Internship	8	\N	00000000-0000-0000-0001-000000000089	Scott,MckayandMcdaniel實習機會	2027-01-17	Scott,MckayandMcdaniel實習機會	Available	f
-00000000-0000-0000-0002-000000000178	Lab	2	3022	\N	政治學系國際關係組實驗室機會	2025-10-11	政治學系國際關係組實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000179	Internship	10	\N	00000000-0000-0000-0001-000000000104	Spencer-Garcia實習機會	2025-03-17	Spencer-Garcia實習機會	Canceled	t
-00000000-0000-0000-0002-000000000180	Internship	4	\N	00000000-0000-0000-0001-000000000126	UnderwoodandSons實習機會	2026-11-19	UnderwoodandSons實習機會	Available	f
-00000000-0000-0000-0002-000000000181	Internship	10	3050	\N	社會學系校內實習	2024-08-13	社會學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000182	Internship	5	1030	\N	歷史學系校內實習	2026-11-22	歷史學系校內實習	Available	f
-00000000-0000-0000-0002-000000000183	Others	6	1030	\N	歷史學系其他資源	2024-08-07	歷史學系其他資源	Canceled	t
-00000000-0000-0000-0002-000000000184	Internship	3	\N	00000000-0000-0000-0001-000000000100	台灣印無品良股份有限公司實習機會	2026-01-07	台灣印無品良股份有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000185	Lab	5	7010	\N	工商管理學系實驗室機會	2024-08-23	工商管理學系實驗室機會	Canceled	t
-00000000-0000-0000-0002-000000000186	Internship	6	7060	\N	企業管理學系校內實習	2025-07-22	企業管理學系校內實習	Canceled	t
-00000000-0000-0000-0002-000000000187	Internship	5	\N	00000000-0000-0000-0001-000000000115	York-Joseph實習機會	2026-04-12	York-Joseph實習機會	Available	f
-00000000-0000-0000-0002-000000000188	Scholarship	2	50A0	\N	工學院院學士獎學金	2025-08-05	工學院院學士獎學金	Canceled	t
-00000000-0000-0000-0002-000000000189	Scholarship	5	\N	00000000-0000-0000-0001-000000000082	台灣電信股份有限公司獎學金	2026-11-10	台灣電信股份有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000190	Scholarship	9	1070	\N	日本語文學系獎學金	2026-02-12	日本語文學系獎學金	Available	f
-00000000-0000-0000-0002-000000000191	Others	2	1020	\N	外國語文學系其他資源	2025-12-27	外國語文學系其他資源	Available	f
-00000000-0000-0000-0002-000000000192	Others	7	O020	\N	國際學院其他資源	2027-03-25	國際學院其他資源	Available	f
-00000000-0000-0000-0002-000000000193	Lab	9	\N	00000000-0000-0000-0001-000000000126	UnderwoodandSons企業合作實驗室	2025-04-23	UnderwoodandSons企業合作實驗室	Canceled	t
-00000000-0000-0000-0002-000000000194	Others	7	\N	00000000-0000-0000-0001-000000000103	Mitchell,GoodmanandCole其他資源	2027-04-22	Mitchell,GoodmanandCole其他資源	Available	f
-00000000-0000-0000-0002-000000000195	Others	6	\N	00000000-0000-0000-0001-000000000085	輝燁企業有限公司其他資源	2025-08-28	輝燁企業有限公司其他資源	Canceled	t
-00000000-0000-0000-0002-000000000196	Others	4	\N	00000000-0000-0000-0001-000000000126	UnderwoodandSons其他資源	2025-05-22	UnderwoodandSons其他資源	Canceled	t
-00000000-0000-0000-0002-000000000197	Internship	4	\N	00000000-0000-0000-0001-000000000121	風微廣場股份有限公司實習機會	2027-03-16	風微廣場股份有限公司實習機會	Available	f
-00000000-0000-0000-0002-000000000198	Lab	4	\N	00000000-0000-0000-0001-000000000110	LloydGroup企業合作實驗室	2027-02-14	LloydGroup企業合作實驗室	Available	f
-00000000-0000-0000-0002-000000000199	Scholarship	9	\N	00000000-0000-0000-0001-000000000107	台灣業糖資訊有限公司獎學金	2025-06-24	台灣業糖資訊有限公司獎學金	Canceled	t
-00000000-0000-0000-0002-000000000200	Scholarship	2	\N	00000000-0000-0000-0001-000000000096	Miller,HarrellandReese獎學金	2027-05-29	Miller,HarrellandReese獎學金	Available	f
+00000000-0000-0000-0002-000000000001	Others	4	\N	00000000-0000-0000-0000-000000000122	德汎資訊有限公司其他資源	2027-02-16	德汎資訊有限公司其他資源	Available	f
+00000000-0000-0000-0002-000000000003	Lab	10	\N	00000000-0000-0000-0000-000000000086	ChapmanInc企業合作實驗室	2024-09-29	ChapmanInc企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000004	Internship	4	\N	00000000-0000-0000-0000-000000000114	DaviesLLC實習機會	2027-02-07	DaviesLLC實習機會	Available	f
+00000000-0000-0000-0002-000000000005	Internship	6	\N	00000000-0000-0000-0000-000000000084	Winters,NewmanandBrown實習機會	2025-03-04	Winters,NewmanandBrown實習機會	Canceled	t
+00000000-0000-0000-0002-000000000008	Scholarship	3	\N	00000000-0000-0000-0000-000000000120	Travis,ReedandRoss獎學金	2025-02-22	Travis,ReedandRoss獎學金	Canceled	t
+00000000-0000-0000-0002-000000000009	Others	6	\N	00000000-0000-0000-0000-000000000128	DavidLLC其他資源	2026-08-08	DavidLLC其他資源	Available	f
+00000000-0000-0000-0002-000000000013	Internship	5	\N	00000000-0000-0000-0000-000000000107	台灣業糖資訊有限公司實習機會	2025-02-12	台灣業糖資訊有限公司實習機會	Canceled	t
+00000000-0000-0000-0002-000000000014	Lab	3	\N	00000000-0000-0000-0000-000000000089	Scott,MckayandMcdaniel企業合作實驗室	2025-12-12	Scott,MckayandMcdaniel企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000015	Internship	2	\N	00000000-0000-0000-0000-000000000127	月日光半導體股份有限公司實習機會	2025-08-15	月日光半導體股份有限公司實習機會	Canceled	t
+00000000-0000-0000-0002-000000000016	Internship	3	\N	00000000-0000-0000-0000-000000000113	Watson-Hines實習機會	2025-07-11	Watson-Hines實習機會	Canceled	t
+00000000-0000-0000-0002-000000000017	Scholarship	10	\N	00000000-0000-0000-0000-000000000084	Winters,NewmanandBrown獎學金	2025-05-17	Winters,NewmanandBrown獎學金	Canceled	t
+00000000-0000-0000-0002-000000000019	Lab	8	\N	00000000-0000-0000-0000-000000000081	華聯電子有限公司企業合作實驗室	2026-10-16	華聯電子有限公司企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000020	Others	10	\N	00000000-0000-0000-0000-000000000084	Winters,NewmanandBrown其他資源	2025-06-02	Winters,NewmanandBrown其他資源	Canceled	t
+00000000-0000-0000-0002-000000000021	Internship	3	\N	00000000-0000-0000-0000-000000000126	UnderwoodandSons實習機會	2024-11-29	UnderwoodandSons實習機會	Canceled	t
+00000000-0000-0000-0002-000000000028	Scholarship	4	\N	00000000-0000-0000-0000-000000000109	CarterInc獎學金	2025-07-04	CarterInc獎學金	Canceled	t
+00000000-0000-0000-0002-000000000029	Lab	3	\N	00000000-0000-0000-0000-000000000101	Conner,LiandSantiago企業合作實驗室	2027-02-21	Conner,LiandSantiago企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000032	Scholarship	3	\N	00000000-0000-0000-0000-000000000124	碩華電腦股份有限公司獎學金	2025-03-16	碩華電腦股份有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000034	Lab	7	\N	00000000-0000-0000-0000-000000000101	Conner,LiandSantiago企業合作實驗室	2026-06-04	Conner,LiandSantiago企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000037	Scholarship	6	\N	00000000-0000-0000-0000-000000000090	華中郵政資訊有限公司獎學金	2025-03-30	華中郵政資訊有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000039	Lab	2	\N	00000000-0000-0000-0000-000000000130	台日積體電路企業合作實驗室	2026-11-15	台日積體電路企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000040	Scholarship	4	\N	00000000-0000-0000-0000-000000000117	台灣雅萊（Y'ORÉAL）獎學金	2026-10-19	台灣雅萊（Y'ORÉAL）獎學金	Canceled	t
+00000000-0000-0000-0002-000000000041	Scholarship	8	\N	00000000-0000-0000-0000-000000000127	月日光半導體股份有限公司獎學金	2026-04-14	月日光半導體股份有限公司獎學金	Available	f
+00000000-0000-0000-0002-000000000042	Internship	2	\N	00000000-0000-0000-0000-000000000090	華中郵政資訊有限公司實習機會	2027-02-22	華中郵政資訊有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000045	Lab	5	\N	00000000-0000-0000-0000-000000000095	華中航空股份有限公司企業合作實驗室	2025-01-05	華中航空股份有限公司企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000046	Internship	9	\N	00000000-0000-0000-0000-000000000112	合作庫金商業銀行資訊有限公司實習機會	2026-04-10	合作庫金商業銀行資訊有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000049	Scholarship	6	\N	00000000-0000-0000-0000-000000000088	Vang-Schmidt獎學金	2026-09-25	Vang-Schmidt獎學金	Available	f
+00000000-0000-0000-0002-000000000050	Scholarship	8	\N	00000000-0000-0000-0000-000000000111	風微廣場獎學金	2025-09-16	風微廣場獎學金	Canceled	t
+00000000-0000-0000-0002-000000000051	Scholarship	3	\N	00000000-0000-0000-0000-000000000082	台灣電信股份有限公司獎學金	2026-11-07	台灣電信股份有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000053	Others	9	\N	00000000-0000-0000-0000-000000000086	ChapmanInc其他資源	2025-11-28	ChapmanInc其他資源	Canceled	t
+00000000-0000-0000-0002-000000000055	Lab	9	\N	00000000-0000-0000-0000-000000000100	台灣印無品良股份有限公司企業合作實驗室	2025-05-05	台灣印無品良股份有限公司企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000056	Internship	10	\N	00000000-0000-0000-0000-000000000097	隆豐大飯店（北台君悅）資訊有限公司實習機會	2026-07-12	隆豐大飯店（北台君悅）資訊有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000059	Others	10	\N	00000000-0000-0000-0000-000000000108	Burgess-Kelly其他資源	2024-06-14	Burgess-Kelly其他資源	Canceled	t
+00000000-0000-0000-0002-000000000060	Lab	9	\N	00000000-0000-0000-0000-000000000108	Burgess-Kelly企業合作實驗室	2026-04-19	Burgess-Kelly企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000061	Internship	5	\N	00000000-0000-0000-0000-000000000109	CarterInc實習機會	2026-08-06	CarterInc實習機會	Available	f
+00000000-0000-0000-0002-000000000064	Scholarship	9	\N	00000000-0000-0000-0000-000000000112	合作庫金商業銀行資訊有限公司獎學金	2026-07-01	合作庫金商業銀行資訊有限公司獎學金	Available	f
+00000000-0000-0000-0002-000000000068	Internship	6	\N	00000000-0000-0000-0000-000000000095	華中航空股份有限公司實習機會	2026-07-05	華中航空股份有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000069	Scholarship	5	\N	00000000-0000-0000-0000-000000000092	聯燁鋼鐵有限公司獎學金	2026-09-25	聯燁鋼鐵有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000070	Others	4	\N	00000000-0000-0000-0000-000000000117	台灣雅萊（Y'ORÉAL）其他資源	2025-06-16	台灣雅萊（Y'ORÉAL）其他資源	Canceled	t
+00000000-0000-0000-0002-000000000073	Internship	3	\N	00000000-0000-0000-0000-000000000101	Conner,LiandSantiago實習機會	2026-11-10	Conner,LiandSantiago實習機會	Canceled	t
+00000000-0000-0000-0002-000000000074	Others	8	\N	00000000-0000-0000-0000-000000000082	台灣電信股份有限公司其他資源	2027-01-02	台灣電信股份有限公司其他資源	Available	f
+00000000-0000-0000-0002-000000000077	Scholarship	2	\N	00000000-0000-0000-0000-000000000130	台日積體電路獎學金	2024-07-12	台日積體電路獎學金	Canceled	t
+00000000-0000-0000-0002-000000000080	Internship	6	\N	00000000-0000-0000-0000-000000000105	Brooks,HughesandMiller實習機會	2026-05-24	Brooks,HughesandMiller實習機會	Available	f
+00000000-0000-0000-0002-000000000083	Scholarship	4	\N	00000000-0000-0000-0000-000000000124	碩華電腦股份有限公司獎學金	2025-10-09	碩華電腦股份有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000084	Lab	3	\N	00000000-0000-0000-0000-000000000112	合作庫金商業銀行資訊有限公司企業合作實驗室	2026-08-30	合作庫金商業銀行資訊有限公司企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000086	Internship	3	\N	00000000-0000-0000-0000-000000000115	York-Joseph實習機會	2026-12-25	York-Joseph實習機會	Available	f
+00000000-0000-0000-0002-000000000092	Others	2	\N	00000000-0000-0000-0000-000000000085	輝燁企業有限公司其他資源	2026-10-20	輝燁企業有限公司其他資源	Canceled	t
+00000000-0000-0000-0002-000000000094	Others	8	\N	00000000-0000-0000-0000-000000000093	Stanley-Tucker其他資源	2027-05-10	Stanley-Tucker其他資源	Available	f
+00000000-0000-0000-0002-000000000095	Lab	6	\N	00000000-0000-0000-0000-000000000106	ConleyPLC企業合作實驗室	2026-04-04	ConleyPLC企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000096	Scholarship	5	\N	00000000-0000-0000-0000-000000000106	ConleyPLC獎學金	2026-02-11	ConleyPLC獎學金	Available	f
+00000000-0000-0000-0002-000000000097	Others	3	\N	00000000-0000-0000-0000-000000000089	Scott,MckayandMcdaniel其他資源	2026-12-06	Scott,MckayandMcdaniel其他資源	Available	f
+00000000-0000-0000-0002-000000000110	Scholarship	10	\N	00000000-0000-0000-0000-000000000125	Cabrera-Richardson獎學金	2024-11-27	Cabrera-Richardson獎學金	Canceled	t
+00000000-0000-0000-0002-000000000111	Others	4	\N	00000000-0000-0000-0000-000000000112	合作庫金商業銀行資訊有限公司其他資源	2025-04-16	合作庫金商業銀行資訊有限公司其他資源	Canceled	t
+00000000-0000-0000-0002-000000000113	Internship	6	\N	00000000-0000-0000-0000-000000000111	風微廣場實習機會	2026-05-21	風微廣場實習機會	Available	f
+00000000-0000-0000-0002-000000000115	Others	5	\N	00000000-0000-0000-0000-000000000094	SaundersLLC其他資源	2026-07-04	SaundersLLC其他資源	Available	f
+00000000-0000-0000-0002-000000000119	Lab	6	\N	00000000-0000-0000-0000-000000000082	台灣電信股份有限公司企業合作實驗室	2025-05-12	台灣電信股份有限公司企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000120	Lab	3	\N	00000000-0000-0000-0000-000000000119	Gardner,MayandTurner企業合作實驗室	2025-06-22	Gardner,MayandTurner企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000124	Lab	3	\N	00000000-0000-0000-0000-000000000107	台灣業糖資訊有限公司企業合作實驗室	2024-11-07	台灣業糖資訊有限公司企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000125	Others	8	\N	00000000-0000-0000-0000-000000000123	HughesGroup其他資源	2027-05-01	HughesGroup其他資源	Available	f
+00000000-0000-0000-0002-000000000126	Internship	6	\N	00000000-0000-0000-0000-000000000096	Miller,HarrellandReese實習機會	2024-08-10	Miller,HarrellandReese實習機會	Canceled	t
+00000000-0000-0000-0002-000000000131	Others	4	\N	00000000-0000-0000-0000-000000000112	合作庫金商業銀行資訊有限公司其他資源	2025-02-03	合作庫金商業銀行資訊有限公司其他資源	Canceled	t
+00000000-0000-0000-0002-000000000132	Lab	10	\N	00000000-0000-0000-0000-000000000125	Cabrera-Richardson企業合作實驗室	2024-09-29	Cabrera-Richardson企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000133	Internship	10	\N	00000000-0000-0000-0000-000000000116	台灣印無品良股份有限公司實習機會	2026-09-11	台灣印無品良股份有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000134	Lab	8	\N	00000000-0000-0000-0000-000000000106	ConleyPLC企業合作實驗室	2025-12-16	ConleyPLC企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000139	Others	7	\N	00000000-0000-0000-0000-000000000110	LloydGroup其他資源	2024-08-14	LloydGroup其他資源	Canceled	t
+00000000-0000-0000-0002-000000000142	Internship	5	\N	00000000-0000-0000-0000-000000000091	Villegas,CardenasandAustin實習機會	2026-04-22	Villegas,CardenasandAustin實習機會	Available	f
+00000000-0000-0000-0002-000000000143	Scholarship	9	\N	00000000-0000-0000-0000-000000000111	風微廣場獎學金	2025-03-23	風微廣場獎學金	Canceled	t
+00000000-0000-0000-0002-000000000145	Internship	5	\N	00000000-0000-0000-0000-000000000130	台日積體電路實習機會	2024-09-02	台日積體電路實習機會	Canceled	t
+00000000-0000-0000-0002-000000000146	Lab	2	\N	00000000-0000-0000-0000-000000000096	Miller,HarrellandReese企業合作實驗室	2027-03-31	Miller,HarrellandReese企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000198	Lab	4	\N	00000000-0000-0000-0000-000000000110	LloydGroup企業合作實驗室	2027-02-14	LloydGroup企業合作實驗室	Available	f
+00000000-0000-0000-0002-000000000200	Scholarship	2	\N	00000000-0000-0000-0000-000000000096	Miller,HarrellandReese獎學金	2027-05-29	Miller,HarrellandReese獎學金	Available	f
+00000000-0000-0000-0002-000000000148	Internship	8	\N	00000000-0000-0000-0000-000000000087	Schneider-Johnson實習機會	2025-11-27	Schneider-Johnson實習機會	Canceled	t
+00000000-0000-0000-0002-000000000149	Others	9	\N	00000000-0000-0000-0000-000000000092	聯燁鋼鐵有限公司其他資源	2025-06-14	聯燁鋼鐵有限公司其他資源	Canceled	t
+00000000-0000-0000-0002-000000000152	Others	9	\N	00000000-0000-0000-0000-000000000087	Schneider-Johnson其他資源	2024-08-20	Schneider-Johnson其他資源	Canceled	t
+00000000-0000-0000-0002-000000000153	Internship	9	\N	00000000-0000-0000-0000-000000000109	CarterInc實習機會	2024-09-18	CarterInc實習機會	Canceled	t
+00000000-0000-0000-0002-000000000155	Others	3	\N	00000000-0000-0000-0000-000000000127	月日光半導體股份有限公司其他資源	2025-10-07	月日光半導體股份有限公司其他資源	Canceled	t
+00000000-0000-0000-0002-000000000157	Scholarship	9	\N	00000000-0000-0000-0000-000000000098	Johnson-Wood獎學金	2024-09-25	Johnson-Wood獎學金	Canceled	t
+00000000-0000-0000-0002-000000000162	Internship	7	\N	00000000-0000-0000-0000-000000000109	CarterInc實習機會	2027-03-06	CarterInc實習機會	Available	f
+00000000-0000-0000-0002-000000000163	Internship	5	\N	00000000-0000-0000-0000-000000000093	Stanley-Tucker實習機會	2025-09-28	Stanley-Tucker實習機會	Canceled	t
+00000000-0000-0000-0002-000000000167	Scholarship	8	\N	00000000-0000-0000-0000-000000000088	Vang-Schmidt獎學金	2025-11-21	Vang-Schmidt獎學金	Canceled	t
+00000000-0000-0000-0002-000000000169	Others	8	\N	00000000-0000-0000-0000-000000000101	Conner,LiandSantiago其他資源	2026-05-20	Conner,LiandSantiago其他資源	Available	f
+00000000-0000-0000-0002-000000000171	Others	3	\N	00000000-0000-0000-0000-000000000084	Winters,NewmanandBrown其他資源	2026-03-27	Winters,NewmanandBrown其他資源	Available	f
+00000000-0000-0000-0002-000000000174	Internship	2	\N	00000000-0000-0000-0000-000000000122	德汎資訊有限公司實習機會	2025-12-23	德汎資訊有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000176	Lab	2	\N	00000000-0000-0000-0000-000000000086	ChapmanInc企業合作實驗室	2025-08-22	ChapmanInc企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000177	Internship	8	\N	00000000-0000-0000-0000-000000000089	Scott,MckayandMcdaniel實習機會	2027-01-17	Scott,MckayandMcdaniel實習機會	Available	f
+00000000-0000-0000-0002-000000000179	Internship	10	\N	00000000-0000-0000-0000-000000000104	Spencer-Garcia實習機會	2025-03-17	Spencer-Garcia實習機會	Canceled	t
+00000000-0000-0000-0002-000000000180	Internship	4	\N	00000000-0000-0000-0000-000000000126	UnderwoodandSons實習機會	2026-11-19	UnderwoodandSons實習機會	Available	f
+00000000-0000-0000-0002-000000000184	Internship	3	\N	00000000-0000-0000-0000-000000000100	台灣印無品良股份有限公司實習機會	2026-01-07	台灣印無品良股份有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000187	Internship	5	\N	00000000-0000-0000-0000-000000000115	York-Joseph實習機會	2026-04-12	York-Joseph實習機會	Available	f
+00000000-0000-0000-0002-000000000189	Scholarship	5	\N	00000000-0000-0000-0000-000000000082	台灣電信股份有限公司獎學金	2026-11-10	台灣電信股份有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000193	Lab	9	\N	00000000-0000-0000-0000-000000000126	UnderwoodandSons企業合作實驗室	2025-04-23	UnderwoodandSons企業合作實驗室	Canceled	t
+00000000-0000-0000-0002-000000000194	Others	7	\N	00000000-0000-0000-0000-000000000103	Mitchell,GoodmanandCole其他資源	2027-04-22	Mitchell,GoodmanandCole其他資源	Available	f
+00000000-0000-0000-0002-000000000195	Others	6	\N	00000000-0000-0000-0000-000000000085	輝燁企業有限公司其他資源	2025-08-28	輝燁企業有限公司其他資源	Canceled	t
+00000000-0000-0000-0002-000000000196	Others	4	\N	00000000-0000-0000-0000-000000000126	UnderwoodandSons其他資源	2025-05-22	UnderwoodandSons其他資源	Canceled	t
+00000000-0000-0000-0002-000000000197	Internship	4	\N	00000000-0000-0000-0000-000000000121	風微廣場股份有限公司實習機會	2027-03-16	風微廣場股份有限公司實習機會	Available	f
+00000000-0000-0000-0002-000000000199	Scholarship	9	\N	00000000-0000-0000-0000-000000000107	台灣業糖資訊有限公司獎學金	2025-06-24	台灣業糖資訊有限公司獎學金	Canceled	t
+00000000-0000-0000-0002-000000000002	Others	8	00000000-0000-0000-0000-000000000045	\N	生物環境系統工程學系其他資源	2024-07-23	生物環境系統工程學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000006	Others	8	00000000-0000-0000-0000-000000000040	\N	材料科學與工程學系其他資源	2025-01-31	材料科學與工程學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000007	Lab	10	00000000-0000-0000-0000-000000000043	\N	工學院院學士實驗室機會	2026-03-28	工學院院學士實驗室機會	Available	f
+00000000-0000-0000-0002-000000000010	Others	10	00000000-0000-0000-0000-000000000042	\N	智慧工程科技全英語學士學位學程其他資源	2025-02-23	智慧工程科技全英語學士學位學程其他資源	Canceled	t
+00000000-0000-0000-0002-000000000011	Internship	9	00000000-0000-0000-0000-000000000043	\N	工學院院學士校內實習	2025-03-09	工學院院學士校內實習	Canceled	t
+00000000-0000-0000-0002-000000000012	Lab	10	00000000-0000-0000-0000-000000000008	\N	日本語文學系實驗室機會	2025-12-20	日本語文學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000018	Others	8	00000000-0000-0000-0000-000000000008	\N	日本語文學系其他資源	2026-06-07	日本語文學系其他資源	Available	f
+00000000-0000-0000-0002-000000000022	Scholarship	7	00000000-0000-0000-0000-000000000059	\N	工商管理學系企業管理組獎學金	2026-01-20	工商管理學系企業管理組獎學金	Available	f
+00000000-0000-0000-0002-000000000023	Lab	3	00000000-0000-0000-0000-000000000049	\N	農業經濟學系實驗室機會	2025-06-01	農業經濟學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000024	Others	5	00000000-0000-0000-0000-000000000076	\N	校學士其他資源	2026-08-10	校學士其他資源	Available	f
+00000000-0000-0000-0002-000000000025	Scholarship	7	00000000-0000-0000-0000-000000000018	\N	政治學系政治理論組獎學金	2025-01-11	政治學系政治理論組獎學金	Canceled	t
+00000000-0000-0000-0002-000000000026	Internship	7	00000000-0000-0000-0000-000000000065	\N	企業管理學系校內實習	2025-01-25	企業管理學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000027	Lab	6	00000000-0000-0000-0000-000000000079	\N	國際學院實驗室機會	2026-03-06	國際學院實驗室機會	Available	f
+00000000-0000-0000-0002-000000000030	Others	5	00000000-0000-0000-0000-000000000049	\N	農業經濟學系其他資源	2024-06-06	農業經濟學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000031	Internship	9	00000000-0000-0000-0000-000000000068	\N	資訊工程學系校內實習	2025-12-02	資訊工程學系校內實習	Available	f
+00000000-0000-0000-0002-000000000033	Internship	7	00000000-0000-0000-0000-000000000018	\N	政治學系政治理論組校內實習	2025-01-22	政治學系政治理論組校內實習	Canceled	t
+00000000-0000-0000-0002-000000000035	Scholarship	6	00000000-0000-0000-0000-000000000072	\N	生命科學系獎學金	2024-12-17	生命科學系獎學金	Canceled	t
+00000000-0000-0000-0002-000000000036	Internship	6	00000000-0000-0000-0000-000000000023	\N	社會科學院院學士學位校內實習	2025-07-23	社會科學院院學士學位校內實習	Canceled	t
+00000000-0000-0000-0002-000000000038	Others	6	00000000-0000-0000-0000-000000000004	\N	歷史學系其他資源	2025-02-16	歷史學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000043	Others	7	00000000-0000-0000-0000-000000000050	\N	園藝暨景觀學系其他資源	2025-01-20	園藝暨景觀學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000044	Others	6	00000000-0000-0000-0000-000000000080	\N	創新領域學士學位學程其他資源	2024-10-24	創新領域學士學位學程其他資源	Canceled	t
+00000000-0000-0000-0002-000000000047	Internship	3	00000000-0000-0000-0000-000000000080	\N	創新領域學士學位學程校內實習	2025-04-07	創新領域學士學位學程校內實習	Canceled	t
+00000000-0000-0000-0002-000000000048	Scholarship	3	00000000-0000-0000-0000-000000000064	\N	資訊管理學系獎學金	2026-11-14	資訊管理學系獎學金	Available	f
+00000000-0000-0000-0002-000000000052	Others	3	00000000-0000-0000-0000-000000000012	\N	化學系其他資源	2026-11-29	化學系其他資源	Available	f
+00000000-0000-0000-0002-000000000054	Others	9	00000000-0000-0000-0000-000000000025	\N	醫學系其他資源	2024-08-10	醫學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000057	Scholarship	10	00000000-0000-0000-0000-000000000023	\N	社會科學院院學士學位獎學金	2027-02-25	社會科學院院學士學位獎學金	Canceled	t
+00000000-0000-0000-0002-000000000058	Scholarship	9	00000000-0000-0000-0000-000000000068	\N	資訊工程學系獎學金	2024-12-09	資訊工程學系獎學金	Canceled	t
+00000000-0000-0000-0002-000000000062	Internship	5	00000000-0000-0000-0000-000000000040	\N	材料科學與工程學系校內實習	2026-07-18	材料科學與工程學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000063	Others	9	00000000-0000-0000-0000-000000000041	\N	醫學工程學系其他資源	2024-12-24	醫學工程學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000065	Internship	8	00000000-0000-0000-0000-000000000020	\N	政治學系公共行政組校內實習	2026-06-06	政治學系公共行政組校內實習	Available	f
+00000000-0000-0000-0002-000000000066	Internship	8	00000000-0000-0000-0000-000000000021	\N	經濟學系校內實習	2025-07-01	經濟學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000067	Lab	8	00000000-0000-0000-0000-000000000066	\N	公共衛生學系實驗室機會	2024-07-02	公共衛生學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000071	Lab	9	00000000-0000-0000-0000-000000000058	\N	工商管理學系實驗室機會	2026-02-08	工商管理學系實驗室機會	Available	f
+00000000-0000-0000-0002-000000000072	Internship	5	00000000-0000-0000-0000-000000000073	\N	生化科技學系校內實習	2027-05-26	生化科技學系校內實習	Available	f
+00000000-0000-0000-0002-000000000075	Scholarship	7	00000000-0000-0000-0000-000000000005	\N	哲學系獎學金	2027-01-07	哲學系獎學金	Available	f
+00000000-0000-0000-0002-000000000076	Others	8	00000000-0000-0000-0000-000000000071	\N	法律學系財經法學組其他資源	2025-01-05	法律學系財經法學組其他資源	Canceled	t
+00000000-0000-0000-0002-000000000078	Internship	10	00000000-0000-0000-0000-000000000040	\N	材料科學與工程學系校內實習	2026-09-15	材料科學與工程學系校內實習	Available	f
+00000000-0000-0000-0002-000000000079	Scholarship	2	00000000-0000-0000-0000-000000000005	\N	哲學系獎學金	2025-01-13	哲學系獎學金	Canceled	t
+00000000-0000-0000-0002-000000000081	Lab	10	00000000-0000-0000-0000-000000000045	\N	生物環境系統工程學系實驗室機會	2026-08-09	生物環境系統工程學系實驗室機會	Available	f
+00000000-0000-0000-0002-000000000082	Lab	3	00000000-0000-0000-0000-000000000056	\N	植物病理與微生物學系實驗室機會	2025-05-20	植物病理與微生物學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000085	Internship	6	00000000-0000-0000-0000-000000000049	\N	農業經濟學系校內實習	2024-10-21	農業經濟學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000087	Lab	5	00000000-0000-0000-0000-000000000039	\N	工程科學及海洋工程學系實驗室機會	2025-05-19	工程科學及海洋工程學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000088	Lab	8	00000000-0000-0000-0000-000000000074	\N	生命科學院院學士實驗室機會	2025-11-22	生命科學院院學士實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000089	Others	7	00000000-0000-0000-0000-000000000063	\N	國際企業學系其他資源	2024-08-11	國際企業學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000090	Scholarship	9	00000000-0000-0000-0000-000000000046	\N	農業化學系獎學金	2027-02-28	農業化學系獎學金	Available	f
+00000000-0000-0000-0002-000000000091	Internship	10	00000000-0000-0000-0000-000000000013	\N	地質科學系校內實習	2025-07-23	地質科學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000093	Others	5	00000000-0000-0000-0000-000000000074	\N	生命科學院院學士其他資源	2025-02-07	生命科學院院學士其他資源	Canceled	t
+00000000-0000-0000-0002-000000000098	Lab	7	00000000-0000-0000-0000-000000000016	\N	大氣科學系實驗室機會	2025-07-26	大氣科學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000099	Internship	3	00000000-0000-0000-0000-000000000006	\N	人類學系校內實習	2026-05-07	人類學系校內實習	Available	f
+00000000-0000-0000-0002-000000000100	Others	2	00000000-0000-0000-0000-000000000025	\N	醫學系其他資源	2024-10-24	醫學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000101	Others	4	00000000-0000-0000-0000-000000000053	\N	生物產業傳播暨發展學系其他資源	2027-02-01	生物產業傳播暨發展學系其他資源	Available	f
+00000000-0000-0000-0002-000000000102	Internship	2	00000000-0000-0000-0000-000000000066	\N	公共衛生學系校內實習	2027-02-12	公共衛生學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000103	Lab	3	00000000-0000-0000-0000-000000000027	\N	藥學系實驗室機會	2025-06-30	藥學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000104	Internship	5	00000000-0000-0000-0000-000000000057	\N	生物科技與食品營養學士學位學程校內實習	2024-11-01	生物科技與食品營養學士學位學程校內實習	Canceled	t
+00000000-0000-0000-0002-000000000105	Others	6	00000000-0000-0000-0000-000000000060	\N	工商管理學系科技管理組其他資源	2027-03-11	工商管理學系科技管理組其他資源	Available	f
+00000000-0000-0000-0002-000000000106	Internship	7	00000000-0000-0000-0000-000000000001	\N	中國文學系校內實習	2024-08-27	中國文學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000107	Others	3	00000000-0000-0000-0000-000000000059	\N	工商管理學系企業管理組其他資源	2027-01-22	工商管理學系企業管理組其他資源	Available	f
+00000000-0000-0000-0002-000000000108	Lab	7	00000000-0000-0000-0000-000000000009	\N	戲劇學系實驗室機會	2027-02-08	戲劇學系實驗室機會	Available	f
+00000000-0000-0000-0002-000000000109	Others	3	00000000-0000-0000-0000-000000000066	\N	公共衛生學系其他資源	2025-09-20	公共衛生學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000112	Internship	4	00000000-0000-0000-0000-000000000014	\N	心理學系校內實習	2025-04-02	心理學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000114	Internship	5	00000000-0000-0000-0000-000000000004	\N	歷史學系校內實習	2024-09-30	歷史學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000116	Others	10	00000000-0000-0000-0000-000000000031	\N	物理治療學系其他資源	2026-04-14	物理治療學系其他資源	Available	f
+00000000-0000-0000-0002-000000000117	Lab	5	00000000-0000-0000-0000-000000000065	\N	企業管理學系實驗室機會	2025-06-11	企業管理學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000118	Internship	3	00000000-0000-0000-0000-000000000047	\N	森林環境暨資源學系校內實習	2024-08-11	森林環境暨資源學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000121	Others	3	00000000-0000-0000-0000-000000000032	\N	物理治療學系其他資源	2025-03-05	物理治療學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000122	Lab	10	00000000-0000-0000-0000-000000000023	\N	社會科學院院學士學位實驗室機會	2025-05-21	社會科學院院學士學位實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000123	Others	7	00000000-0000-0000-0000-000000000027	\N	藥學系其他資源	2026-07-19	藥學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000127	Lab	7	00000000-0000-0000-0000-000000000071	\N	法律學系財經法學組實驗室機會	2025-05-05	法律學系財經法學組實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000128	Internship	2	00000000-0000-0000-0000-000000000039	\N	工程科學及海洋工程學系校內實習	2026-06-25	工程科學及海洋工程學系校內實習	Available	f
+00000000-0000-0000-0002-000000000129	Lab	6	00000000-0000-0000-0000-000000000058	\N	工商管理學系實驗室機會	2026-07-13	工商管理學系實驗室機會	Available	f
+00000000-0000-0000-0002-000000000130	Others	8	00000000-0000-0000-0000-000000000055	\N	昆蟲學系其他資源	2026-07-15	昆蟲學系其他資源	Available	f
+00000000-0000-0000-0002-000000000135	Others	4	00000000-0000-0000-0000-000000000066	\N	公共衛生學系其他資源	2026-09-10	公共衛生學系其他資源	Available	f
+00000000-0000-0000-0002-000000000136	Internship	3	00000000-0000-0000-0000-000000000002	\N	中國文學系國際學生學士班校內實習	2027-03-22	中國文學系國際學生學士班校內實習	Available	f
+00000000-0000-0000-0002-000000000137	Others	7	00000000-0000-0000-0000-000000000072	\N	生命科學系其他資源	2026-06-16	生命科學系其他資源	Available	f
+00000000-0000-0000-0002-000000000138	Lab	6	00000000-0000-0000-0000-000000000026	\N	牙醫學系實驗室機會	2027-05-28	牙醫學系實驗室機會	Available	f
+00000000-0000-0000-0002-000000000140	Internship	5	00000000-0000-0000-0000-000000000050	\N	園藝暨景觀學系校內實習	2026-05-22	園藝暨景觀學系校內實習	Available	f
+00000000-0000-0000-0002-000000000141	Internship	2	00000000-0000-0000-0000-000000000053	\N	生物產業傳播暨發展學系校內實習	2025-09-30	生物產業傳播暨發展學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000144	Lab	7	00000000-0000-0000-0000-000000000051	\N	獸醫學系實驗室機會	2025-01-11	獸醫學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000147	Internship	8	00000000-0000-0000-0000-000000000059	\N	工商管理學系企業管理組校內實習	2027-05-10	工商管理學系企業管理組校內實習	Available	f
+00000000-0000-0000-0002-000000000150	Internship	2	00000000-0000-0000-0000-000000000079	\N	國際學院校內實習	2025-12-09	國際學院校內實習	Available	f
+00000000-0000-0000-0002-000000000151	Internship	5	00000000-0000-0000-0000-000000000031	\N	物理治療學系校內實習	2025-05-08	物理治療學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000154	Lab	6	00000000-0000-0000-0000-000000000044	\N	農藝學系實驗室機會	2024-10-04	農藝學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000156	Scholarship	8	00000000-0000-0000-0000-000000000071	\N	法律學系財經法學組獎學金	2025-01-02	法律學系財經法學組獎學金	Canceled	t
+00000000-0000-0000-0002-000000000158	Others	6	00000000-0000-0000-0000-000000000037	\N	機械工程學系其他資源	2025-11-05	機械工程學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000159	Scholarship	7	00000000-0000-0000-0000-000000000001	\N	中國文學系獎學金	2024-12-02	中國文學系獎學金	Canceled	t
+00000000-0000-0000-0002-000000000160	Scholarship	4	00000000-0000-0000-0000-000000000025	\N	醫學系獎學金	2024-12-21	醫學系獎學金	Canceled	t
+00000000-0000-0000-0002-000000000161	Lab	8	00000000-0000-0000-0000-000000000043	\N	工學院院學士實驗室機會	2024-10-15	工學院院學士實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000164	Lab	3	00000000-0000-0000-0000-000000000074	\N	生命科學院院學士實驗室機會	2025-11-26	生命科學院院學士實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000165	Others	6	00000000-0000-0000-0000-000000000072	\N	生命科學系其他資源	2026-09-18	生命科學系其他資源	Available	f
+00000000-0000-0000-0002-000000000166	Others	10	00000000-0000-0000-0000-000000000073	\N	生化科技學系其他資源	2025-05-12	生化科技學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000168	Lab	5	00000000-0000-0000-0000-000000000010	\N	數學系實驗室機會	2027-04-29	數學系實驗室機會	Available	f
+00000000-0000-0000-0002-000000000170	Internship	3	00000000-0000-0000-0000-000000000029	\N	醫學檢驗暨生物技術學系校內實習	2026-05-08	醫學檢驗暨生物技術學系校內實習	Available	f
+00000000-0000-0000-0002-000000000172	Others	4	00000000-0000-0000-0000-000000000006	\N	人類學系其他資源	2024-07-27	人類學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000173	Others	4	00000000-0000-0000-0000-000000000070	\N	法律學系司法組其他資源	2026-09-30	法律學系司法組其他資源	Canceled	t
+00000000-0000-0000-0002-000000000175	Scholarship	2	00000000-0000-0000-0000-000000000048	\N	動物科學技術學系獎學金	2026-06-15	動物科學技術學系獎學金	Available	f
+00000000-0000-0000-0002-000000000178	Lab	2	00000000-0000-0000-0000-000000000019	\N	政治學系國際關係組實驗室機會	2025-10-11	政治學系國際關係組實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000181	Internship	10	00000000-0000-0000-0000-000000000022	\N	社會學系校內實習	2024-08-13	社會學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000182	Internship	5	00000000-0000-0000-0000-000000000004	\N	歷史學系校內實習	2026-11-22	歷史學系校內實習	Available	f
+00000000-0000-0000-0002-000000000183	Others	6	00000000-0000-0000-0000-000000000004	\N	歷史學系其他資源	2024-08-07	歷史學系其他資源	Canceled	t
+00000000-0000-0000-0002-000000000185	Lab	5	00000000-0000-0000-0000-000000000058	\N	工商管理學系實驗室機會	2024-08-23	工商管理學系實驗室機會	Canceled	t
+00000000-0000-0000-0002-000000000186	Internship	6	00000000-0000-0000-0000-000000000065	\N	企業管理學系校內實習	2025-07-22	企業管理學系校內實習	Canceled	t
+00000000-0000-0000-0002-000000000188	Scholarship	2	00000000-0000-0000-0000-000000000043	\N	工學院院學士獎學金	2025-08-05	工學院院學士獎學金	Canceled	t
+00000000-0000-0000-0002-000000000190	Scholarship	9	00000000-0000-0000-0000-000000000008	\N	日本語文學系獎學金	2026-02-12	日本語文學系獎學金	Available	f
+00000000-0000-0000-0002-000000000191	Others	2	00000000-0000-0000-0000-000000000003	\N	外國語文學系其他資源	2025-12-27	外國語文學系其他資源	Available	f
+00000000-0000-0000-0002-000000000192	Others	7	00000000-0000-0000-0000-000000000079	\N	國際學院其他資源	2027-03-25	國際學院其他資源	Available	f
+d42a219d-04ab-434b-870b-4595b987fffe	Scholarship	2	\N	9b541a87-7eec-470b-baaf-a26e952062c9	AI Scholarship	2025-12-31	人工智慧獎學金	Available	f
 \.
 
 
@@ -8454,6 +8472,8 @@ COPY public.resource_condition (resource_id, department_id, avg_gpa, current_gpa
 00000000-0000-0000-0002-000000000200	1060	\N	\N	t
 00000000-0000-0000-0002-000000000200	4040	\N	3.77	f
 00000000-0000-0000-0002-000000000200	60A0	4.17	3.72	f
+d42a219d-04ab-434b-870b-4595b987fffe	5080	3	2.5	f
+d42a219d-04ab-434b-870b-4595b987fffe	5070	3	2.5	f
 \.
 
 
@@ -26701,507 +26721,507 @@ COPY public.student_gpa (user_id, semester, gpa) FROM stdin;
 -- Data for Name: student_profile; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.student_profile (user_id, student_id, department_id, entry_year, grade) FROM stdin;
-00000000-0000-0000-0000-000000000610	B12606001	6060	112	3
-00000000-0000-0000-0000-000000000346	R14H04001	H040	114	1
-00000000-0000-0000-0000-000000000443	R12A01001	A011	112	3
-00000000-0000-0000-0000-000000000274	B13302001	3020	113	2
-00000000-0000-0000-0000-000000000450	B13607001	6070	113	2
-00000000-0000-0000-0000-000000000311	R12610001	6100	112	3
-00000000-0000-0000-0000-000000000473	B13310001	3100	113	2
-00000000-0000-0000-0000-000000000525	B13705001	7050	113	2
-00000000-0000-0000-0000-000000000327	B11508001	5080	111	4
-00000000-0000-0000-0000-000000000437	R11207001	2070	111	4
-00000000-0000-0000-0000-000000000491	R13201001	2010	113	2
-00000000-0000-0000-0000-000000000498	B13901001	9010	113	2
-00000000-0000-0000-0000-000000000554	R14A01001	A013	114	1
-00000000-0000-0000-0000-000000000134	B13406001	4060	113	2
-00000000-0000-0000-0000-000000000470	R11409001	4090	111	4
-00000000-0000-0000-0000-000000000384	B11302001	3023	111	4
-00000000-0000-0000-0000-000000000519	B14305001	3050	114	1
-00000000-0000-0000-0000-000000000237	R12302001	3021	112	3
-00000000-0000-0000-0000-000000000608	B12105001	1050	112	3
-00000000-0000-0000-0000-000000000520	B14H06001	H060	114	1
-00000000-0000-0000-0000-000000000156	R14605001	6050	114	1
-00000000-0000-0000-0000-000000000356	R13408001	4081	113	2
-00000000-0000-0000-0000-000000000488	B14106001	1060	114	1
-00000000-0000-0000-0000-000000000490	R12109001	1090	112	3
-00000000-0000-0000-0000-000000000551	R14605002	6050	114	1
-00000000-0000-0000-0000-000000000275	R11109001	1090	111	4
-00000000-0000-0000-0000-000000000436	B11611001	6110	111	4
-00000000-0000-0000-0000-000000000479	R1330A001	30A0	113	2
-00000000-0000-0000-0000-000000000322	B11A01001	A011	111	4
-00000000-0000-0000-0000-000000000576	R14H04002	H040	114	1
-00000000-0000-0000-0000-000000000582	B11408001	4080	111	4
-00000000-0000-0000-0000-000000000333	B11402001	4020	111	4
-00000000-0000-0000-0000-000000000305	R11610001	6100	111	4
-00000000-0000-0000-0000-000000000495	B14209001	2090	114	1
-00000000-0000-0000-0000-000000000388	B10611001	6110	110	5
-00000000-0000-0000-0000-000000000231	R14701001	7012	114	1
-00000000-0000-0000-0000-000000000559	R12101001	1011	112	3
-00000000-0000-0000-0000-000000000298	B14606001	6060	114	1
-00000000-0000-0000-0000-000000000364	R14404001	4040	114	1
-00000000-0000-0000-0000-000000000295	R14612001	6120	114	1
-00000000-0000-0000-0000-000000000154	B14204001	2040	114	1
-00000000-0000-0000-0000-000000000558	B14303001	3030	114	1
-00000000-0000-0000-0000-000000000289	B11106001	1060	111	4
-00000000-0000-0000-0000-000000000171	R11705001	7050	111	4
-00000000-0000-0000-0000-000000000351	B12502001	5020	112	3
-00000000-0000-0000-0000-000000000435	R10601001	6010	110	5
-00000000-0000-0000-0000-000000000438	B12605001	6050	112	3
-00000000-0000-0000-0000-000000000297	B13302002	3023	113	2
-00000000-0000-0000-0000-000000000387	B11611002	6110	111	4
-00000000-0000-0000-0000-000000000138	B11101001	1010	111	4
-00000000-0000-0000-0000-000000000273	R12403001	4031	112	3
-00000000-0000-0000-0000-000000000415	R11105001	1050	111	4
-00000000-0000-0000-0000-000000000354	R12404001	4040	112	3
-00000000-0000-0000-0000-000000000173	R12302002	3021	112	3
-00000000-0000-0000-0000-000000000626	R12701001	7011	112	3
-00000000-0000-0000-0000-000000000176	B12H04001	H040	112	3
-00000000-0000-0000-0000-000000000284	B14302001	3023	114	1
-00000000-0000-0000-0000-000000000318	R13401001	4010	113	2
-00000000-0000-0000-0000-000000000234	R11601001	6010	111	4
-00000000-0000-0000-0000-000000000157	B10603001	6030	110	5
-00000000-0000-0000-0000-000000000414	R14109001	1090	114	1
-00000000-0000-0000-0000-000000000323	R11103001	1030	111	4
-00000000-0000-0000-0000-000000000202	B12605002	6050	112	3
-00000000-0000-0000-0000-000000000492	R12106001	1060	112	3
-00000000-0000-0000-0000-000000000329	R11B0A001	B0A0	111	4
-00000000-0000-0000-0000-000000000534	R13615001	6150	113	2
-00000000-0000-0000-0000-000000000530	R12B0A001	B0A0	112	3
-00000000-0000-0000-0000-000000000132	R11A01002	A012	111	4
-00000000-0000-0000-0000-000000000472	R14A01002	A011	114	1
-00000000-0000-0000-0000-000000000428	B13402001	4020	113	2
-00000000-0000-0000-0000-000000000185	R11A01003	A013	111	4
-00000000-0000-0000-0000-000000000201	R11102001	1020	111	4
-00000000-0000-0000-0000-000000000209	R13A01001	A013	113	2
-00000000-0000-0000-0000-000000000358	R14201001	2010	114	1
-00000000-0000-0000-0000-000000000198	B13303001	3030	113	2
-00000000-0000-0000-0000-000000000214	R1260A001	60A0	112	3
-00000000-0000-0000-0000-000000000207	B14A01003	A011	114	1
-00000000-0000-0000-0000-000000000253	R14A01004	A012	114	1
-00000000-0000-0000-0000-000000000445	B12H05001	H050	112	3
-00000000-0000-0000-0000-000000000229	R14204002	2040	114	1
-00000000-0000-0000-0000-000000000256	R10902001	9020	110	5
-00000000-0000-0000-0000-000000000589	B14H05001	H050	114	1
-00000000-0000-0000-0000-000000000172	B13701001	7011	113	2
-00000000-0000-0000-0000-000000000238	R12501001	5010	112	3
-00000000-0000-0000-0000-000000000474	R11703001	7030	111	4
-00000000-0000-0000-0000-000000000265	R14508001	5080	114	1
-00000000-0000-0000-0000-000000000262	R10H06001	H060	110	5
-00000000-0000-0000-0000-000000000528	R11O01001	O010	111	4
-00000000-0000-0000-0000-000000000484	B11704001	7040	111	4
-00000000-0000-0000-0000-000000000371	R12706001	7060	112	3
-00000000-0000-0000-0000-000000000179	R13203001	2030	113	2
-00000000-0000-0000-0000-000000000432	R12B02001	B020	112	3
-00000000-0000-0000-0000-000000000226	B11B0A002	B0A0	111	4
-00000000-0000-0000-0000-000000000471	R11401001	4010	111	4
-00000000-0000-0000-0000-000000000552	R11705002	7050	111	4
-00000000-0000-0000-0000-000000000560	R12203001	2030	112	3
-00000000-0000-0000-0000-000000000326	B14H06002	H060	114	1
-00000000-0000-0000-0000-000000000523	B11505001	5050	111	4
-00000000-0000-0000-0000-000000000612	R14B02001	B020	114	1
-00000000-0000-0000-0000-000000000133	R11104001	1040	111	4
-00000000-0000-0000-0000-000000000568	B13302003	3022	113	2
-00000000-0000-0000-0000-000000000150	B10605001	6050	110	5
-00000000-0000-0000-0000-000000000457	B11901001	9010	111	4
-00000000-0000-0000-0000-000000000461	R13704001	7040	113	2
-00000000-0000-0000-0000-000000000363	B14207001	2070	114	1
-00000000-0000-0000-0000-000000000592	B13701002	7011	113	2
-00000000-0000-0000-0000-000000000170	B12508001	5080	112	3
-00000000-0000-0000-0000-000000000324	B1240A001	40A0	112	3
-00000000-0000-0000-0000-000000000178	R14302002	3021	114	1
-00000000-0000-0000-0000-000000000499	R14615001	6150	114	1
-00000000-0000-0000-0000-000000000487	R11601002	6010	111	4
-00000000-0000-0000-0000-000000000546	B12509001	5090	112	3
-00000000-0000-0000-0000-000000000401	B11Z01001	Z010	111	4
-00000000-0000-0000-0000-000000000147	R11607001	6070	111	4
-00000000-0000-0000-0000-000000000183	R13608001	6080	113	2
-00000000-0000-0000-0000-000000000504	R12403002	4030	112	3
-00000000-0000-0000-0000-000000000188	R12A01002	A011	112	3
-00000000-0000-0000-0000-000000000254	B11508002	5080	111	4
-00000000-0000-0000-0000-000000000313	B13207001	2070	113	2
-00000000-0000-0000-0000-000000000153	R10202001	2020	110	5
-00000000-0000-0000-0000-000000000540	R14207002	2070	114	1
-00000000-0000-0000-0000-000000000194	R12207001	2070	112	3
-00000000-0000-0000-0000-000000000581	R13509001	5090	113	2
-00000000-0000-0000-0000-000000000376	B14501001	5010	114	1
-00000000-0000-0000-0000-000000000261	B13B02001	B020	113	2
-00000000-0000-0000-0000-000000000349	B11801001	8010	111	4
-00000000-0000-0000-0000-000000000345	B13403001	4030	113	2
-00000000-0000-0000-0000-000000000617	R13H04001	H040	113	2
-00000000-0000-0000-0000-000000000458	R11202001	2020	111	4
-00000000-0000-0000-0000-000000000152	B11406001	4060	111	4
-00000000-0000-0000-0000-000000000279	R11902001	9020	111	4
-00000000-0000-0000-0000-000000000586	R14607001	6070	114	1
-00000000-0000-0000-0000-000000000162	R12607001	6070	112	3
-00000000-0000-0000-0000-000000000464	B13408002	4081	113	2
-00000000-0000-0000-0000-000000000343	R12505001	5050	112	3
-00000000-0000-0000-0000-000000000556	R14704001	7040	114	1
-00000000-0000-0000-0000-000000000307	B13408003	4080	113	2
-00000000-0000-0000-0000-000000000395	B11A01004	A012	111	4
-00000000-0000-0000-0000-000000000314	B12104001	1040	112	3
-00000000-0000-0000-0000-000000000478	B14504001	5040	114	1
-00000000-0000-0000-0000-000000000503	R14204003	2040	114	1
-00000000-0000-0000-0000-000000000353	B14408001	4080	114	1
-00000000-0000-0000-0000-000000000611	R13408004	4081	113	2
-00000000-0000-0000-0000-000000000357	B12O02001	O020	112	3
-00000000-0000-0000-0000-000000000500	R14H05002	H050	114	1
-00000000-0000-0000-0000-000000000585	R13702001	7020	113	2
-00000000-0000-0000-0000-000000000598	B13A01002	A011	113	2
-00000000-0000-0000-0000-000000000575	R13505001	5050	113	2
-00000000-0000-0000-0000-000000000548	R12101002	1010	112	3
-00000000-0000-0000-0000-000000000486	B10702001	7020	110	5
-00000000-0000-0000-0000-000000000276	B12606002	6060	112	3
-00000000-0000-0000-0000-000000000197	R11302002	3023	111	4
-00000000-0000-0000-0000-000000000572	B12611001	6110	112	3
-00000000-0000-0000-0000-000000000423	B12208001	2080	112	3
-00000000-0000-0000-0000-000000000431	B12H06001	H060	112	3
-00000000-0000-0000-0000-000000000420	B11403001	4031	111	4
-00000000-0000-0000-0000-000000000245	B1260A002	60A0	112	3
-00000000-0000-0000-0000-000000000309	R11103002	1030	111	4
-00000000-0000-0000-0000-000000000442	B13412001	4120	113	2
-00000000-0000-0000-0000-000000000485	R13101001	1011	113	2
-00000000-0000-0000-0000-000000000187	R13208001	2080	113	2
-00000000-0000-0000-0000-000000000210	R12902001	9020	112	3
-00000000-0000-0000-0000-000000000577	B14704002	7040	114	1
-00000000-0000-0000-0000-000000000199	B14902001	9020	114	1
-00000000-0000-0000-0000-000000000386	B1250A001	50A0	112	3
-00000000-0000-0000-0000-000000000536	R13613001	6130	113	2
-00000000-0000-0000-0000-000000000482	R12A01003	A013	112	3
-00000000-0000-0000-0000-000000000251	R12504001	5040	112	3
-00000000-0000-0000-0000-000000000163	R11B01001	B010	111	4
-00000000-0000-0000-0000-000000000278	R13505002	5050	113	2
-00000000-0000-0000-0000-000000000451	B13705002	7050	113	2
-00000000-0000-0000-0000-000000000200	B14H06003	H060	114	1
-00000000-0000-0000-0000-000000000292	R14302003	3020	114	1
-00000000-0000-0000-0000-000000000383	B14406001	4060	114	1
-00000000-0000-0000-0000-000000000367	R11209001	2090	111	4
-00000000-0000-0000-0000-000000000537	R14704003	7040	114	1
-00000000-0000-0000-0000-000000000532	R11412001	4120	111	4
-00000000-0000-0000-0000-000000000606	B11204001	2040	111	4
-00000000-0000-0000-0000-000000000596	B12609001	6090	112	3
-00000000-0000-0000-0000-000000000512	B11701001	7011	111	4
-00000000-0000-0000-0000-000000000460	R14408002	4080	114	1
-00000000-0000-0000-0000-000000000412	B11A01005	A012	111	4
-00000000-0000-0000-0000-000000000507	B11A01006	A013	111	4
-00000000-0000-0000-0000-000000000331	B11101002	1010	111	4
-00000000-0000-0000-0000-000000000362	R14101001	1010	114	1
-00000000-0000-0000-0000-000000000350	B14305002	3050	114	1
-00000000-0000-0000-0000-000000000299	B11302003	3022	111	4
-00000000-0000-0000-0000-000000000268	R10609001	6090	110	5
-00000000-0000-0000-0000-000000000603	B13502001	5020	113	2
-00000000-0000-0000-0000-000000000392	R13101002	1010	113	2
-00000000-0000-0000-0000-000000000328	R12801001	8010	112	3
-00000000-0000-0000-0000-000000000422	B13305001	3050	113	2
-00000000-0000-0000-0000-000000000248	R12701002	7011	112	3
-00000000-0000-0000-0000-000000000542	B14705001	7050	114	1
-00000000-0000-0000-0000-000000000164	R11509001	5090	111	4
-00000000-0000-0000-0000-000000000266	B11403002	4030	111	4
-00000000-0000-0000-0000-000000000208	R14302004	3020	114	1
-00000000-0000-0000-0000-000000000348	B13615002	6150	113	2
-00000000-0000-0000-0000-000000000549	B13A01003	A012	113	2
-00000000-0000-0000-0000-000000000619	B14701002	7011	114	1
-00000000-0000-0000-0000-000000000224	B12501002	5010	112	3
-00000000-0000-0000-0000-000000000521	R13B02002	B020	113	2
-00000000-0000-0000-0000-000000000204	B14408003	4080	114	1
-00000000-0000-0000-0000-000000000533	B1430A001	30A0	114	1
-00000000-0000-0000-0000-000000000615	B11607002	6070	111	4
-00000000-0000-0000-0000-000000000588	B13104001	1040	113	2
-00000000-0000-0000-0000-000000000526	R13H06001	H060	113	2
-00000000-0000-0000-0000-000000000385	B11109002	1090	111	4
-00000000-0000-0000-0000-000000000567	R12408001	4081	112	3
-00000000-0000-0000-0000-000000000293	B1140A001	40A0	111	4
-00000000-0000-0000-0000-000000000255	R13H04002	H040	113	2
-00000000-0000-0000-0000-000000000413	R13602001	6020	113	2
-00000000-0000-0000-0000-000000000168	R13403002	4031	113	2
-00000000-0000-0000-0000-000000000149	R12Z01001	Z010	112	3
-00000000-0000-0000-0000-000000000396	B12404002	4040	112	3
-00000000-0000-0000-0000-000000000515	R13402002	4020	113	2
-00000000-0000-0000-0000-000000000618	R13701003	7012	113	2
-00000000-0000-0000-0000-000000000535	R13310002	3100	113	2
-00000000-0000-0000-0000-000000000332	B14A01005	A011	114	1
-00000000-0000-0000-0000-000000000203	B14507001	5070	114	1
-00000000-0000-0000-0000-000000000158	B12412001	4120	112	3
-00000000-0000-0000-0000-000000000477	R12204001	2040	112	3
-00000000-0000-0000-0000-000000000518	R12302003	3022	112	3
-00000000-0000-0000-0000-000000000146	R11A01007	A011	111	4
-00000000-0000-0000-0000-000000000496	R12611002	6110	112	3
-00000000-0000-0000-0000-000000000410	B12611003	6110	112	3
-00000000-0000-0000-0000-000000000177	R14404002	4040	114	1
-00000000-0000-0000-0000-000000000393	B13505003	5050	113	2
-00000000-0000-0000-0000-000000000469	R14701003	7011	114	1
-00000000-0000-0000-0000-000000000321	R13801001	8010	113	2
-00000000-0000-0000-0000-000000000468	R13A01004	A013	113	2
-00000000-0000-0000-0000-000000000403	R12103001	1030	112	3
-00000000-0000-0000-0000-000000000590	B11204002	2040	111	4
-00000000-0000-0000-0000-000000000249	R13B01001	B010	113	2
-00000000-0000-0000-0000-000000000522	B12615001	6150	112	3
-00000000-0000-0000-0000-000000000564	R12504002	5040	112	3
-00000000-0000-0000-0000-000000000416	B13408005	4081	113	2
-00000000-0000-0000-0000-000000000441	R13901002	9010	113	2
-00000000-0000-0000-0000-000000000566	B12703001	7030	112	3
-00000000-0000-0000-0000-000000000316	R13701004	7011	113	2
-00000000-0000-0000-0000-000000000541	R1150A001	50A0	111	4
-00000000-0000-0000-0000-000000000369	B14B01001	B010	114	1
-00000000-0000-0000-0000-000000000389	B13H04003	H040	113	2
-00000000-0000-0000-0000-000000000427	B11607003	6070	111	4
-00000000-0000-0000-0000-000000000291	B14105001	1050	114	1
-00000000-0000-0000-0000-000000000429	R12408002	4081	112	3
-00000000-0000-0000-0000-000000000366	R12B01001	B010	112	3
-00000000-0000-0000-0000-000000000190	R12613001	6130	112	3
-00000000-0000-0000-0000-000000000175	B14H04003	H040	114	1
-00000000-0000-0000-0000-000000000489	B11703002	7030	111	4
-00000000-0000-0000-0000-000000000215	R13606001	6060	113	2
-00000000-0000-0000-0000-000000000193	R1330A002	30A0	113	2
-00000000-0000-0000-0000-000000000411	B14202001	2020	114	1
-00000000-0000-0000-0000-000000000602	B11408002	4080	111	4
-00000000-0000-0000-0000-000000000390	R11102002	1020	111	4
-00000000-0000-0000-0000-000000000453	R11603001	6030	111	4
-00000000-0000-0000-0000-000000000433	R11602001	6020	111	4
-00000000-0000-0000-0000-000000000449	R12701003	7012	112	3
-00000000-0000-0000-0000-000000000290	R12612001	6120	112	3
-00000000-0000-0000-0000-000000000340	B11401002	4010	111	4
-00000000-0000-0000-0000-000000000355	B12302004	3022	112	3
-00000000-0000-0000-0000-000000000627	R11402002	4020	111	4
-00000000-0000-0000-0000-000000000545	R11203001	2030	111	4
-00000000-0000-0000-0000-000000000140	B14601001	6010	114	1
-00000000-0000-0000-0000-000000000624	B13H05001	H050	113	2
-00000000-0000-0000-0000-000000000578	R12701004	7010	112	3
-00000000-0000-0000-0000-000000000137	B13701005	7010	113	2
-00000000-0000-0000-0000-000000000359	B13B0A001	B0A0	113	2
-00000000-0000-0000-0000-000000000439	R14701004	7011	114	1
-00000000-0000-0000-0000-000000000493	R12B02002	B020	112	3
-00000000-0000-0000-0000-000000000286	R14601002	6010	114	1
-00000000-0000-0000-0000-000000000454	R11601003	6010	111	4
-00000000-0000-0000-0000-000000000463	B14404003	4040	114	1
-00000000-0000-0000-0000-000000000319	B12501003	5010	112	3
-00000000-0000-0000-0000-000000000531	R14102001	1020	114	1
-00000000-0000-0000-0000-000000000220	B12404003	4040	112	3
-00000000-0000-0000-0000-000000000620	R12101003	1011	112	3
-00000000-0000-0000-0000-000000000143	R11607004	6070	111	4
-00000000-0000-0000-0000-000000000417	R13102001	1020	113	2
-00000000-0000-0000-0000-000000000189	R14601003	6010	114	1
-00000000-0000-0000-0000-000000000570	B12302005	3021	112	3
-00000000-0000-0000-0000-000000000601	R11104002	1040	111	4
-00000000-0000-0000-0000-000000000446	B11408003	4081	111	4
-00000000-0000-0000-0000-000000000247	B13608002	6080	113	2
-00000000-0000-0000-0000-000000000337	R13505004	5050	113	2
-00000000-0000-0000-0000-000000000260	R13408006	4080	113	2
-00000000-0000-0000-0000-000000000296	B10208001	2080	110	5
-00000000-0000-0000-0000-000000000181	R12303001	3030	112	3
-00000000-0000-0000-0000-000000000160	R14305003	3050	114	1
-00000000-0000-0000-0000-000000000308	R1230A001	30A0	112	3
-00000000-0000-0000-0000-000000000148	B11504001	5040	111	4
-00000000-0000-0000-0000-000000000481	B11105002	1050	111	4
-00000000-0000-0000-0000-000000000217	B13408007	4081	113	2
-00000000-0000-0000-0000-000000000510	R14104001	1040	114	1
-00000000-0000-0000-0000-000000000182	R14612002	6120	114	1
-00000000-0000-0000-0000-000000000516	R13A01005	A012	113	2
-00000000-0000-0000-0000-000000000529	R12203002	2030	112	3
-00000000-0000-0000-0000-000000000344	B13101003	1010	113	2
-00000000-0000-0000-0000-000000000511	B13502002	5020	113	2
-00000000-0000-0000-0000-000000000573	R12706002	7060	112	3
-00000000-0000-0000-0000-000000000288	B13409001	4090	113	2
-00000000-0000-0000-0000-000000000301	B13105001	1050	113	2
-00000000-0000-0000-0000-000000000285	B13O01001	O010	113	2
-00000000-0000-0000-0000-000000000501	B12507001	5070	112	3
-00000000-0000-0000-0000-000000000191	R14101002	1010	114	1
-00000000-0000-0000-0000-000000000379	R13201002	2010	113	2
-00000000-0000-0000-0000-000000000475	R13H05002	H050	113	2
-00000000-0000-0000-0000-000000000513	B14406002	4060	114	1
-00000000-0000-0000-0000-000000000557	B11O01002	O010	111	4
-00000000-0000-0000-0000-000000000609	R14107001	1070	114	1
-00000000-0000-0000-0000-000000000243	R13408008	4080	113	2
-00000000-0000-0000-0000-000000000447	B12203003	2030	112	3
-00000000-0000-0000-0000-000000000192	R1140A002	40A0	111	4
-00000000-0000-0000-0000-000000000131	R12207002	2070	112	3
-00000000-0000-0000-0000-000000000341	R13607002	6070	113	2
-00000000-0000-0000-0000-000000000400	R14701005	7012	114	1
-00000000-0000-0000-0000-000000000448	R12701005	7010	112	3
-00000000-0000-0000-0000-000000000161	R12408003	4081	112	3
-00000000-0000-0000-0000-000000000607	B14505001	5050	114	1
-00000000-0000-0000-0000-000000000595	R1440A001	40A0	114	1
-00000000-0000-0000-0000-000000000205	R11202002	2020	111	4
-00000000-0000-0000-0000-000000000424	B13303002	3030	113	2
-00000000-0000-0000-0000-000000000174	R12B01002	B010	112	3
-00000000-0000-0000-0000-000000000212	R12A01004	A012	112	3
-00000000-0000-0000-0000-000000000524	B13412002	4120	113	2
-00000000-0000-0000-0000-000000000421	R11409002	4090	111	4
-00000000-0000-0000-0000-000000000569	R14H06004	H060	114	1
-00000000-0000-0000-0000-000000000370	B12615002	6150	112	3
-00000000-0000-0000-0000-000000000527	B11613001	6130	111	4
-00000000-0000-0000-0000-000000000394	R11611003	6110	111	4
-00000000-0000-0000-0000-000000000334	B11109003	1090	111	4
-00000000-0000-0000-0000-000000000565	R13412003	4120	113	2
-00000000-0000-0000-0000-000000000562	B12209001	2090	112	3
-00000000-0000-0000-0000-000000000360	B12608001	6080	112	3
-00000000-0000-0000-0000-000000000583	B14406003	4060	114	1
-00000000-0000-0000-0000-000000000623	B13615003	6150	113	2
-00000000-0000-0000-0000-000000000221	B11107001	1070	111	4
-00000000-0000-0000-0000-000000000561	B10208002	2080	110	5
-00000000-0000-0000-0000-000000000259	R14109002	1090	114	1
-00000000-0000-0000-0000-000000000233	R12204002	2040	112	3
-00000000-0000-0000-0000-000000000151	R12109002	1090	112	3
-00000000-0000-0000-0000-000000000272	B12204003	2040	112	3
-00000000-0000-0000-0000-000000000506	R13303003	3030	113	2
-00000000-0000-0000-0000-000000000196	B13706001	7060	113	2
-00000000-0000-0000-0000-000000000167	R1360A001	60A0	113	2
-00000000-0000-0000-0000-000000000459	R14610001	6100	114	1
-00000000-0000-0000-0000-000000000281	B12207003	2070	112	3
-00000000-0000-0000-0000-000000000300	B13105002	1050	113	2
-00000000-0000-0000-0000-000000000325	B1140A003	40A0	111	4
-00000000-0000-0000-0000-000000000320	R14501002	5010	114	1
-00000000-0000-0000-0000-000000000614	R12202001	2020	112	3
-00000000-0000-0000-0000-000000000587	R12302006	3023	112	3
-00000000-0000-0000-0000-000000000539	R1450A001	50A0	114	1
-00000000-0000-0000-0000-000000000622	B13A01006	A012	113	2
-00000000-0000-0000-0000-000000000555	R14502001	5020	114	1
-00000000-0000-0000-0000-000000000165	R12107001	1070	112	3
-00000000-0000-0000-0000-000000000228	R14610002	6100	114	1
-00000000-0000-0000-0000-000000000365	R11901002	9010	111	4
-00000000-0000-0000-0000-000000000252	R10107001	1070	110	5
-00000000-0000-0000-0000-000000000467	B13612001	6120	113	2
-00000000-0000-0000-0000-000000000352	B13Z01001	Z010	113	2
-00000000-0000-0000-0000-000000000219	R12A01005	A013	112	3
-00000000-0000-0000-0000-000000000600	R13704002	7040	113	2
-00000000-0000-0000-0000-000000000434	B11606001	6060	111	4
-00000000-0000-0000-0000-000000000246	R11305001	3050	111	4
-00000000-0000-0000-0000-000000000330	R14105002	1050	114	1
-00000000-0000-0000-0000-000000000235	B14207003	2070	114	1
-00000000-0000-0000-0000-000000000155	R11701002	7011	111	4
-00000000-0000-0000-0000-000000000267	R11508003	5080	111	4
-00000000-0000-0000-0000-000000000338	R13610001	6100	113	2
-00000000-0000-0000-0000-000000000591	R11615001	6150	111	4
-00000000-0000-0000-0000-000000000402	R12609002	6090	112	3
-00000000-0000-0000-0000-000000000373	R13303004	3030	113	2
-00000000-0000-0000-0000-000000000628	B12703002	7030	112	3
-00000000-0000-0000-0000-000000000315	R14404004	4040	114	1
-00000000-0000-0000-0000-000000000258	R12310001	3100	112	3
-00000000-0000-0000-0000-000000000584	R14610003	6100	114	1
-00000000-0000-0000-0000-000000000304	B13B01002	B010	113	2
-00000000-0000-0000-0000-000000000263	R13202001	2020	113	2
-00000000-0000-0000-0000-000000000186	B11101003	1011	111	4
-00000000-0000-0000-0000-000000000399	R1160A001	60A0	111	4
-00000000-0000-0000-0000-000000000230	B14603001	6030	114	1
-00000000-0000-0000-0000-000000000244	R13704003	7040	113	2
-00000000-0000-0000-0000-000000000382	R14202002	2020	114	1
-00000000-0000-0000-0000-000000000270	R10201001	2010	110	5
-00000000-0000-0000-0000-000000000216	R11901003	9010	111	4
-00000000-0000-0000-0000-000000000538	B10702002	7020	110	5
-00000000-0000-0000-0000-000000000563	B14302005	3023	114	1
-00000000-0000-0000-0000-000000000599	R10508001	5080	110	5
-00000000-0000-0000-0000-000000000497	R12Z01002	Z010	112	3
-00000000-0000-0000-0000-000000000625	B11612001	6120	111	4
-00000000-0000-0000-0000-000000000166	B11104003	1040	111	4
-00000000-0000-0000-0000-000000000302	B14403001	4030	114	1
-00000000-0000-0000-0000-000000000508	B11101004	1010	111	4
-00000000-0000-0000-0000-000000000579	B12602001	6020	112	3
-00000000-0000-0000-0000-000000000184	B11701003	7012	111	4
-00000000-0000-0000-0000-000000000444	B11701004	7012	111	4
-00000000-0000-0000-0000-000000000339	B14504002	5040	114	1
-00000000-0000-0000-0000-000000000409	B11607005	6070	111	4
-00000000-0000-0000-0000-000000000517	R14302006	3023	114	1
-00000000-0000-0000-0000-000000000277	R13615004	6150	113	2
-00000000-0000-0000-0000-000000000440	R10613001	6130	110	5
-00000000-0000-0000-0000-000000000142	B13601001	6010	113	2
-00000000-0000-0000-0000-000000000306	B13302004	3023	113	2
-00000000-0000-0000-0000-000000000462	B14102002	1020	114	1
-00000000-0000-0000-0000-000000000404	B13612002	6120	113	2
-00000000-0000-0000-0000-000000000397	R11412002	4120	111	4
-00000000-0000-0000-0000-000000000593	R14302007	3022	114	1
-00000000-0000-0000-0000-000000000239	R14201002	2010	114	1
-00000000-0000-0000-0000-000000000222	B11104004	1040	111	4
-00000000-0000-0000-0000-000000000213	R14402001	4020	114	1
-00000000-0000-0000-0000-000000000211	R11612002	6120	111	4
-00000000-0000-0000-0000-000000000250	R12704001	7040	112	3
-00000000-0000-0000-0000-000000000342	B1430A002	30A0	114	1
-00000000-0000-0000-0000-000000000218	B14601004	6010	114	1
-00000000-0000-0000-0000-000000000574	B13101004	1010	113	2
-00000000-0000-0000-0000-000000000616	B13408009	4080	113	2
-00000000-0000-0000-0000-000000000283	B14207004	2070	114	1
-00000000-0000-0000-0000-000000000408	R11601004	6010	111	4
-00000000-0000-0000-0000-000000000368	B13701006	7012	113	2
-00000000-0000-0000-0000-000000000377	B12901001	9010	112	3
-00000000-0000-0000-0000-000000000543	R1160A002	60A0	111	4
-00000000-0000-0000-0000-000000000372	R14A01006	A013	114	1
-00000000-0000-0000-0000-000000000242	B12203004	2030	112	3
-00000000-0000-0000-0000-000000000456	R14501003	5010	114	1
-00000000-0000-0000-0000-000000000455	B12H06002	H060	112	3
-00000000-0000-0000-0000-000000000223	B12201001	2010	112	3
-00000000-0000-0000-0000-000000000547	R1060A001	60A0	110	5
-00000000-0000-0000-0000-000000000287	B1440A002	40A0	114	1
-00000000-0000-0000-0000-000000000418	R11408004	4080	111	4
-00000000-0000-0000-0000-000000000502	R13107001	1070	113	2
-00000000-0000-0000-0000-000000000425	R12207004	2070	112	3
-00000000-0000-0000-0000-000000000159	R14201003	2010	114	1
-00000000-0000-0000-0000-000000000430	B13505005	5050	113	2
-00000000-0000-0000-0000-000000000380	R12408004	4080	112	3
-00000000-0000-0000-0000-000000000465	R11H04001	H040	111	4
-00000000-0000-0000-0000-000000000398	B12103002	1030	112	3
-00000000-0000-0000-0000-000000000139	B13303005	3030	113	2
-00000000-0000-0000-0000-000000000241	R13A01007	A012	113	2
-00000000-0000-0000-0000-000000000613	B11310001	3100	111	4
-00000000-0000-0000-0000-000000000505	R1440A003	40A0	114	1
-00000000-0000-0000-0000-000000000312	R12408005	4081	112	3
-00000000-0000-0000-0000-000000000144	B11602002	6020	111	4
-00000000-0000-0000-0000-000000000419	B14208001	2080	114	1
-00000000-0000-0000-0000-000000000310	R1250A002	50A0	112	3
-00000000-0000-0000-0000-000000000476	R11902002	9020	111	4
-00000000-0000-0000-0000-000000000227	B12408006	4081	112	3
-00000000-0000-0000-0000-000000000336	B13209001	2090	113	2
-00000000-0000-0000-0000-000000000483	R12302007	3020	112	3
-00000000-0000-0000-0000-000000000240	R14A01007	A013	114	1
-00000000-0000-0000-0000-000000000381	R13508001	5080	113	2
-00000000-0000-0000-0000-000000000391	B12B0A002	B0A0	112	3
-00000000-0000-0000-0000-000000000269	R12505002	5050	112	3
-00000000-0000-0000-0000-000000000378	B14408004	4080	114	1
-00000000-0000-0000-0000-000000000466	B14A01008	A013	114	1
-00000000-0000-0000-0000-000000000550	B12106002	1060	112	3
-00000000-0000-0000-0000-000000000271	R13Z01002	Z010	113	2
-00000000-0000-0000-0000-000000000405	R11701005	7012	111	4
-00000000-0000-0000-0000-000000000605	B14204004	2040	114	1
-00000000-0000-0000-0000-000000000597	B1250A003	50A0	112	3
-00000000-0000-0000-0000-000000000571	R14501004	5010	114	1
-00000000-0000-0000-0000-000000000407	R13403003	4031	113	2
-00000000-0000-0000-0000-000000000232	B11106002	1060	111	4
-00000000-0000-0000-0000-000000000145	R11105003	1050	111	4
-00000000-0000-0000-0000-000000000480	R14A01009	A011	114	1
-00000000-0000-0000-0000-000000000347	R11509002	5090	111	4
-00000000-0000-0000-0000-000000000604	R14203001	2030	114	1
-00000000-0000-0000-0000-000000000494	B11202003	2020	111	4
-00000000-0000-0000-0000-000000000264	R14H04004	H040	114	1
-00000000-0000-0000-0000-000000000169	R14B02002	B020	114	1
-00000000-0000-0000-0000-000000000280	B13A01008	A013	113	2
-00000000-0000-0000-0000-000000000514	B14H05003	H050	114	1
-00000000-0000-0000-0000-000000000544	B13A01009	A013	113	2
-00000000-0000-0000-0000-000000000375	R11408005	4081	111	4
-00000000-0000-0000-0000-000000000553	R12106003	1060	112	3
-00000000-0000-0000-0000-000000000136	B13A01010	A012	113	2
-00000000-0000-0000-0000-000000000206	R12704002	7040	112	3
-00000000-0000-0000-0000-000000000180	R14208002	2080	114	1
-00000000-0000-0000-0000-000000000426	B12507002	5070	112	3
-00000000-0000-0000-0000-000000000335	R1450A002	50A0	114	1
-00000000-0000-0000-0000-000000000629	R12607002	6070	112	3
-00000000-0000-0000-0000-000000000135	B12B01003	B010	112	3
-00000000-0000-0000-0000-000000000374	B13702002	7020	113	2
-00000000-0000-0000-0000-000000000594	B12302008	3023	112	3
-00000000-0000-0000-0000-000000000452	R12310002	3100	112	3
-00000000-0000-0000-0000-000000000317	B14406004	4060	114	1
-00000000-0000-0000-0000-000000000141	R13403004	4031	113	2
-00000000-0000-0000-0000-000000000257	R14801001	8010	114	1
-00000000-0000-0000-0000-000000000195	R13505006	5050	113	2
-00000000-0000-0000-0000-000000000225	R13403005	4031	113	2
-00000000-0000-0000-0000-000000000361	B11408006	4081	111	4
-00000000-0000-0000-0000-000000000236	B13401002	4010	113	2
-00000000-0000-0000-0000-000000000294	B11615002	6150	111	4
-00000000-0000-0000-0000-000000000509	R14H06005	H060	114	1
-00000000-0000-0000-0000-000000000621	R12701006	7012	112	3
-00000000-0000-0000-0000-000000000580	B11A01008	A012	111	4
-00000000-0000-0000-0000-000000000282	B12302009	3021	112	3
-00000000-0000-0000-0000-000000000406	B1340A001	40A0	113	2
-00000000-0000-0000-0000-000000000630	B11B0A003	B0A0	111	4
-00000000-0000-0000-0000-000000000303	B12207005	2070	112	3
+COPY public.student_profile (user_id, student_id, department_id, entry_year, grade, is_poor) FROM stdin;
+00000000-0000-0000-0000-000000000610	B12606001	6060	112	3	f
+00000000-0000-0000-0000-000000000346	R14H04001	H040	114	1	f
+00000000-0000-0000-0000-000000000443	R12A01001	A011	112	3	f
+00000000-0000-0000-0000-000000000274	B13302001	3020	113	2	f
+00000000-0000-0000-0000-000000000450	B13607001	6070	113	2	f
+00000000-0000-0000-0000-000000000311	R12610001	6100	112	3	f
+00000000-0000-0000-0000-000000000473	B13310001	3100	113	2	f
+00000000-0000-0000-0000-000000000525	B13705001	7050	113	2	f
+00000000-0000-0000-0000-000000000327	B11508001	5080	111	4	f
+00000000-0000-0000-0000-000000000437	R11207001	2070	111	4	f
+00000000-0000-0000-0000-000000000491	R13201001	2010	113	2	f
+00000000-0000-0000-0000-000000000498	B13901001	9010	113	2	f
+00000000-0000-0000-0000-000000000554	R14A01001	A013	114	1	f
+00000000-0000-0000-0000-000000000134	B13406001	4060	113	2	f
+00000000-0000-0000-0000-000000000470	R11409001	4090	111	4	f
+00000000-0000-0000-0000-000000000384	B11302001	3023	111	4	f
+00000000-0000-0000-0000-000000000519	B14305001	3050	114	1	f
+00000000-0000-0000-0000-000000000237	R12302001	3021	112	3	f
+00000000-0000-0000-0000-000000000608	B12105001	1050	112	3	f
+00000000-0000-0000-0000-000000000520	B14H06001	H060	114	1	f
+00000000-0000-0000-0000-000000000156	R14605001	6050	114	1	f
+00000000-0000-0000-0000-000000000356	R13408001	4081	113	2	f
+00000000-0000-0000-0000-000000000488	B14106001	1060	114	1	f
+00000000-0000-0000-0000-000000000490	R12109001	1090	112	3	f
+00000000-0000-0000-0000-000000000551	R14605002	6050	114	1	f
+00000000-0000-0000-0000-000000000275	R11109001	1090	111	4	f
+00000000-0000-0000-0000-000000000436	B11611001	6110	111	4	f
+00000000-0000-0000-0000-000000000479	R1330A001	30A0	113	2	f
+00000000-0000-0000-0000-000000000322	B11A01001	A011	111	4	f
+00000000-0000-0000-0000-000000000576	R14H04002	H040	114	1	f
+00000000-0000-0000-0000-000000000582	B11408001	4080	111	4	f
+00000000-0000-0000-0000-000000000333	B11402001	4020	111	4	f
+00000000-0000-0000-0000-000000000305	R11610001	6100	111	4	f
+00000000-0000-0000-0000-000000000495	B14209001	2090	114	1	f
+00000000-0000-0000-0000-000000000388	B10611001	6110	110	5	f
+00000000-0000-0000-0000-000000000231	R14701001	7012	114	1	f
+00000000-0000-0000-0000-000000000559	R12101001	1011	112	3	f
+00000000-0000-0000-0000-000000000298	B14606001	6060	114	1	f
+00000000-0000-0000-0000-000000000364	R14404001	4040	114	1	f
+00000000-0000-0000-0000-000000000295	R14612001	6120	114	1	f
+00000000-0000-0000-0000-000000000154	B14204001	2040	114	1	f
+00000000-0000-0000-0000-000000000558	B14303001	3030	114	1	f
+00000000-0000-0000-0000-000000000289	B11106001	1060	111	4	f
+00000000-0000-0000-0000-000000000171	R11705001	7050	111	4	f
+00000000-0000-0000-0000-000000000351	B12502001	5020	112	3	f
+00000000-0000-0000-0000-000000000435	R10601001	6010	110	5	f
+00000000-0000-0000-0000-000000000438	B12605001	6050	112	3	f
+00000000-0000-0000-0000-000000000297	B13302002	3023	113	2	f
+00000000-0000-0000-0000-000000000387	B11611002	6110	111	4	f
+00000000-0000-0000-0000-000000000138	B11101001	1010	111	4	f
+00000000-0000-0000-0000-000000000273	R12403001	4031	112	3	f
+00000000-0000-0000-0000-000000000415	R11105001	1050	111	4	f
+00000000-0000-0000-0000-000000000354	R12404001	4040	112	3	f
+00000000-0000-0000-0000-000000000173	R12302002	3021	112	3	f
+00000000-0000-0000-0000-000000000626	R12701001	7011	112	3	f
+00000000-0000-0000-0000-000000000176	B12H04001	H040	112	3	f
+00000000-0000-0000-0000-000000000284	B14302001	3023	114	1	f
+00000000-0000-0000-0000-000000000318	R13401001	4010	113	2	f
+00000000-0000-0000-0000-000000000234	R11601001	6010	111	4	f
+00000000-0000-0000-0000-000000000157	B10603001	6030	110	5	f
+00000000-0000-0000-0000-000000000414	R14109001	1090	114	1	f
+00000000-0000-0000-0000-000000000323	R11103001	1030	111	4	f
+00000000-0000-0000-0000-000000000202	B12605002	6050	112	3	f
+00000000-0000-0000-0000-000000000492	R12106001	1060	112	3	f
+00000000-0000-0000-0000-000000000329	R11B0A001	B0A0	111	4	f
+00000000-0000-0000-0000-000000000534	R13615001	6150	113	2	f
+00000000-0000-0000-0000-000000000530	R12B0A001	B0A0	112	3	f
+00000000-0000-0000-0000-000000000132	R11A01002	A012	111	4	f
+00000000-0000-0000-0000-000000000472	R14A01002	A011	114	1	f
+00000000-0000-0000-0000-000000000428	B13402001	4020	113	2	f
+00000000-0000-0000-0000-000000000185	R11A01003	A013	111	4	f
+00000000-0000-0000-0000-000000000201	R11102001	1020	111	4	f
+00000000-0000-0000-0000-000000000209	R13A01001	A013	113	2	f
+00000000-0000-0000-0000-000000000358	R14201001	2010	114	1	f
+00000000-0000-0000-0000-000000000198	B13303001	3030	113	2	f
+00000000-0000-0000-0000-000000000214	R1260A001	60A0	112	3	f
+00000000-0000-0000-0000-000000000207	B14A01003	A011	114	1	f
+00000000-0000-0000-0000-000000000253	R14A01004	A012	114	1	f
+00000000-0000-0000-0000-000000000445	B12H05001	H050	112	3	f
+00000000-0000-0000-0000-000000000229	R14204002	2040	114	1	f
+00000000-0000-0000-0000-000000000256	R10902001	9020	110	5	f
+00000000-0000-0000-0000-000000000589	B14H05001	H050	114	1	f
+00000000-0000-0000-0000-000000000172	B13701001	7011	113	2	f
+00000000-0000-0000-0000-000000000238	R12501001	5010	112	3	f
+00000000-0000-0000-0000-000000000474	R11703001	7030	111	4	f
+00000000-0000-0000-0000-000000000265	R14508001	5080	114	1	f
+00000000-0000-0000-0000-000000000262	R10H06001	H060	110	5	f
+00000000-0000-0000-0000-000000000528	R11O01001	O010	111	4	f
+00000000-0000-0000-0000-000000000484	B11704001	7040	111	4	f
+00000000-0000-0000-0000-000000000371	R12706001	7060	112	3	f
+00000000-0000-0000-0000-000000000179	R13203001	2030	113	2	f
+00000000-0000-0000-0000-000000000432	R12B02001	B020	112	3	f
+00000000-0000-0000-0000-000000000226	B11B0A002	B0A0	111	4	f
+00000000-0000-0000-0000-000000000471	R11401001	4010	111	4	f
+00000000-0000-0000-0000-000000000552	R11705002	7050	111	4	f
+00000000-0000-0000-0000-000000000560	R12203001	2030	112	3	f
+00000000-0000-0000-0000-000000000326	B14H06002	H060	114	1	f
+00000000-0000-0000-0000-000000000523	B11505001	5050	111	4	f
+00000000-0000-0000-0000-000000000612	R14B02001	B020	114	1	f
+00000000-0000-0000-0000-000000000133	R11104001	1040	111	4	f
+00000000-0000-0000-0000-000000000568	B13302003	3022	113	2	f
+00000000-0000-0000-0000-000000000150	B10605001	6050	110	5	f
+00000000-0000-0000-0000-000000000457	B11901001	9010	111	4	f
+00000000-0000-0000-0000-000000000461	R13704001	7040	113	2	f
+00000000-0000-0000-0000-000000000363	B14207001	2070	114	1	f
+00000000-0000-0000-0000-000000000592	B13701002	7011	113	2	f
+00000000-0000-0000-0000-000000000170	B12508001	5080	112	3	f
+00000000-0000-0000-0000-000000000324	B1240A001	40A0	112	3	f
+00000000-0000-0000-0000-000000000178	R14302002	3021	114	1	f
+00000000-0000-0000-0000-000000000499	R14615001	6150	114	1	f
+00000000-0000-0000-0000-000000000487	R11601002	6010	111	4	f
+00000000-0000-0000-0000-000000000546	B12509001	5090	112	3	f
+00000000-0000-0000-0000-000000000401	B11Z01001	Z010	111	4	f
+00000000-0000-0000-0000-000000000147	R11607001	6070	111	4	f
+00000000-0000-0000-0000-000000000183	R13608001	6080	113	2	f
+00000000-0000-0000-0000-000000000504	R12403002	4030	112	3	f
+00000000-0000-0000-0000-000000000188	R12A01002	A011	112	3	f
+00000000-0000-0000-0000-000000000254	B11508002	5080	111	4	f
+00000000-0000-0000-0000-000000000313	B13207001	2070	113	2	f
+00000000-0000-0000-0000-000000000153	R10202001	2020	110	5	f
+00000000-0000-0000-0000-000000000540	R14207002	2070	114	1	f
+00000000-0000-0000-0000-000000000194	R12207001	2070	112	3	f
+00000000-0000-0000-0000-000000000581	R13509001	5090	113	2	f
+00000000-0000-0000-0000-000000000376	B14501001	5010	114	1	f
+00000000-0000-0000-0000-000000000261	B13B02001	B020	113	2	f
+00000000-0000-0000-0000-000000000349	B11801001	8010	111	4	f
+00000000-0000-0000-0000-000000000345	B13403001	4030	113	2	f
+00000000-0000-0000-0000-000000000617	R13H04001	H040	113	2	f
+00000000-0000-0000-0000-000000000458	R11202001	2020	111	4	f
+00000000-0000-0000-0000-000000000152	B11406001	4060	111	4	f
+00000000-0000-0000-0000-000000000279	R11902001	9020	111	4	f
+00000000-0000-0000-0000-000000000586	R14607001	6070	114	1	f
+00000000-0000-0000-0000-000000000162	R12607001	6070	112	3	f
+00000000-0000-0000-0000-000000000464	B13408002	4081	113	2	f
+00000000-0000-0000-0000-000000000343	R12505001	5050	112	3	f
+00000000-0000-0000-0000-000000000556	R14704001	7040	114	1	f
+00000000-0000-0000-0000-000000000307	B13408003	4080	113	2	f
+00000000-0000-0000-0000-000000000395	B11A01004	A012	111	4	f
+00000000-0000-0000-0000-000000000314	B12104001	1040	112	3	f
+00000000-0000-0000-0000-000000000478	B14504001	5040	114	1	f
+00000000-0000-0000-0000-000000000503	R14204003	2040	114	1	f
+00000000-0000-0000-0000-000000000353	B14408001	4080	114	1	f
+00000000-0000-0000-0000-000000000611	R13408004	4081	113	2	f
+00000000-0000-0000-0000-000000000357	B12O02001	O020	112	3	f
+00000000-0000-0000-0000-000000000500	R14H05002	H050	114	1	f
+00000000-0000-0000-0000-000000000585	R13702001	7020	113	2	f
+00000000-0000-0000-0000-000000000598	B13A01002	A011	113	2	f
+00000000-0000-0000-0000-000000000575	R13505001	5050	113	2	f
+00000000-0000-0000-0000-000000000548	R12101002	1010	112	3	f
+00000000-0000-0000-0000-000000000486	B10702001	7020	110	5	f
+00000000-0000-0000-0000-000000000276	B12606002	6060	112	3	f
+00000000-0000-0000-0000-000000000197	R11302002	3023	111	4	f
+00000000-0000-0000-0000-000000000572	B12611001	6110	112	3	f
+00000000-0000-0000-0000-000000000423	B12208001	2080	112	3	f
+00000000-0000-0000-0000-000000000431	B12H06001	H060	112	3	f
+00000000-0000-0000-0000-000000000420	B11403001	4031	111	4	f
+00000000-0000-0000-0000-000000000245	B1260A002	60A0	112	3	f
+00000000-0000-0000-0000-000000000309	R11103002	1030	111	4	f
+00000000-0000-0000-0000-000000000442	B13412001	4120	113	2	f
+00000000-0000-0000-0000-000000000485	R13101001	1011	113	2	f
+00000000-0000-0000-0000-000000000187	R13208001	2080	113	2	f
+00000000-0000-0000-0000-000000000210	R12902001	9020	112	3	f
+00000000-0000-0000-0000-000000000577	B14704002	7040	114	1	f
+00000000-0000-0000-0000-000000000199	B14902001	9020	114	1	f
+00000000-0000-0000-0000-000000000386	B1250A001	50A0	112	3	f
+00000000-0000-0000-0000-000000000536	R13613001	6130	113	2	f
+00000000-0000-0000-0000-000000000482	R12A01003	A013	112	3	f
+00000000-0000-0000-0000-000000000251	R12504001	5040	112	3	f
+00000000-0000-0000-0000-000000000163	R11B01001	B010	111	4	f
+00000000-0000-0000-0000-000000000278	R13505002	5050	113	2	f
+00000000-0000-0000-0000-000000000451	B13705002	7050	113	2	f
+00000000-0000-0000-0000-000000000200	B14H06003	H060	114	1	f
+00000000-0000-0000-0000-000000000292	R14302003	3020	114	1	f
+00000000-0000-0000-0000-000000000383	B14406001	4060	114	1	f
+00000000-0000-0000-0000-000000000367	R11209001	2090	111	4	f
+00000000-0000-0000-0000-000000000537	R14704003	7040	114	1	f
+00000000-0000-0000-0000-000000000532	R11412001	4120	111	4	f
+00000000-0000-0000-0000-000000000606	B11204001	2040	111	4	f
+00000000-0000-0000-0000-000000000596	B12609001	6090	112	3	f
+00000000-0000-0000-0000-000000000512	B11701001	7011	111	4	f
+00000000-0000-0000-0000-000000000460	R14408002	4080	114	1	f
+00000000-0000-0000-0000-000000000412	B11A01005	A012	111	4	f
+00000000-0000-0000-0000-000000000507	B11A01006	A013	111	4	f
+00000000-0000-0000-0000-000000000331	B11101002	1010	111	4	f
+00000000-0000-0000-0000-000000000362	R14101001	1010	114	1	f
+00000000-0000-0000-0000-000000000350	B14305002	3050	114	1	f
+00000000-0000-0000-0000-000000000299	B11302003	3022	111	4	f
+00000000-0000-0000-0000-000000000268	R10609001	6090	110	5	f
+00000000-0000-0000-0000-000000000603	B13502001	5020	113	2	f
+00000000-0000-0000-0000-000000000392	R13101002	1010	113	2	f
+00000000-0000-0000-0000-000000000328	R12801001	8010	112	3	f
+00000000-0000-0000-0000-000000000422	B13305001	3050	113	2	f
+00000000-0000-0000-0000-000000000248	R12701002	7011	112	3	f
+00000000-0000-0000-0000-000000000542	B14705001	7050	114	1	f
+00000000-0000-0000-0000-000000000164	R11509001	5090	111	4	f
+00000000-0000-0000-0000-000000000266	B11403002	4030	111	4	f
+00000000-0000-0000-0000-000000000208	R14302004	3020	114	1	f
+00000000-0000-0000-0000-000000000348	B13615002	6150	113	2	f
+00000000-0000-0000-0000-000000000549	B13A01003	A012	113	2	f
+00000000-0000-0000-0000-000000000619	B14701002	7011	114	1	f
+00000000-0000-0000-0000-000000000224	B12501002	5010	112	3	f
+00000000-0000-0000-0000-000000000521	R13B02002	B020	113	2	f
+00000000-0000-0000-0000-000000000204	B14408003	4080	114	1	f
+00000000-0000-0000-0000-000000000533	B1430A001	30A0	114	1	f
+00000000-0000-0000-0000-000000000615	B11607002	6070	111	4	f
+00000000-0000-0000-0000-000000000588	B13104001	1040	113	2	f
+00000000-0000-0000-0000-000000000526	R13H06001	H060	113	2	f
+00000000-0000-0000-0000-000000000385	B11109002	1090	111	4	f
+00000000-0000-0000-0000-000000000567	R12408001	4081	112	3	f
+00000000-0000-0000-0000-000000000293	B1140A001	40A0	111	4	f
+00000000-0000-0000-0000-000000000255	R13H04002	H040	113	2	f
+00000000-0000-0000-0000-000000000413	R13602001	6020	113	2	f
+00000000-0000-0000-0000-000000000168	R13403002	4031	113	2	f
+00000000-0000-0000-0000-000000000149	R12Z01001	Z010	112	3	f
+00000000-0000-0000-0000-000000000396	B12404002	4040	112	3	f
+00000000-0000-0000-0000-000000000515	R13402002	4020	113	2	f
+00000000-0000-0000-0000-000000000618	R13701003	7012	113	2	f
+00000000-0000-0000-0000-000000000535	R13310002	3100	113	2	f
+00000000-0000-0000-0000-000000000332	B14A01005	A011	114	1	f
+00000000-0000-0000-0000-000000000203	B14507001	5070	114	1	f
+00000000-0000-0000-0000-000000000158	B12412001	4120	112	3	f
+00000000-0000-0000-0000-000000000477	R12204001	2040	112	3	f
+00000000-0000-0000-0000-000000000518	R12302003	3022	112	3	f
+00000000-0000-0000-0000-000000000146	R11A01007	A011	111	4	f
+00000000-0000-0000-0000-000000000496	R12611002	6110	112	3	f
+00000000-0000-0000-0000-000000000410	B12611003	6110	112	3	f
+00000000-0000-0000-0000-000000000177	R14404002	4040	114	1	f
+00000000-0000-0000-0000-000000000393	B13505003	5050	113	2	f
+00000000-0000-0000-0000-000000000469	R14701003	7011	114	1	f
+00000000-0000-0000-0000-000000000321	R13801001	8010	113	2	f
+00000000-0000-0000-0000-000000000468	R13A01004	A013	113	2	f
+00000000-0000-0000-0000-000000000403	R12103001	1030	112	3	f
+00000000-0000-0000-0000-000000000590	B11204002	2040	111	4	f
+00000000-0000-0000-0000-000000000249	R13B01001	B010	113	2	f
+00000000-0000-0000-0000-000000000522	B12615001	6150	112	3	f
+00000000-0000-0000-0000-000000000564	R12504002	5040	112	3	f
+00000000-0000-0000-0000-000000000416	B13408005	4081	113	2	f
+00000000-0000-0000-0000-000000000441	R13901002	9010	113	2	f
+00000000-0000-0000-0000-000000000566	B12703001	7030	112	3	f
+00000000-0000-0000-0000-000000000316	R13701004	7011	113	2	f
+00000000-0000-0000-0000-000000000541	R1150A001	50A0	111	4	f
+00000000-0000-0000-0000-000000000369	B14B01001	B010	114	1	f
+00000000-0000-0000-0000-000000000389	B13H04003	H040	113	2	f
+00000000-0000-0000-0000-000000000427	B11607003	6070	111	4	f
+00000000-0000-0000-0000-000000000291	B14105001	1050	114	1	f
+00000000-0000-0000-0000-000000000429	R12408002	4081	112	3	f
+00000000-0000-0000-0000-000000000366	R12B01001	B010	112	3	f
+00000000-0000-0000-0000-000000000190	R12613001	6130	112	3	f
+00000000-0000-0000-0000-000000000175	B14H04003	H040	114	1	f
+00000000-0000-0000-0000-000000000489	B11703002	7030	111	4	f
+00000000-0000-0000-0000-000000000215	R13606001	6060	113	2	f
+00000000-0000-0000-0000-000000000193	R1330A002	30A0	113	2	f
+00000000-0000-0000-0000-000000000411	B14202001	2020	114	1	f
+00000000-0000-0000-0000-000000000602	B11408002	4080	111	4	f
+00000000-0000-0000-0000-000000000390	R11102002	1020	111	4	f
+00000000-0000-0000-0000-000000000453	R11603001	6030	111	4	f
+00000000-0000-0000-0000-000000000433	R11602001	6020	111	4	f
+00000000-0000-0000-0000-000000000449	R12701003	7012	112	3	f
+00000000-0000-0000-0000-000000000290	R12612001	6120	112	3	f
+00000000-0000-0000-0000-000000000340	B11401002	4010	111	4	f
+00000000-0000-0000-0000-000000000355	B12302004	3022	112	3	f
+00000000-0000-0000-0000-000000000627	R11402002	4020	111	4	f
+00000000-0000-0000-0000-000000000545	R11203001	2030	111	4	f
+00000000-0000-0000-0000-000000000140	B14601001	6010	114	1	f
+00000000-0000-0000-0000-000000000624	B13H05001	H050	113	2	f
+00000000-0000-0000-0000-000000000578	R12701004	7010	112	3	f
+00000000-0000-0000-0000-000000000137	B13701005	7010	113	2	f
+00000000-0000-0000-0000-000000000359	B13B0A001	B0A0	113	2	f
+00000000-0000-0000-0000-000000000439	R14701004	7011	114	1	f
+00000000-0000-0000-0000-000000000493	R12B02002	B020	112	3	f
+00000000-0000-0000-0000-000000000286	R14601002	6010	114	1	f
+00000000-0000-0000-0000-000000000454	R11601003	6010	111	4	f
+00000000-0000-0000-0000-000000000463	B14404003	4040	114	1	f
+00000000-0000-0000-0000-000000000319	B12501003	5010	112	3	f
+00000000-0000-0000-0000-000000000531	R14102001	1020	114	1	f
+00000000-0000-0000-0000-000000000220	B12404003	4040	112	3	f
+00000000-0000-0000-0000-000000000620	R12101003	1011	112	3	f
+00000000-0000-0000-0000-000000000143	R11607004	6070	111	4	f
+00000000-0000-0000-0000-000000000417	R13102001	1020	113	2	f
+00000000-0000-0000-0000-000000000189	R14601003	6010	114	1	f
+00000000-0000-0000-0000-000000000570	B12302005	3021	112	3	f
+00000000-0000-0000-0000-000000000601	R11104002	1040	111	4	f
+00000000-0000-0000-0000-000000000446	B11408003	4081	111	4	f
+00000000-0000-0000-0000-000000000247	B13608002	6080	113	2	f
+00000000-0000-0000-0000-000000000337	R13505004	5050	113	2	f
+00000000-0000-0000-0000-000000000260	R13408006	4080	113	2	f
+00000000-0000-0000-0000-000000000296	B10208001	2080	110	5	f
+00000000-0000-0000-0000-000000000181	R12303001	3030	112	3	f
+00000000-0000-0000-0000-000000000160	R14305003	3050	114	1	f
+00000000-0000-0000-0000-000000000308	R1230A001	30A0	112	3	f
+00000000-0000-0000-0000-000000000148	B11504001	5040	111	4	f
+00000000-0000-0000-0000-000000000481	B11105002	1050	111	4	f
+00000000-0000-0000-0000-000000000217	B13408007	4081	113	2	f
+00000000-0000-0000-0000-000000000510	R14104001	1040	114	1	f
+00000000-0000-0000-0000-000000000182	R14612002	6120	114	1	f
+00000000-0000-0000-0000-000000000516	R13A01005	A012	113	2	f
+00000000-0000-0000-0000-000000000529	R12203002	2030	112	3	f
+00000000-0000-0000-0000-000000000344	B13101003	1010	113	2	f
+00000000-0000-0000-0000-000000000511	B13502002	5020	113	2	f
+00000000-0000-0000-0000-000000000573	R12706002	7060	112	3	f
+00000000-0000-0000-0000-000000000288	B13409001	4090	113	2	f
+00000000-0000-0000-0000-000000000301	B13105001	1050	113	2	f
+00000000-0000-0000-0000-000000000285	B13O01001	O010	113	2	f
+00000000-0000-0000-0000-000000000501	B12507001	5070	112	3	f
+00000000-0000-0000-0000-000000000191	R14101002	1010	114	1	f
+00000000-0000-0000-0000-000000000379	R13201002	2010	113	2	f
+00000000-0000-0000-0000-000000000475	R13H05002	H050	113	2	f
+00000000-0000-0000-0000-000000000513	B14406002	4060	114	1	f
+00000000-0000-0000-0000-000000000557	B11O01002	O010	111	4	f
+00000000-0000-0000-0000-000000000609	R14107001	1070	114	1	f
+00000000-0000-0000-0000-000000000243	R13408008	4080	113	2	f
+00000000-0000-0000-0000-000000000447	B12203003	2030	112	3	f
+00000000-0000-0000-0000-000000000192	R1140A002	40A0	111	4	f
+00000000-0000-0000-0000-000000000131	R12207002	2070	112	3	f
+00000000-0000-0000-0000-000000000341	R13607002	6070	113	2	f
+00000000-0000-0000-0000-000000000400	R14701005	7012	114	1	f
+00000000-0000-0000-0000-000000000448	R12701005	7010	112	3	f
+00000000-0000-0000-0000-000000000161	R12408003	4081	112	3	f
+00000000-0000-0000-0000-000000000607	B14505001	5050	114	1	f
+00000000-0000-0000-0000-000000000595	R1440A001	40A0	114	1	f
+00000000-0000-0000-0000-000000000205	R11202002	2020	111	4	f
+00000000-0000-0000-0000-000000000424	B13303002	3030	113	2	f
+00000000-0000-0000-0000-000000000174	R12B01002	B010	112	3	f
+00000000-0000-0000-0000-000000000212	R12A01004	A012	112	3	f
+00000000-0000-0000-0000-000000000524	B13412002	4120	113	2	f
+00000000-0000-0000-0000-000000000421	R11409002	4090	111	4	f
+00000000-0000-0000-0000-000000000569	R14H06004	H060	114	1	f
+00000000-0000-0000-0000-000000000370	B12615002	6150	112	3	f
+00000000-0000-0000-0000-000000000527	B11613001	6130	111	4	f
+00000000-0000-0000-0000-000000000394	R11611003	6110	111	4	f
+00000000-0000-0000-0000-000000000334	B11109003	1090	111	4	f
+00000000-0000-0000-0000-000000000565	R13412003	4120	113	2	f
+00000000-0000-0000-0000-000000000562	B12209001	2090	112	3	f
+00000000-0000-0000-0000-000000000360	B12608001	6080	112	3	f
+00000000-0000-0000-0000-000000000583	B14406003	4060	114	1	f
+00000000-0000-0000-0000-000000000623	B13615003	6150	113	2	f
+00000000-0000-0000-0000-000000000221	B11107001	1070	111	4	f
+00000000-0000-0000-0000-000000000561	B10208002	2080	110	5	f
+00000000-0000-0000-0000-000000000259	R14109002	1090	114	1	f
+00000000-0000-0000-0000-000000000233	R12204002	2040	112	3	f
+00000000-0000-0000-0000-000000000151	R12109002	1090	112	3	f
+00000000-0000-0000-0000-000000000272	B12204003	2040	112	3	f
+00000000-0000-0000-0000-000000000506	R13303003	3030	113	2	f
+00000000-0000-0000-0000-000000000196	B13706001	7060	113	2	f
+00000000-0000-0000-0000-000000000167	R1360A001	60A0	113	2	f
+00000000-0000-0000-0000-000000000459	R14610001	6100	114	1	f
+00000000-0000-0000-0000-000000000281	B12207003	2070	112	3	f
+00000000-0000-0000-0000-000000000300	B13105002	1050	113	2	f
+00000000-0000-0000-0000-000000000325	B1140A003	40A0	111	4	f
+00000000-0000-0000-0000-000000000320	R14501002	5010	114	1	f
+00000000-0000-0000-0000-000000000614	R12202001	2020	112	3	f
+00000000-0000-0000-0000-000000000587	R12302006	3023	112	3	f
+00000000-0000-0000-0000-000000000539	R1450A001	50A0	114	1	f
+00000000-0000-0000-0000-000000000622	B13A01006	A012	113	2	f
+00000000-0000-0000-0000-000000000555	R14502001	5020	114	1	f
+00000000-0000-0000-0000-000000000165	R12107001	1070	112	3	f
+00000000-0000-0000-0000-000000000228	R14610002	6100	114	1	f
+00000000-0000-0000-0000-000000000365	R11901002	9010	111	4	f
+00000000-0000-0000-0000-000000000252	R10107001	1070	110	5	f
+00000000-0000-0000-0000-000000000467	B13612001	6120	113	2	f
+00000000-0000-0000-0000-000000000352	B13Z01001	Z010	113	2	f
+00000000-0000-0000-0000-000000000219	R12A01005	A013	112	3	f
+00000000-0000-0000-0000-000000000600	R13704002	7040	113	2	f
+00000000-0000-0000-0000-000000000434	B11606001	6060	111	4	f
+00000000-0000-0000-0000-000000000246	R11305001	3050	111	4	f
+00000000-0000-0000-0000-000000000330	R14105002	1050	114	1	f
+00000000-0000-0000-0000-000000000235	B14207003	2070	114	1	f
+00000000-0000-0000-0000-000000000155	R11701002	7011	111	4	f
+00000000-0000-0000-0000-000000000267	R11508003	5080	111	4	f
+00000000-0000-0000-0000-000000000338	R13610001	6100	113	2	f
+00000000-0000-0000-0000-000000000591	R11615001	6150	111	4	f
+00000000-0000-0000-0000-000000000402	R12609002	6090	112	3	f
+00000000-0000-0000-0000-000000000373	R13303004	3030	113	2	f
+00000000-0000-0000-0000-000000000628	B12703002	7030	112	3	f
+00000000-0000-0000-0000-000000000315	R14404004	4040	114	1	f
+00000000-0000-0000-0000-000000000258	R12310001	3100	112	3	f
+00000000-0000-0000-0000-000000000584	R14610003	6100	114	1	f
+00000000-0000-0000-0000-000000000304	B13B01002	B010	113	2	f
+00000000-0000-0000-0000-000000000263	R13202001	2020	113	2	f
+00000000-0000-0000-0000-000000000186	B11101003	1011	111	4	f
+00000000-0000-0000-0000-000000000399	R1160A001	60A0	111	4	f
+00000000-0000-0000-0000-000000000230	B14603001	6030	114	1	f
+00000000-0000-0000-0000-000000000244	R13704003	7040	113	2	f
+00000000-0000-0000-0000-000000000382	R14202002	2020	114	1	f
+00000000-0000-0000-0000-000000000270	R10201001	2010	110	5	f
+00000000-0000-0000-0000-000000000216	R11901003	9010	111	4	f
+00000000-0000-0000-0000-000000000538	B10702002	7020	110	5	f
+00000000-0000-0000-0000-000000000563	B14302005	3023	114	1	f
+00000000-0000-0000-0000-000000000599	R10508001	5080	110	5	f
+00000000-0000-0000-0000-000000000497	R12Z01002	Z010	112	3	f
+00000000-0000-0000-0000-000000000625	B11612001	6120	111	4	f
+00000000-0000-0000-0000-000000000166	B11104003	1040	111	4	f
+00000000-0000-0000-0000-000000000302	B14403001	4030	114	1	f
+00000000-0000-0000-0000-000000000508	B11101004	1010	111	4	f
+00000000-0000-0000-0000-000000000579	B12602001	6020	112	3	f
+00000000-0000-0000-0000-000000000184	B11701003	7012	111	4	f
+00000000-0000-0000-0000-000000000444	B11701004	7012	111	4	f
+00000000-0000-0000-0000-000000000339	B14504002	5040	114	1	f
+00000000-0000-0000-0000-000000000409	B11607005	6070	111	4	f
+00000000-0000-0000-0000-000000000517	R14302006	3023	114	1	f
+00000000-0000-0000-0000-000000000277	R13615004	6150	113	2	f
+00000000-0000-0000-0000-000000000440	R10613001	6130	110	5	f
+00000000-0000-0000-0000-000000000142	B13601001	6010	113	2	f
+00000000-0000-0000-0000-000000000306	B13302004	3023	113	2	f
+00000000-0000-0000-0000-000000000462	B14102002	1020	114	1	f
+00000000-0000-0000-0000-000000000404	B13612002	6120	113	2	f
+00000000-0000-0000-0000-000000000397	R11412002	4120	111	4	f
+00000000-0000-0000-0000-000000000593	R14302007	3022	114	1	f
+00000000-0000-0000-0000-000000000239	R14201002	2010	114	1	f
+00000000-0000-0000-0000-000000000222	B11104004	1040	111	4	f
+00000000-0000-0000-0000-000000000213	R14402001	4020	114	1	f
+00000000-0000-0000-0000-000000000211	R11612002	6120	111	4	f
+00000000-0000-0000-0000-000000000250	R12704001	7040	112	3	f
+00000000-0000-0000-0000-000000000342	B1430A002	30A0	114	1	f
+00000000-0000-0000-0000-000000000218	B14601004	6010	114	1	f
+00000000-0000-0000-0000-000000000574	B13101004	1010	113	2	f
+00000000-0000-0000-0000-000000000616	B13408009	4080	113	2	f
+00000000-0000-0000-0000-000000000283	B14207004	2070	114	1	f
+00000000-0000-0000-0000-000000000408	R11601004	6010	111	4	f
+00000000-0000-0000-0000-000000000368	B13701006	7012	113	2	f
+00000000-0000-0000-0000-000000000377	B12901001	9010	112	3	f
+00000000-0000-0000-0000-000000000543	R1160A002	60A0	111	4	f
+00000000-0000-0000-0000-000000000372	R14A01006	A013	114	1	f
+00000000-0000-0000-0000-000000000242	B12203004	2030	112	3	f
+00000000-0000-0000-0000-000000000456	R14501003	5010	114	1	f
+00000000-0000-0000-0000-000000000455	B12H06002	H060	112	3	f
+00000000-0000-0000-0000-000000000223	B12201001	2010	112	3	f
+00000000-0000-0000-0000-000000000547	R1060A001	60A0	110	5	f
+00000000-0000-0000-0000-000000000287	B1440A002	40A0	114	1	f
+00000000-0000-0000-0000-000000000418	R11408004	4080	111	4	f
+00000000-0000-0000-0000-000000000502	R13107001	1070	113	2	f
+00000000-0000-0000-0000-000000000425	R12207004	2070	112	3	f
+00000000-0000-0000-0000-000000000159	R14201003	2010	114	1	f
+00000000-0000-0000-0000-000000000430	B13505005	5050	113	2	f
+00000000-0000-0000-0000-000000000380	R12408004	4080	112	3	f
+00000000-0000-0000-0000-000000000465	R11H04001	H040	111	4	f
+00000000-0000-0000-0000-000000000398	B12103002	1030	112	3	f
+00000000-0000-0000-0000-000000000139	B13303005	3030	113	2	f
+00000000-0000-0000-0000-000000000241	R13A01007	A012	113	2	f
+00000000-0000-0000-0000-000000000613	B11310001	3100	111	4	f
+00000000-0000-0000-0000-000000000505	R1440A003	40A0	114	1	f
+00000000-0000-0000-0000-000000000312	R12408005	4081	112	3	f
+00000000-0000-0000-0000-000000000144	B11602002	6020	111	4	f
+00000000-0000-0000-0000-000000000419	B14208001	2080	114	1	f
+00000000-0000-0000-0000-000000000310	R1250A002	50A0	112	3	f
+00000000-0000-0000-0000-000000000476	R11902002	9020	111	4	f
+00000000-0000-0000-0000-000000000227	B12408006	4081	112	3	f
+00000000-0000-0000-0000-000000000336	B13209001	2090	113	2	f
+00000000-0000-0000-0000-000000000483	R12302007	3020	112	3	f
+00000000-0000-0000-0000-000000000240	R14A01007	A013	114	1	f
+00000000-0000-0000-0000-000000000381	R13508001	5080	113	2	f
+00000000-0000-0000-0000-000000000391	B12B0A002	B0A0	112	3	f
+00000000-0000-0000-0000-000000000269	R12505002	5050	112	3	f
+00000000-0000-0000-0000-000000000378	B14408004	4080	114	1	f
+00000000-0000-0000-0000-000000000466	B14A01008	A013	114	1	f
+00000000-0000-0000-0000-000000000550	B12106002	1060	112	3	f
+00000000-0000-0000-0000-000000000271	R13Z01002	Z010	113	2	f
+00000000-0000-0000-0000-000000000405	R11701005	7012	111	4	f
+00000000-0000-0000-0000-000000000605	B14204004	2040	114	1	f
+00000000-0000-0000-0000-000000000597	B1250A003	50A0	112	3	f
+00000000-0000-0000-0000-000000000571	R14501004	5010	114	1	f
+00000000-0000-0000-0000-000000000407	R13403003	4031	113	2	f
+00000000-0000-0000-0000-000000000232	B11106002	1060	111	4	f
+00000000-0000-0000-0000-000000000145	R11105003	1050	111	4	f
+00000000-0000-0000-0000-000000000480	R14A01009	A011	114	1	f
+00000000-0000-0000-0000-000000000347	R11509002	5090	111	4	f
+00000000-0000-0000-0000-000000000604	R14203001	2030	114	1	f
+00000000-0000-0000-0000-000000000494	B11202003	2020	111	4	f
+00000000-0000-0000-0000-000000000264	R14H04004	H040	114	1	f
+00000000-0000-0000-0000-000000000169	R14B02002	B020	114	1	f
+00000000-0000-0000-0000-000000000280	B13A01008	A013	113	2	f
+00000000-0000-0000-0000-000000000514	B14H05003	H050	114	1	f
+00000000-0000-0000-0000-000000000544	B13A01009	A013	113	2	f
+00000000-0000-0000-0000-000000000375	R11408005	4081	111	4	f
+00000000-0000-0000-0000-000000000553	R12106003	1060	112	3	f
+00000000-0000-0000-0000-000000000136	B13A01010	A012	113	2	f
+00000000-0000-0000-0000-000000000206	R12704002	7040	112	3	f
+00000000-0000-0000-0000-000000000180	R14208002	2080	114	1	f
+00000000-0000-0000-0000-000000000426	B12507002	5070	112	3	f
+00000000-0000-0000-0000-000000000335	R1450A002	50A0	114	1	f
+00000000-0000-0000-0000-000000000629	R12607002	6070	112	3	f
+00000000-0000-0000-0000-000000000135	B12B01003	B010	112	3	f
+00000000-0000-0000-0000-000000000374	B13702002	7020	113	2	f
+00000000-0000-0000-0000-000000000594	B12302008	3023	112	3	f
+00000000-0000-0000-0000-000000000452	R12310002	3100	112	3	f
+00000000-0000-0000-0000-000000000317	B14406004	4060	114	1	f
+00000000-0000-0000-0000-000000000141	R13403004	4031	113	2	f
+00000000-0000-0000-0000-000000000257	R14801001	8010	114	1	f
+00000000-0000-0000-0000-000000000195	R13505006	5050	113	2	f
+00000000-0000-0000-0000-000000000225	R13403005	4031	113	2	f
+00000000-0000-0000-0000-000000000361	B11408006	4081	111	4	f
+00000000-0000-0000-0000-000000000236	B13401002	4010	113	2	f
+00000000-0000-0000-0000-000000000294	B11615002	6150	111	4	f
+00000000-0000-0000-0000-000000000509	R14H06005	H060	114	1	f
+00000000-0000-0000-0000-000000000621	R12701006	7012	112	3	f
+00000000-0000-0000-0000-000000000580	B11A01008	A012	111	4	f
+00000000-0000-0000-0000-000000000282	B12302009	3021	112	3	f
+00000000-0000-0000-0000-000000000406	B1340A001	40A0	113	2	f
+00000000-0000-0000-0000-000000000630	B11B0A003	B0A0	111	4	f
+00000000-0000-0000-0000-000000000303	B12207005	2070	112	3	f
 \.
 
 
@@ -27710,6 +27730,11 @@ COPY public."user" (user_id, real_name, email, username, password, nickname, rol
 00000000-0000-0000-0000-000000000406	Gary Myers	ugraham@example.org	std_275_103468	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Patrick	student	f	\N	f	2024-02-09 00:00:00+00	9999-12-31 00:00:00+00	\N	\N
 00000000-0000-0000-0000-000000000630	陳宇翔	li-linglin@example.com	std_499_492491	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Michael	student	f	\N	f	2022-04-11 00:00:00+00	9999-12-31 00:00:00+00	\N	\N
 00000000-0000-0000-0000-000000000303	王家豪	hsushu-fen@example.org	std_172_664032	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Heather	student	f	\N	f	2023-08-25 00:00:00+00	9999-12-31 00:00:00+00	\N	\N
+00000000-0000-0000-0000-000000000009	林淑娟	dlin@example.net	1090_host_680099	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	戲劇學系聯絡人	department	f	\N	f	2023-06-15 00:00:00+00	9999-12-31 00:00:00+00	\N	1090
+00000000-0000-0000-0000-000000000001	張志成	fchen@example.org	1010_host_629903	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	中國文學系聯絡人	department	f	\N	f	2023-10-18 00:00:00+00	9999-12-31 00:00:00+00	\N	1010
+00000000-0000-0000-0000-000000000002	葉麗香	lisa02@example.net	1011_host_456778	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	中國文學系國際學生學士班聯絡人	department	f	\N	f	2021-11-08 00:00:00+00	9999-12-31 00:00:00+00	\N	1011
+00000000-0000-0000-0000-000000000003	Tyler Rogers	mei-lan94@example.org	1020_host_662275	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	外國語文學系聯絡人	department	f	\N	f	2022-07-13 00:00:00+00	9999-12-31 00:00:00+00	\N	1020
+9b541a87-7eec-470b-baaf-a26e952062c9	公司測試	josh@mail.com	testcompany	$2b$10$qdINb6xblj8U29RBr5enmOVFjI1QF6t24EOQl3Fz1C38QQtWMzanW	testc	company	f	\N	f	2025-12-02 04:57:32.196709+00	9999-12-31 23:59:59+00	\N	\N
 00000000-0000-0000-0000-000000000110	Amber Rios	tylerjimenez@example.net	comp_29_940064	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	LloydGroup聯絡人	company	f	\N	f	2024-07-23 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000110	\N
 00000000-0000-0000-0000-000000000097	黃明宏	edward17@example.com	comp_16_935012	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	隆豐大飯店（北台君悅）資訊有限公司聯絡人	company	f	\N	f	2025-10-24 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000097	\N
 00000000-0000-0000-0000-000000000128	Cheryl Wright	timothy84@example.com	comp_47_701334	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	DavidLLC聯絡人	company	f	\N	f	2025-11-07 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000128	\N
@@ -27718,7 +27743,6 @@ COPY public."user" (user_id, real_name, email, username, password, nickname, rol
 00000000-0000-0000-0000-000000000092	王秀英	pai-lin59@example.net	comp_11_155164	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	聯燁鋼鐵有限公司聯絡人	company	f	\N	f	2024-05-13 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000092	\N
 00000000-0000-0000-0000-000000000082	Teresa Rodriguez	debra12@example.org	comp_1_419149	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	台灣電信股份有限公司聯絡人	company	f	\N	f	2025-08-14 00:00:00+00	2025-11-30 00:00:00+00	00000000-0000-0000-0001-000000000082	\N
 00000000-0000-0000-0000-000000000124	楊柏宇	shih-han52@example.com	comp_43_722565	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	碩華電腦股份有限公司聯絡人	company	f	\N	f	2023-07-20 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000124	\N
-00000000-0000-0000-0000-000000000009	林淑娟	dlin@example.net	1090_host_680099	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	戲劇學系聯絡人	department	f	\N	f	2023-06-15 00:00:00+00	9999-12-31 00:00:00+00	\N	1090
 00000000-0000-0000-0000-000000000089	Nicholas Edwards	vchen@example.com	comp_8_683397	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Scott,MckayandMcdaniel聯絡人	company	f	\N	f	2023-04-12 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000089	\N
 00000000-0000-0000-0000-000000000108	劉文傑	kuo-hua58@example.com	comp_27_970720	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Burgess-Kelly聯絡人	company	f	\N	f	2025-09-17 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000108	\N
 00000000-0000-0000-0000-000000000098	Heather Jones	ycarpenter@example.net	comp_17_571579	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Johnson-Wood聯絡人	company	f	\N	f	2025-07-13 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000098	\N
@@ -27761,9 +27785,6 @@ COPY public."user" (user_id, real_name, email, username, password, nickname, rol
 00000000-0000-0000-0000-000000000118	邱文祥	bryananthony@example.org	comp_37_782759	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	平太洋崇光百貨聯絡人	company	f	\N	f	2023-08-24 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000118	\N
 00000000-0000-0000-0000-000000000093	郭嘉宏	hsiu-ying49@example.com	comp_12_147623	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	Stanley-Tucker聯絡人	company	f	\N	f	2023-11-01 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000093	\N
 00000000-0000-0000-0000-000000000100	Jasmine Schroeder	mathewaguilar@example.org	comp_19_425301	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	台灣印無品良股份有限公司聯絡人	company	f	\N	f	2024-02-15 00:00:00+00	9999-12-31 00:00:00+00	00000000-0000-0000-0001-000000000100	\N
-00000000-0000-0000-0000-000000000001	張志成	fchen@example.org	1010_host_629903	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	中國文學系聯絡人	department	f	\N	f	2023-10-18 00:00:00+00	9999-12-31 00:00:00+00	\N	1010
-00000000-0000-0000-0000-000000000002	葉麗香	lisa02@example.net	1011_host_456778	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	中國文學系國際學生學士班聯絡人	department	f	\N	f	2021-11-08 00:00:00+00	9999-12-31 00:00:00+00	\N	1011
-00000000-0000-0000-0000-000000000003	Tyler Rogers	mei-lan94@example.org	1020_host_662275	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	外國語文學系聯絡人	department	f	\N	f	2022-07-13 00:00:00+00	9999-12-31 00:00:00+00	\N	1020
 00000000-0000-0000-0000-000000000004	王淑慧	chenchien-hsing@example.com	1030_host_996865	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	歷史學系聯絡人	department	f	\N	f	2023-05-16 00:00:00+00	9999-12-31 00:00:00+00	\N	1030
 00000000-0000-0000-0000-000000000005	王惠美	jason41@example.net	1040_host_660086	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	哲學系聯絡人	department	f	\N	f	2021-08-10 00:00:00+00	9999-12-31 00:00:00+00	\N	1040
 00000000-0000-0000-0000-000000000006	王子睿	perezantonio@example.com	1050_host_380746	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	人類學系聯絡人	department	f	\N	f	2023-10-30 00:00:00+00	9999-12-31 00:00:00+00	\N	1050
@@ -27840,7 +27861,7 @@ COPY public."user" (user_id, real_name, email, username, password, nickname, rol
 00000000-0000-0000-0000-000000000078	Elizabeth Spence DDS	speng@example.org	o010_host_329642	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	國際事務處聯絡人	department	f	\N	f	2020-12-13 00:00:00+00	9999-12-31 00:00:00+00	\N	O010
 00000000-0000-0000-0000-000000000079	賴美英	linshu-chuan@example.net	o020_host_867934	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	國際學院聯絡人	department	f	\N	f	2023-08-03 00:00:00+00	9999-12-31 00:00:00+00	\N	O020
 00000000-0000-0000-0000-000000000080	張哲維	hsiu-lan42@example.com	z010_host_945664	$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K	創新領域學士學位學程聯絡人	department	f	\N	f	2021-10-08 00:00:00+00	9999-12-31 00:00:00+00	\N	Z010
-9b541a87-7eec-470b-baaf-a26e952062c9	公司測試	josh@mail.com	testcompany	$2b$10$qdINb6xblj8U29RBr5enmOVFjI1QF6t24EOQl3Fz1C38QQtWMzanW	testc	company	f	\N	f	2025-12-02 04:57:32.196709+00	9999-12-31 23:59:59+00	\N	\N
+c447c18e-361a-4f67-b567-2c5cdbb042ba	Josh	b12508026@ntu.edu.tw	b12508026	$2b$10$z4sFZ9gpOvYnmj5BqV11YOkD4qj6OLu/0iFylAPmVg7jlFuNXm6Nm	Josh	student	t	\N	f	2025-12-02 08:21:27.837754+00	9999-12-31 23:59:59+00	\N	\N
 \.
 
 
@@ -28098,7 +28119,7 @@ ALTER TABLE ONLY public.push_record
 --
 
 ALTER TABLE ONLY public.resource
-    ADD CONSTRAINT resource_company_supplier_id_fkey FOREIGN KEY (company_supplier_id) REFERENCES public.company_profile(company_id);
+    ADD CONSTRAINT resource_company_supplier_id_fkey FOREIGN KEY (company_supplier_id) REFERENCES public."user"(user_id);
 
 
 --
@@ -28122,7 +28143,7 @@ ALTER TABLE ONLY public.resource_condition
 --
 
 ALTER TABLE ONLY public.resource
-    ADD CONSTRAINT resource_department_supplier_id_fkey FOREIGN KEY (department_supplier_id) REFERENCES public.department_profile(department_id);
+    ADD CONSTRAINT resource_department_supplier_id_fkey FOREIGN KEY (department_supplier_id) REFERENCES public."user"(user_id);
 
 
 --
@@ -28172,6 +28193,15 @@ ALTER TABLE ONLY public.student_profile
 ALTER TABLE ONLY public.student_profile
     ADD CONSTRAINT student_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(user_id) ON DELETE CASCADE;
 
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
 --
 -- Name: student_search_mv; Type: MATERIALIZED VIEW DATA; Schema: public; Owner: postgres
 --
@@ -28183,8 +28213,7 @@ REFRESH MATERIALIZED VIEW public.student_search_mv;
 -- PostgreSQL database dump complete
 --
 
-
-\unrestrict LrwjUzvIbbbeUAgoRA3eseCh8IvtHh0eRjlTob3jIo6TCwWlfOR4X0fla36347p
+\unrestrict bpyVE51ol71Sbxucyksb7T7XIwDdqTMCe57uL1pvxUZjU7ahhLlb3nWAgmbaObc
 
 UPDATE public.user AS u
 SET company_id = c.company_id

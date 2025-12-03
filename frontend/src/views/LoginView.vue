@@ -32,6 +32,7 @@ const handleLogin = async () => {
     console.log('Login successful:', data);
 
     authStore.setUser(data.user);
+    authStore.setNeedProfile(data.needProfile);
 
     console.log('Need profile setup:', data.needProfile);
     if (data.needProfile) {

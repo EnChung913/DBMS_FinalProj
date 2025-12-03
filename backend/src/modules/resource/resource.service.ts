@@ -5,9 +5,11 @@ import { Repository, DataSource } from 'typeorm';
 import { Resource } from '../../entities/resource.entity';
 import { ResourceCondition } from '../../entities/resource-condition.entity';
 import { UpsertResourceConditionDto } from './resource-condition/dto/upsert-resource-condition.dto';
+import { User } from '../../entities/user.entity';
 
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { ResourceConditionService } from './resource-condition/resource-condition.service';
+
 
 @Injectable()
 export class ResourceService {
@@ -143,4 +145,32 @@ export class ResourceService {
       conditions,
     };
   }
+
+  async getAllResources() {
+    const sql = `
+      SELECT
+          r.resource_id,
+          r.resource_type,
+          r.quota,
+          r.title,
+          r.deadline,
+          r.description,
+          r.status,
+          r.is_deleted,
+          COALESCE(ds.real_name, cs.real_name) AS supplier_name,
+          rc.department_id,
+          rc.avg_gpa,
+          rc.current_gpa,
+          rc.is_poor
+      FROM resource r
+      LEFT JOIN "user" ds ON ds.user_id = r.department_supplier_id
+      LEFT JOIN "user" cs ON cs.user_id = r.company_supplier_id
+      LEFT JOIN resource_condition rc ON rc.resource_id = r.resource_id
+      WHERE r.is_deleted = false
+        AND r.status = 'Available'
+      ORDER BY r.deadline ASC
+    `;
+    return this.dataSource.query(sql);
+  }
+
 }

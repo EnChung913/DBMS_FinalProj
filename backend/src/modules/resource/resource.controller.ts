@@ -34,14 +34,18 @@ export class ResourceController {
 		return this.resourceService.addCondition(resourceId, dto, req.user);
 	}
 
-
-
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('company', 'department')
   @Get('my')
   async getMyResources(@Req() req: any) {
     const user = req.user;
     return this.resourceService.getMyResources(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('list')
+  async getAllResources() {
+    return this.resourceService.getAllResources();
   }
 
   @UseGuards(JwtAuthGuard)
