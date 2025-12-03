@@ -117,7 +117,16 @@ const getStatusClass = (status: string) => {
       </aside>
 
       <main class="right-panel">
-        <div class="section-title-row"><h2>Recommended Resources</h2></div>
+        <div class="section-title-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2>Recommended Resources</h2>
+          </div>
+    
+          <router-link to="/student/resources" class="btn-view-all">
+            <span class="btn-text">View All</span>
+            <span class="arrow-icon">➭➭➭</span>
+          </router-link>
+        </div>
         <div class="resource-grid">
           <div v-for="res in recommendedResources" :key="res.resource_id" class="resource-card">
             <div class="match-badge">
@@ -512,5 +521,42 @@ const getStatusClass = (status: string) => {
   background: var(--primary-color);
   color: #fff;
   box-shadow: 0 4px 12px rgba(125, 157, 156, 0.3);
+}
+
+.btn-view-all {
+  /* --- 佈局與防換行核心設定 --- */
+  display: inline-flex;    /* 關鍵：讓內容物緊密排列 */
+  align-items: center;     /* 垂直置中 */
+  gap: 8px;                /* 文字與箭頭的間距 */
+  white-space: nowrap;     /* 關鍵：強制文字絕對不准換行 */
+  
+  /* --- 外觀設定 --- */
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 700;        /* 加粗一點比較好看 */
+  font-size: 0.95rem;
+  padding: 8px 16px;       /* 增加一點內距，讓按鈕大一點 */
+  border-radius: 8px;
+  border: 1px solid transparent; /* 預留邊框位置 */
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-view-all:hover {
+  background: rgba(125, 157, 156, 0.1);
+  transform: translateX(3px); /* 懸浮時整體稍微往右移 */
+}
+
+.arrow-icon {
+  font-size: 1.5rem;       /* 在這裡調整箭頭大小 */
+  line-height: 0.8;        /* 縮小行高，避免撐開按鈕高度 */
+  display: flex;           /* 讓箭頭符號本身也保持彈性盒模型，消除怪異間距 */
+  align-items: center;
+  margin-top: -2px;        /* 微調：視字體而定，有時需要往上一點點才視覺置中 */
+}
+
+.btn-text {
+  display: inline-block;
+  padding-top: 2px; /* 視字體情況微調 */
 }
 </style>

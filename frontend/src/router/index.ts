@@ -7,6 +7,7 @@ import StudentDashboard from '../views/Student/StudentDashboard.vue';
 import DepartmentDashboard from '../views/Department/DepartmentDashboard.vue';
 import CompanyDashboard from '../views/Company/CompanyDashboard.vue';
 import ForgotPasswordView from '../views/ForgotPasswordView.vue';
+import AllResources from '../views/Student/AllResources.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,6 +40,12 @@ const router = createRouter({
       name: 'CompanyDashboard',
       component: CompanyDashboard,
       meta: { requiresAuth: true, role: 'company', requiresSetup: true }
+    },
+    {
+      path: '/student/resources',
+      name: 'AllResources',
+      component: AllResources,
+      meta: { requiresAuth: true, role: 'student', requiresSetup: true }
     }
   ]
 });
