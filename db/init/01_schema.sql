@@ -17,34 +17,31 @@ CREATE TABLE "user" (
     is_2fa_enabled BOOLEAN DEFAULT FALSE,
     registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ DEFAULT '9999-12-31 23:59:59',
-
     company_id UUID,
-    department_id VARCHAR(50),
+    department_id VARCHAR(50)
 );
 
--- TODO: User application table (if needed)
--- CREATE TABLE user_application (
---     application_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
---     -- 與 user 幾乎相同的欄位
---     real_name VARCHAR(50) NOT NULL,
---     email VARCHAR(50) NOT NULL,
---     username VARCHAR(50) NOT NULL,
---     password VARCHAR(128) NOT NULL,
---     nickname VARCHAR(50) NOT NULL,
---     role VARCHAR(20) CHECK(role IN ('department','company')) NOT NULL,
---     registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE user_application (
+     application_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     real_name VARCHAR(50) NOT NULL,
+     email VARCHAR(50) NOT NULL,
+     username VARCHAR(50) NOT NULL,
+     password VARCHAR(128) NOT NULL,
+     nickname VARCHAR(50) NOT NULL,
+     role VARCHAR(20) CHECK(role IN ('department','company')) NOT NULL,
+     registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
---     -- 新增: 審核狀態
---     status VARCHAR(20)
---         CHECK(status IN ('pending','approved','rejected'))
---         DEFAULT 'pending',
 
---     submit_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
---     review_time TIMESTAMPTZ,
---     reviewed_by UUID REFERENCES "user"(user_id),
---     review_comment TEXT
--- );
+     status VARCHAR(20)
+	 CHECK(status IN ('pending','approved','rejected'))
+     DEFAULT 'pending',
+
+     submit_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+     review_time TIMESTAMPTZ,
+     reviewed_by UUID REFERENCES "user"(user_id),
+     review_comment TEXT
+);
 
 
 -------------------------------------------------
@@ -143,22 +140,12 @@ CREATE TABLE resource (
     resource_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     resource_type VARCHAR(20) 
         CHECK(resource_type IN ('Scholarship','Internship','Lab','Competition','Others')),
-
     quota INT NOT NULL CHECK(quota >= 0),
-    
-    department_supplier_id UUID REFERENCES user(user_id),
-    company_supplier_id UUID REFERENCES user(user_id),
-    
-    CHECK (
-        (department_supplier_id IS NOT NULL AND company_supplier_id IS NULL) OR 
-        (department_supplier_id IS NULL AND company_supplier_id IS NOT NULL)
-    ),
-    
+    supplier_id UUID REFERENCES "user"(user_id),
     title VARCHAR(100) NOT NULL,
     deadline DATE,
     description TEXT NOT NULL,
-    status VARCHAR(20) CHECK(status IN ('Canceled','Unavailable','Available')) NOT NULL DEFAULT 'Unavailable',
-    is_deleted BOOLEAN DEFAULT FALSE
+    status VARCHAR(20) CHECK(status IN ('Canceled','Unavailable','Available', 'Full')) NOT NULL DEFAULT 'Unavailable'
 );
 
 -------------------------------------------------
@@ -186,9 +173,6 @@ CREATE TABLE application (
     review_status VARCHAR(20)
         CHECK(review_status IN ('submitted','under_review','approved','rejected'))
         NOT NULL,
-
-    resource_status_at_apply VARCHAR(20)
-        CHECK(resource_status_at_apply IN ('Canceled','Unavailable','Available','Full')),
     
     PRIMARY KEY(user_id, resource_id)
 );

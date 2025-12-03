@@ -6,7 +6,7 @@ from faker import Faker
 from datetime import date, datetime, timedelta, timezone
 from io import StringIO
 import string
-import math
+from uuid import uuid4
 from collections import defaultdict
 
 Faker.seed(42)
@@ -22,7 +22,7 @@ fake_en = Faker('en_US')
 TZ = timezone(timedelta(hours=8))
 
 # 密碼 Hash 值 (ntu-test-2025)
-DEFAULT_PASSWORD_HASH = "$2b$10$X1y/p.tXz/fJ9kG4c0hP0.W2s3D4E5F6G7H8I9J0K"
+DEFAULT_PASSWORD_HASH = "$2b$10$mSAYMiRM1448LuLpBqQOHOJ8H0941/3Rc1a9bSRkPmFRJC6mDVQ9i"
 
 # 數量設定
 NUM_STUDENTS = 500
@@ -60,16 +60,17 @@ def sql_value(value):
     if isinstance(value, uuid.UUID):
         return f"'{value}'"
     
+    if isinstance(value, bool):
+        return 'TRUE' if value else 'FALSE'
+    
+    if isinstance(value, datetime):
+        # 支援 tz-aware datetime
+        return f"'{value.strftime('%Y-%m-%d %H:%M:%S%z')}'"
+    
     if isinstance(value, date):
         return f"'{value.strftime('%Y-%m-%d')}'"
     
-    if isinstance(value, bool):
-        return 'TRUE' if value else 'FALSE'
-    if isinstance(value, (datetime, date)):
-        return f"'{v.strftime('%Y-%m-%d')}'"
-    
     return str(value)
-
 def generate_soft_delete_timestamps(registered_at):
     """生成在註冊時間之後的刪除時間。"""
     time_diff = timedelta(days=random.randint(1, 365*2))
@@ -173,25 +174,27 @@ def generate_user_data():
         user_id = generate_sequential_uuid(uuid_user)
         real_name = fake_ch.name() 
         registered_at = fake_ch.date_time_between(start_date='-5y', end_date='-1y', tzinfo=TZ)
-        safe_abbr = re.sub(r'[^a-zA-Z0-9]', '', dept['abbr'])  # 只保留英文和數字
-        if not safe_abbr:  # 如果全是中文，改成英文代碼
+        safe_abbr = re.sub(r'[^a-zA-Z0-9]', '', dept['abbr'])
+        if not safe_abbr:
             safe_abbr = dept['code'].lower()
+        
+        # 如果是資管系聯絡人，is_admin 設為 True
+        is_admin_flag = True if dept['code'] == '7050' else False
+
         user = {
             'user_id': user_id,
             'real_name': real_name,
             'email': fake_ch.unique.email(),
-            # 使用 dept name 的前幾個字母和唯一後綴
             'username': f"{safe_abbr}_host_{get_suffix()}",
             'password': DEFAULT_PASSWORD_HASH,
-            # 使用完整的學系名稱
             'nickname': generate_nickname('department', real_name, dept_name=dept['name']),
             'role': 'department',
-            'is_admin': False,
+            'is_admin': is_admin_flag,   # <-- 這裡設定
             'registered_at': registered_at,
             'deleted_at': datetime(9999, 12, 31, 23, 59, 59, tzinfo=TZ)
         }
         all_users.append(user)
-        dept['contact_person_id'] = user_id # 供後續 profile 表使用
+        dept['contact_person_id'] = user_id
     
     print(f"✅ 生成 {len(department_data)} 筆 'department' 使用者資料。")
 
@@ -282,23 +285,32 @@ def write_sql_file(all_users):
         
         columns = [
             "user_id", "real_name", "email", "username", "password", "nickname", "role", 
-            "is_admin", "registered_at", "deleted_at"
+            "is_admin", "registered_at", "deleted_at", "company_id", "department_id"
         ]
-        
         columns_sql = ", ".join(columns)
-        
-        for user in all_users:
+        BATCH_SIZE = 100
+        batch_values = []
+        for idx, user in enumerate(all_users, start=1):
             values = [
                 user['user_id'], user['real_name'], user['email'], user['username'], 
                 user['password'], user['nickname'], user['role'], user['is_admin'],
-                user['registered_at'], user['deleted_at']
+                user['registered_at'], user['deleted_at'],
+                user.get('company_id', None),  # FK 新增
+                user.get('department_id', None)  # FK 新增
             ]
-            
             values_sql = ", ".join([sql_value(v) for v in values])
+            batch_values.append(f"({values_sql})")
             
-            f.write(f'INSERT INTO "user" ({columns_sql}) VALUES ({values_sql});\n')
-            
-        f.write("\nCOMMIT;\n")
+            if idx % BATCH_SIZE == 0:
+                f.write(f"INSERT INTO \"user\" ({columns_sql}) VALUES\n")
+                f.write(",\n".join(batch_values) + ";\n\n")
+                batch_values = []
+
+        # 寫入剩下的資料
+        if batch_values:
+            f.write(f"INSERT INTO \"user\" ({columns_sql}) VALUES\n")
+            f.write(",\n".join(batch_values) + ";\n\n")
+        f.write("COMMIT;\n")
 
 # --- 6. 執行主程序 ---
 
@@ -325,16 +337,31 @@ if all_users:
 DEPARTMENT_PROFILE_SQL_FILE = 'insert_department_profile.sql'
 
 def write_department_profile_sql(department_data):
+    BATCH_SIZE = 100  # 每 50 筆生成一次 INSERT
     with open(DEPARTMENT_PROFILE_SQL_FILE, 'w', encoding='utf-8') as f:
         f.write("-- PostgreSQL INSERT script for 'department_profile' table\n\n")
         f.write("BEGIN;\n\n")
-        for dept in department_data:
+        
+        batch_values = []
+        for idx, dept in enumerate(department_data, start=1):
             dept_id = dept['code']
-            dept_name = dept['name']
+            dept_name = dept['name'].replace("'", "''")  # 避免單引號錯誤
             contact_uuid = dept['contact_person_id']
-            f.write(f"INSERT INTO department_profile (department_id, department_name, contact_person) VALUES ('{dept_id}', '{dept_name}', '{contact_uuid}');\n")
-        f.write("\nCOMMIT;\n")
+            batch_values.append(f"('{dept_id}', '{dept_name}', '{contact_uuid}')")
+            
+            if idx % BATCH_SIZE == 0:
+                f.write("INSERT INTO department_profile (department_id, department_name, contact_person) VALUES\n")
+                f.write(",\n".join(batch_values) + ";\n\n")
+                batch_values = []
+
+        # 寫入剩餘的資料
+        if batch_values:
+            f.write("INSERT INTO department_profile (department_id, department_name, contact_person) VALUES\n")
+            f.write(",\n".join(batch_values) + ";\n\n")
+        
+        f.write("COMMIT;\n")
     print(f"🎉 成功生成 {len(department_data)} 筆 'department_profile' 資料到 {DEPARTMENT_PROFILE_SQL_FILE}。")
+
 
 # 呼叫函數生成 SQL
 write_department_profile_sql(department_data)
@@ -349,69 +376,280 @@ def generate_sequential_company_uuid(n):
     return f"00000000-0000-0000-0001-{int(n):012d}"
 
 COMPANY_PROFILE_SQL_FILE = 'insert_company_profile.sql'
-INDUSTRY_BOX = ['科技業','生技業','服務業']
+INDUSTRY_BOX = ['科技業','生技業','服務業','金融業','醫療業','教育業','餐飲業','零售業','製造業','建築業','運輸業','物流業','能源業','農業','漁業','林業','娛樂業','媒體業','廣告業','旅遊業','保險業','電信業','資訊服務業','軟體業','硬體業','半導體業','汽車業','航太業','化工業','製藥業','時尚業','美容業','健身業','房地產業','法律業','會計業','諮詢業','非營利組織','藝術業','音樂業','影視業','出版業','電子商務','遊戲業','體育產業','環保產業','醫美業','家具業','餐飲連鎖業','跨境電商','社群媒體業','智能家居業']
 used_company_ids = set()
 
 def write_company_profile_sql(all_users):
     company_users = [u for u in all_users if u['role'] == 'company']
+    BATCH_SIZE = 100  # 每 50 筆生成一次 INSERT
+    
     with open(COMPANY_PROFILE_SQL_FILE, 'w', encoding='utf-8') as f:
         f.write("-- PostgreSQL INSERT script for 'company_profile' table\n\n")
         f.write("BEGIN;\n\n")
-        for u in company_users:
+        
+        batch_values = []
+        for idx, u in enumerate(company_users, start=1):
             company_id = generate_sequential_company_uuid(int(u['user_id'][-12:]))  # 取 user_id 最後 12 位轉數字
-            company_name = sql_value(u['company_name'])
+            company_name = u['company_name'].replace("'", "''")  # 避免單引號錯誤
             contact_uuid = u['user_id']
-            industry = random.choice(INDUSTRY_BOX)
-            f.write(f"INSERT INTO company_profile (company_id, company_name, contact_person, industry) VALUES ('{company_id}', {company_name}, '{contact_uuid}', '{industry}');\n")
-        f.write("\nCOMMIT;\n")
+            industry = random.choice(INDUSTRY_BOX).replace("'", "''")  # 處理特殊字元
+            batch_values.append(f"('{company_id}', '{company_name}', '{contact_uuid}', '{industry}')")
+            
+            if idx % BATCH_SIZE == 0:
+                f.write("INSERT INTO company_profile (company_id, company_name, contact_person, industry) VALUES\n")
+                f.write(",\n".join(batch_values) + ";\n\n")
+                batch_values = []
+
+        # 寫入剩餘資料
+        if batch_values:
+            f.write("INSERT INTO company_profile (company_id, company_name, contact_person, industry) VALUES\n")
+            f.write(",\n".join(batch_values) + ";\n\n")
+        
+        f.write("COMMIT;\n")
+    
     print(f"🎉 成功生成 {len(company_users)} 筆 'company_profile' 資料到 {COMPANY_PROFILE_SQL_FILE}。")
+
 
 # 呼叫函數
 write_company_profile_sql(all_users)
 
 STUDENT_PROFILE_SQL_FILE = 'insert_student_profile.sql'
 
+def calculate_entry_year(registered_at):
+    """
+    registered_at: datetime
+    回傳學生入學民國年
+    """
+    now = datetime.now(TZ)
+    # 以月份為判斷，如果已過 9 個月就算 n 年，否則 n-1 年
+    diff = now - registered_at
+    diff_in_months = diff.days // 30  # 粗略換算月份
+    years = diff_in_months // 12
+
+    # 超過 9 個月就算 n 年，否則 n-1 年
+    if (diff_in_months % 12) >= 9:
+        entry_year_ad = registered_at.year + years
+    else:
+        entry_year_ad = registered_at.year + years - 1
+
+    # 轉成民國年
+    entry_year_minguo = entry_year_ad - 1911
+    return entry_year_minguo
+
 def write_student_profile_sql(all_users):
     student_users = [u for u in all_users if u['role'] == 'student']
 
-    # 用於避免每個系每年流水號重複
-    dept_used_numbers = {}
+    dept_used_numbers = {}  # 用於避免每個系每年流水號重複
+    BATCH_SIZE = 100        # 每 100 筆一起 INSERT
 
     with open(STUDENT_PROFILE_SQL_FILE, 'w', encoding='utf-8') as f:
         f.write("-- PostgreSQL INSERT script for 'student_profile' table\n\n")
         f.write("BEGIN;\n\n")
 
-        for u in student_users:
-            entry_year = u['registered_at'].year - 1911
+        batch_values = []
+
+        for idx, u in enumerate(student_users, start=1):
+            entry_year = calculate_entry_year(u['registered_at'])
+            u['entry_year'] = entry_year   # <- 回寫 entry_year
             year_code = str(entry_year)[-2:]
             level = random.choice(['B', 'R'])
-            dept_code = u['main_dept_code']
+            dept_code = u['main_dept_code']  # 對應 department_profile.department_id
             dept_code_short = dept_code[:3]
 
             year_dept_key = f"{entry_year}_{dept_code_short}"
 
-            # 初始化序號
             if year_dept_key not in dept_used_numbers:
                 dept_used_numbers[year_dept_key] = 1
 
             student_number = f"{dept_used_numbers[year_dept_key]:03d}"
             dept_used_numbers[year_dept_key] += 1
 
-            # 組成學號
             student_id = f"{level}{year_code}{dept_code_short}{student_number}"
-            u['student_id'] = student_id   # <-- 這行非常重要：把學號回寫回 all_users
+            u['student_id'] = student_id  # 回寫回 all_users
 
             grade = datetime.now().year - (entry_year + 1911) + 1
 
-            f.write(f"INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade) "
-                    f"VALUES ('{u['user_id']}', '{student_id}', '{dept_code}', {entry_year}, {grade});\n")
+            batch_values.append(
+                f"('{u['user_id']}', '{student_id}', '{dept_code}', {entry_year}, {grade})"
+            )
 
-        f.write("\nCOMMIT;\n")
+            if idx % BATCH_SIZE == 0:
+                f.write("INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade) VALUES\n")
+                f.write(",\n".join(batch_values) + ";\n\n")
+                batch_values = []
+
+        # 寫入剩餘資料
+        if batch_values:
+            f.write("INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade) VALUES\n")
+            f.write(",\n".join(batch_values) + ";\n\n")
+
+        f.write("COMMIT;\n")
 
     print(f"🎉 成功生成 {len(student_users)} 筆 'student_profile' 資料到 {STUDENT_PROFILE_SQL_FILE}。")
 
+
 # 呼叫函數
 write_student_profile_sql(all_users)
+
+# --- 定義輸出 SQL 檔名 ---
+USER_FK_UPDATE_SQL_FILE = "user_fk_update.sql"
+
+# --- 寫入 user table FK 更新的函數 ---
+def write_user_fk_update_sql(all_users, department_data, company_users):
+    BATCH_SIZE = 50
+    update_lines = []
+
+    # 建立 department mapping: contact_person_id -> department_id
+    dept_map = {dept['contact_person_id']: dept['code'] for dept in department_data}
+
+    # 建立 company mapping: user_id -> company_id
+    comp_map = {u['user_id']: generate_sequential_company_uuid(int(u['user_id'][-12:])) for u in company_users}
+
+    with open(USER_FK_UPDATE_SQL_FILE, 'w', encoding='utf-8') as f:
+        f.write("-- PostgreSQL UPDATE script for 'user' table FKs\n\n")
+        f.write("BEGIN;\n\n")
+
+        for idx, u in enumerate(all_users, start=1):
+            if u['role'] == 'department':
+                dept_id = dept_map.get(u['user_id'], 'NULL')
+                update_lines.append(f"UPDATE \"user\" SET department_id = '{dept_id}' WHERE user_id = '{u['user_id']}'")
+            elif u['role'] == 'company':
+                company_id = comp_map.get(u['user_id'], 'NULL')
+                update_lines.append(f"UPDATE \"user\" SET company_id = '{company_id}' WHERE user_id = '{u['user_id']}'")
+            # student 不操作
+
+            # 批次提交
+            if idx % BATCH_SIZE == 0:
+                f.write(";\n".join(update_lines) + ";\n\n")
+                update_lines = []
+
+        # 寫入剩餘的
+        if update_lines:
+            f.write(";\n".join(update_lines) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
+    print(f"✅ 成功生成 'user' table FK 更新 SQL 到 {USER_FK_UPDATE_SQL_FILE}")
+
+
+# --- 呼叫函數生成 SQL ---
+# all_users = 已生成的使用者資料
+# department_data = 已生成的 department profile 資料
+# company_users = [u for u in all_users if u['role'] == 'company']
+write_user_fk_update_sql(all_users, department_data, [u for u in all_users if u['role'] == 'company'])
+
+
+APPL_STUDENT_NUM = 50
+APPL_COMPANY_NUM = 5
+
+USER_APPLICATION_SQL_FILE = "user_application.sql"
+
+def write_user_application_sql(all_users, admin_user_id):
+    """
+    all_users: 所有已生成 user 資料
+    admin_user_id: 資管系管理人 user_id
+    """
+    # 分類使用者
+    department_users = [u for u in all_users if u['role'] == 'department']
+    company_users = [u for u in all_users if u['role'] == 'company']
+
+    batch_values = []
+    BATCH_SIZE = 50
+
+    columns_sql = ("application_id, real_name, email, username, password, nickname, role, "
+                   "registered_at, status, submit_time, review_time, reviewed_by, review_comment")
+
+    with open(USER_APPLICATION_SQL_FILE, 'w', encoding='utf-8') as f:
+        f.write("-- PostgreSQL INSERT script for 'user_application' table\n\n")
+        f.write("BEGIN;\n\n")
+
+        # -----------------------------
+        # 1. 已註冊 user -> approved
+        # -----------------------------
+        approved_users = department_users + company_users
+        for idx, u in enumerate(approved_users, start=1):
+            application_id = str(uuid4())
+            registered_at = u['registered_at']
+            submit_time = registered_at - timedelta(days=2)
+            review_time = registered_at - timedelta(hours=1)
+            status = 'approved'
+            review_comment = status
+
+            values = [
+                application_id,
+                u['real_name'],
+                u['email'],
+                u['username'],
+                u['password'],
+                u['nickname'],
+                u['role'],
+                registered_at,
+                status,
+                submit_time,
+                review_time,
+                admin_user_id,
+                review_comment
+            ]
+
+            values_sql = ", ".join([sql_value(v) for v in values])
+            batch_values.append(f"({values_sql})")
+
+            if idx % BATCH_SIZE == 0:
+                f.write(f"INSERT INTO user_application ({columns_sql}) VALUES\n")
+                f.write(",\n".join(batch_values) + ";\n\n")
+                batch_values = []
+
+        # -----------------------------
+        # 2. 額外公司 -> pending / rejected
+        # -----------------------------
+        extra_users = random.sample(company_users, APPL_COMPANY_NUM)
+        for idx, u in enumerate(extra_users, start=1):
+            application_id = str(uuid4())
+            registered_at = u['registered_at']
+            submit_time = registered_at - timedelta(days=2)
+            status = random.choice(['pending', 'rejected'])
+            review_time = registered_at - timedelta(hours=1) if status != 'pending' else None
+            reviewed_by = admin_user_id if status != 'pending' else None
+            review_comment = status
+
+            values = [
+                application_id,
+                u['real_name'],
+                u['email'],
+                u['username'],
+                u['password'],
+                u['nickname'],
+                u['role'],
+                registered_at,
+                status,
+                submit_time,
+                review_time,
+                reviewed_by,
+                review_comment
+            ]
+
+            values_sql = ", ".join([sql_value(v) for v in values])
+            batch_values.append(f"({values_sql})")
+
+            if idx % BATCH_SIZE == 0:
+                f.write(f"INSERT INTO user_application ({columns_sql}) VALUES\n")
+                f.write(",\n".join(batch_values) + ";\n\n")
+                batch_values = []
+
+        # 寫入剩餘資料
+        if batch_values:
+            f.write(f"INSERT INTO user_application ({columns_sql}) VALUES\n")
+            f.write(",\n".join(batch_values) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
+    print(f"✅ 成功生成 user_application SQL 到 {USER_APPLICATION_SQL_FILE}")
+
+
+
+# 假設 all_users 已經生成完畢
+# admin_user_id: 資管系管理人的 user_id
+write_user_application_sql(all_users, '00000000-0000-0000-0000-000000000064')
 
 
 
@@ -658,27 +896,59 @@ def generate_course_and_gpa(all_users):
     print(f"✅ 計算 GPA 完成，共 {len(student_gpas)} 筆學期 GPA。")
 
     # 輸出 SQL
+    BATCH_SIZE = 1000
+
     def write_student_course_sql(filename, records):
         with open(filename, 'w', encoding='utf-8') as f:
-            f.write("-- PostgreSQL INSERT script for 'student_course_record' table\n\n")
+            f.write("-- PostgreSQL INSERT script for 'student_course_record' table (batch mode)\n\n")
             f.write("BEGIN;\n\n")
+
+            batch = []
             for r in records:
                 vals = [r['user_id'], r['semester'], r['course_id'], r['course_name'], r['credit'], r['score']]
-                vals_sql = ", ".join([sql_value(v) for v in vals])
-                f.write(f"INSERT INTO student_course_record (user_id, semester, course_id, course_name, credit, score) VALUES ({vals_sql});\n")
-            f.write("\nCOMMIT;\n")
-        print(f"🎉 已寫入 {len(records)} 筆 student_course_record 到 {filename}。")
+                vals_sql = "(" + ", ".join([sql_value(v) for v in vals]) + ")"
+                batch.append(vals_sql)
+
+                # 滿 BATCH_SIZE 寫一次
+                if len(batch) >= BATCH_SIZE:
+                    f.write("INSERT INTO student_course_record (user_id, semester, course_id, course_name, credit, score) VALUES\n")
+                    f.write(",\n".join(batch) + ";\n\n")
+                    batch = []
+
+            # 收尾如果還有剩
+            if batch:
+                f.write("INSERT INTO student_course_record (user_id, semester, course_id, course_name, credit, score) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+
+            f.write("COMMIT;\n")
+
+        print(f"🎉 已寫入 {len(records)} 筆 student_course_record 到 {filename}（batch 模式）。")
+
 
     def write_student_gpa_sql(filename, gpa_records):
         with open(filename, 'w', encoding='utf-8') as f:
-            f.write("-- PostgreSQL INSERT script for 'student_gpa' table\n\n")
+            f.write("-- PostgreSQL INSERT script for 'student_gpa' table (batch mode)\n\n")
             f.write("BEGIN;\n\n")
+
+            batch = []
             for g in gpa_records:
                 vals = [g['user_id'], g['semester'], g['gpa']]
-                vals_sql = ", ".join([sql_value(v) for v in vals])
-                f.write(f"INSERT INTO student_gpa (user_id, semester, gpa) VALUES ({vals_sql});\n")
-            f.write("\nCOMMIT;\n")
-        print(f"🎉 已寫入 {len(gpa_records)} 筆 student_gpa 到 {filename}。")
+                vals_sql = "(" + ", ".join([sql_value(v) for v in vals]) + ")"
+                batch.append(vals_sql)
+
+                if len(batch) >= BATCH_SIZE:
+                    f.write("INSERT INTO student_gpa (user_id, semester, gpa) VALUES\n")
+                    f.write(",\n".join(batch) + ";\n\n")
+                    batch = []
+
+            if batch:
+                f.write("INSERT INTO student_gpa (user_id, semester, gpa) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+
+            f.write("COMMIT;\n")
+
+        print(f"🎉 已寫入 {len(gpa_records)} 筆 student_gpa 到 {filename}（batch 模式）。")
+
 
     write_student_course_sql(COURSE_SQL_FILE, student_course_records)
     write_student_gpa_sql(GPA_SQL_FILE, student_gpas)
@@ -794,18 +1064,44 @@ def generate_student_department_records(all_users, department_data):
     return student_dept_rows
 
 
+BATCH_SIZE = 1000
+
 def write_student_department_sql(rows, filename="insert_student_department.sql"):
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("-- insert for student_department\nBEGIN;\n\n")
+        f.write("-- insert for student_department (batch mode)\nBEGIN;\n\n")
+
+        batch = []
 
         for r in rows:
-            f.write(
-                "INSERT INTO student_department (user_id, department_id, role, start_semester, end_semester) "
-                f"VALUES ({sql_value(r['user_id'])}, {sql_value(r['department_id'])}, "
-                f"{sql_value(r['role'])}, {sql_value(r['start_semester'])}, {sql_value(r['end_semester'])});\n"
-            )
+            vals = [
+                r['user_id'],
+                r['department_id'],
+                r['role'],
+                r['start_semester'],
+                r['end_semester']
+            ]
+            vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
+            batch.append(vals_sql)
 
-        f.write("\nCOMMIT;\n")
+            # 每 1000 筆寫一次
+            if len(batch) >= BATCH_SIZE:
+                f.write(
+                    "INSERT INTO student_department "
+                    "(user_id, department_id, role, start_semester, end_semester) VALUES\n"
+                )
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
+
+        # 處理最後沒滿的 batch
+        if batch:
+            f.write(
+                "INSERT INTO student_department "
+                "(user_id, department_id, role, start_semester, end_semester) VALUES\n"
+            )
+            f.write(",\n".join(batch) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
 
 student_dept_rows = generate_student_department_records(all_users, department_data)
 
@@ -819,171 +1115,139 @@ def generate_resource_uuid(n):
     # n 轉成 12 位
     tail = f"{n:012d}"
     return f"00000000-0000-0000-0002-{tail}"
-def generate_resources(all_users, department_data, num_resources=200):
+def generate_resources(all_users, NUM_RESOURCE=200):
     """
-    依照規格隨機生成資源資料。
+    生成資源資料，新 schema: supplier_id 指向 user_id
+    保留原邏輯，只修正 supplier_id 與 title/description 對應
     """
-
-    # 找出 department profiles（用 dept['code'] 對應）
-    dept_codes = [d['code'] for d in department_data]
-
-    # 找出所有公司（從 all_users role == company）
-    company_users = [u for u in all_users if u['role'] == 'company']
+    supplier_users = [u for u in all_users if u['role'] in ['department','company']]
 
     resources = []
     TZ_NOW = datetime.now(TZ)
-    company_user_to_profile_id = {
-        u['user_id']: generate_sequential_company_uuid(int(u['user_id'][-12:]))
-        for u in all_users if u['role'] == 'company'
-    }
-    for i in range(1, num_resources + 1):
+
+    for i in range(1, NUM_RESOURCE + 1):
         resource_id = generate_resource_uuid(i)
-
-        # 隨機選 resource type
-        resource_type = random.choice(['Scholarship', 'Internship', 'Lab', 'Others'])
-
-        # quota = 2~10
+        resource_type = random.choice(['Scholarship', 'Internship', 'Lab', 'Competition', 'Others'])
         quota = random.randint(2, 10)
 
-        # -------------------------------------------------
-        # A. 隨機選供應者：department 或 company（二選一）
-        # -------------------------------------------------
-        if random.random() < 0.5:
-            # department supplier
-            dept = random.choice(department_data)
-            department_supplier_id = dept['code']
-            company_supplier_id = None
-
-            # title 應該依 type 合理組成
-            if resource_type == 'Scholarship':
-                title = f"{dept['name']}獎學金"
-            elif resource_type == 'Lab':
-                title = f"{dept['name']}實驗室機會"
-            elif resource_type == 'Internship':
-                # 學系通常不提供 Internship → 改成 Others 類型稱呼
-                title = f"{dept['name']}校內實習"
+        # 隨機選供應者
+        if supplier_users:
+            supplier = random.choice(supplier_users)
+            supplier_id = supplier['user_id']
+            # 根據 role 決定名稱
+            if supplier['role'] == 'department':
+                supplier_name = (supplier.get('nickname') or supplier.get('real_name')).replace("聯絡人", "")
             else:
-                title = f"{dept['name']}其他資源"
-
+                supplier_name = (supplier.get('company_name') or supplier.get('nickname') or supplier.get('real_name'))
         else:
-            # company supplier
-            company = random.choice(company_users)
-            company_name = company['company_name'].replace(" ", "")
-            department_supplier_id = None
-            company_supplier_id = company_user_to_profile_id[company['user_id']]
+            supplier_id = None
+            supplier_name = "未知單位"
 
-            if resource_type == 'Internship':
-                title = f"{company_name}實習機會"
-            elif resource_type == 'Scholarship':
-                title = f"{company_name}獎學金"
-            elif resource_type == 'Lab':
-                title = f"{company_name}企業合作實驗室"
-            else:
-                title = f"{company_name}其他資源"
-
-        # -------------------------------------------------
-        # B. deadline 與 is_deleted
-        # -------------------------------------------------
-        # deadline 隨機落在過去 1.5 年到未來 1.5 年
-        deadline = TZ_NOW.date() + timedelta(days=random.randint(-550, 550))
-
-        # 預設 deleted
-        if deadline < TZ_NOW.date():
-            is_deleted = True
+        # title / description
+        if resource_type == 'Scholarship':
+            title = f"{supplier_name}獎學金"
+        elif resource_type == 'Internship':
+            title = f"{supplier_name}實習機會"
+        elif resource_type == 'Lab':
+            title = f"{supplier_name}實驗室機會"
+        elif resource_type == 'Competition':
+            title = f"{supplier_name}競賽資源"
         else:
-            is_deleted = False
+            title = f"{supplier_name}其他資源"
 
-        # 但你說：可能 deadline 未到就被刪除
-        if random.random() < 0.1:  # 10% 機率提前刪除
-            is_deleted = True
-
-        # -------------------------------------------------
-        # C. status 與 is_deleted 的邏輯關係
-        # -------------------------------------------------
-        # 若 quota = 0 → unavailable
-        if quota == 0:
-            status = 'Unavailable'
-            is_deleted = False   # 滿了但不表示刪除
-
-        else:
-            # 未滿名額
-            if is_deleted:
-                # 被刪除只有兩種狀況：Canceled / Unavailable(但這裡不是)
-                # 所以是 Canceled
-                status = 'Canceled'
-            else:
-                status = 'Available'
-
-        # -------------------------------------------------
-        # D. description 暫時等於 title
-        # -------------------------------------------------
         description = title
 
-        # -------------------------------------------------
-        # E. 加入結果
-        # -------------------------------------------------
+        # deadline 隨機 ±1.5 年
+        deadline = TZ_NOW.date() + timedelta(days=random.randint(-550, 550))
+
+        # status 分配
+        if deadline < TZ_NOW.date():  # 已過期
+            status = random.choices(['Full','Unavailable'], weights=[0.5,0.5])[0]
+        else:  # 未過期
+            status = random.choices(['Available','Canceled','Full'], weights=[0.6,0.1,0.3])[0]
+
         resources.append({
             "resource_id": resource_id,
             "resource_type": resource_type,
             "quota": quota,
-            "department_supplier_id": department_supplier_id,
-            "company_supplier_id": company_supplier_id,
+            "supplier_id": supplier_id,
             "title": title,
             "deadline": deadline,
             "description": description,
-            "status": status,
-            "is_deleted": is_deleted
+            "status": status
         })
 
     return resources
+
+
+BATCH_SIZE = 1000
+
 def write_resource_sql(resources, filename="insert_resource.sql"):
-
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("-- PostgreSQL INSERT for resource\nBEGIN;\n\n")
+        f.write("-- PostgreSQL INSERT for resource (batch mode)\nBEGIN;\n\n")
 
-        cols = ("resource_id, resource_type, quota, department_supplier_id, "
-                "company_supplier_id, title, deadline, description, status, is_deleted")
+        cols = ("resource_id, resource_type, quota, supplier_id, title, deadline, description, status")
+
+        batch = []
 
         for r in resources:
             vals = [
                 r["resource_id"],
                 r["resource_type"],
                 r["quota"],
-                r["department_supplier_id"],
-                r["company_supplier_id"],
+                r["supplier_id"],
                 r["title"],
                 r["deadline"],
                 r["description"],
-                r["status"],
-                r["is_deleted"]
+                r["status"]
             ]
-            vals_sql = ", ".join(sql_value(v) for v in vals)
+            vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
+            batch.append(vals_sql)
 
-            f.write(f"INSERT INTO resource ({cols}) VALUES ({vals_sql});\n")
+            # 寫入一個 batch
+            if len(batch) >= BATCH_SIZE:
+                f.write(f"INSERT INTO resource ({cols}) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
 
-        f.write("\nCOMMIT;\n")
+        # 收尾未滿 batch 的資料
+        if batch:
+            f.write(f"INSERT INTO resource ({cols}) VALUES\n")
+            f.write(",\n".join(batch) + ";\n\n")
 
-resources = generate_resources(all_users, department_data, num_resources=200)
-write_resource_sql(resources)
+        f.write("COMMIT;\n")
 
+
+# 生成並寫入 SQL
+resources = generate_resources(all_users, NUM_RESOURCE=200)
+write_resource_sql(resources, filename="insert_resource.sql")
 
 RESOURCE_CONDITION_SQL_FILE = "insert_resource_condition.sql"
 
 def generate_resource_conditions(resources, department_data):
+    """
+    生成 resource_condition 假資料。
+    如果 resource 的 supplier 是 department，必須包含自己。
+    """
     resource_conditions = []
 
-    dept_codes = [d['code'] for d in department_data]
+    # 建立 mapping: department user_id -> department_code
+    dept_user_ids = {dept['contact_person_id']: dept['code'] for dept in department_data}
+    dept_codes = [dept['code'] for dept in department_data]
 
     for r in resources:
-        # 至少 1 個科系
+        # 隨機選一些科系，至少 1 個
         num_depts = random.randint(1, len(dept_codes))
         selected_depts = random.sample(dept_codes, num_depts)
 
         # 如果 supplier 是 department，必須包含它
-        if r['department_supplier_id'] and r['department_supplier_id'] not in selected_depts:
-            selected_depts[0] = r['department_supplier_id']
+        if r['supplier_id'] in dept_user_ids:
+            supplier_dept_code = dept_user_ids[r['supplier_id']]
+            if supplier_dept_code not in selected_depts:
+                # 把第一個替換成 supplier 自己
+                selected_depts[0] = supplier_dept_code
 
-        for dept_id in selected_depts:
+        for dept_code in selected_depts:
             # avg_gpa: 50% 機率有值，介於 3.7~4.3
             avg_gpa = round(random.uniform(3.7, 4.3), 2) if random.random() < 0.5 else None
 
@@ -995,7 +1259,7 @@ def generate_resource_conditions(resources, department_data):
 
             resource_conditions.append({
                 'resource_id': r['resource_id'],
-                'department_id': dept_id,
+                'department_id': dept_code,
                 'avg_gpa': avg_gpa,
                 'current_gpa': current_gpa,
                 'is_poor': is_poor
@@ -1004,10 +1268,15 @@ def generate_resource_conditions(resources, department_data):
     return resource_conditions
 
 
+BATCH_SIZE = 1000
+
 def write_resource_condition_sql(resource_conditions, filename=RESOURCE_CONDITION_SQL_FILE):
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("-- PostgreSQL INSERT for resource_condition\nBEGIN;\n\n")
+        f.write("-- PostgreSQL INSERT for resource_condition (batch mode)\nBEGIN;\n\n")
+
         cols = "resource_id, department_id, avg_gpa, current_gpa, is_poor"
+        batch = []
+
         for rc in resource_conditions:
             vals = [
                 rc['resource_id'],
@@ -1016,17 +1285,33 @@ def write_resource_condition_sql(resource_conditions, filename=RESOURCE_CONDITIO
                 rc['current_gpa'],
                 rc['is_poor']
             ]
-            vals_sql = ", ".join(sql_value(v) for v in vals)
-            f.write(f"INSERT INTO resource_condition ({cols}) VALUES ({vals_sql});\n")
-        f.write("\nCOMMIT;\n")
+            vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
+            batch.append(vals_sql)
+
+            # 每 1000 筆寫入一次
+            if len(batch) >= BATCH_SIZE:
+                f.write(f"INSERT INTO resource_condition ({cols}) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
+
+        # 寫入最後一批未達 1000 筆的資料
+        if batch:
+            f.write(f"INSERT INTO resource_condition ({cols}) VALUES\n")
+            f.write(",\n".join(batch) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
+    print(f"🎉 成功生成 {len(resource_conditions)} 筆 'resource_condition' 資料到 {filename}（batch）")
 
 
-# 使用範例
+
+# ---------------- 使用範例 ----------------
+
 resource_conditions = generate_resource_conditions(resources, department_data)
 write_resource_condition_sql(resource_conditions)
 
-APPLICATION_SQL_FILE = "insert_application.sql"
 
+APPLICATION_SQL_FILE = "insert_application.sql"
 def generate_applications(all_users, resources, max_apply_per_student=5):
     student_users = [u for u in all_users if u['role'] == 'student']
     applications = []
@@ -1035,106 +1320,159 @@ def generate_applications(all_users, resources, max_apply_per_student=5):
     approved_count = {r['resource_id']: 0 for r in resources}
 
     for student in student_users:
-        # 隨機決定此學生要申請幾個資源
         num_apply = random.randint(1, max_apply_per_student)
         selected_resources = random.sample(resources, num_apply)
 
         for r in selected_resources:
-            # apply_date 不會超過 deadline
-       
             apply_start = student['registered_at'].date()
             apply_end = min(r['deadline'], datetime.now(TZ).date()) if r['deadline'] else datetime.now(TZ).date()
-
-            # 如果 apply_start 已經超過 apply_end，就直接 assign apply_date = apply_end
             if apply_start > apply_end:
                 apply_date = apply_end
             else:
                 apply_date = apply_start + timedelta(days=random.randint(0, (apply_end - apply_start).days))
 
-            # 根據 resource.status 決定 status
-            if r['status'] == 'Canceled':
-                status = 'rejected'
-            elif r['status'] == 'Unavailable':
-                status = random.choice(['approved', 'rejected'])
-                if status == 'approved' and approved_count[r['resource_id']] >= r['quota']:
-                    status = 'rejected'
-            else:  # Available
-                status = random.choice(['submitted', 'under_review', 'approved', 'rejected'])
-                if status == 'approved' and approved_count[r['resource_id']] >= r['quota']:
-                    status = 'rejected'
+            quota_full = approved_count[r['resource_id']] >= r['quota']
 
-            # 更新已核准人數
-            if status == 'approved':
+            if r['status'] == 'Canceled':
+                review_status = 'rejected'
+            elif r['status'] == 'Full':
+                # 先 approved 到 quota，剩下都是 rejected
+                if not quota_full:
+                    review_status = 'approved'
+                else:
+                    review_status = 'rejected'
+            elif r['status'] == 'Unavailable':
+                choices = ['under_review', 'approved', 'rejected']
+                weights = [0.4, 0.4, 0.2]
+                if quota_full:
+                    choices.remove('approved')
+                    weights = [w for c, w in zip(['under_review','approved','rejected'], weights) if c in choices]
+                review_status = random.choices(choices, weights=weights)[0]
+            else:  # Available
+                choices = ['submitted','under_review','approved','rejected']
+                weights = [0.3, 0.3, 0.2, 0.2]
+                if quota_full:
+                    choices.remove('approved')
+                    weights = [w for c, w in zip(['submitted','under_review','approved','rejected'], weights) if c in choices]
+                review_status = random.choices(choices, weights=weights)[0]
+
+            if review_status == 'approved':
                 approved_count[r['resource_id']] += 1
 
             applications.append({
                 'user_id': student['user_id'],
                 'resource_id': r['resource_id'],
                 'apply_date': apply_date,
-                'status': status
+                'review_status': review_status
             })
 
     return applications
 
 
+
+BATCH_SIZE = 1000
+
 def write_application_sql(applications, filename=APPLICATION_SQL_FILE):
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("-- PostgreSQL INSERT for application\nBEGIN;\n\n")
-        cols = "user_id, resource_id, apply_date, status"
+        f.write("-- PostgreSQL INSERT for application (batch mode)\nBEGIN;\n\n")
+
+        cols = "user_id, resource_id, apply_date, review_status"
+        batch = []
+
         for a in applications:
             vals = [
                 a['user_id'],
                 a['resource_id'],
                 a['apply_date'],
-                a['status']
+                a['review_status']
             ]
-            vals_sql = ", ".join(sql_value(v) for v in vals)
-            f.write(f"INSERT INTO application ({cols}) VALUES ({vals_sql});\n")
-        f.write("\nCOMMIT;\n")
+            vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
+            batch.append(vals_sql)
+
+            # 每 BATCH_SIZE 筆寫一次
+            if len(batch) >= BATCH_SIZE:
+                f.write(f"INSERT INTO application ({cols}) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
+
+        # 寫入不到 BATCH_SIZE 的最後一批
+        if batch:
+            f.write(f"INSERT INTO application ({cols}) VALUES\n")
+            f.write(",\n".join(batch) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
 
 
 # 使用範例
 applications = generate_applications(all_users, resources)
 write_application_sql(applications)
 
+
+
 ACHIEVEMENT_SQL_FILE = 'insert_achievement.sql'
 
-def generate_achievements(all_users, department_data, max_per_student=3):
-    student_users = [u for u in all_users if u['role']=='student']
+def generate_achievement_uuid(n):
+    """
+    生成固定前綴 + 序號的 UUID 字串
+    例如：
+      1 -> 00000000-0000-0000-0000-000000000001
+      2 -> 00000000-0000-0000-0000-000000000002
+    """
+    return f"00000000-0000-0000-0004-{n:012d}"
+def generate_achievements(all_users, department_data, max_per_student=6):
+    TZ = datetime.now().astimezone().tzinfo
+
+    student_users = [u for u in all_users if u['role'] == 'student']
     achievements = []
-    achievement_id = 1  # SERIAL 從 1 開始
+    achievement_data = 1
 
     for student in student_users:
-        num_achievements = random.randint(0, max_per_student)  # 可無
-        entry_year = student['registered_at'].year - 1911
-        level = student['student_id'][0] if 'student_id' in student else 'B'
+        num_achievements = random.randint(0, max_per_student)  # 學生可能 0~3 筆
+        entry_year = student['entry_year']  # ← 使用 student_profile 統一過的 entry_year
+        entry_date = datetime(entry_year + 1911, 9, 1, tzinfo=TZ)
 
         for _ in range(num_achievements):
-            category = random.choice(['Competition','Research','Others'])
-            
-            # title / description
+
+            category = random.choice([
+                'Competition', 'Research', 'Intern', 'Project', 'Others'
+            ])
+
+            # ---------- Title / Description ----------
             if random.random() < 0.5:
-                source_name = random.choice([d['name'] for d in department_data])
+                source = random.choice([d['name'] for d in department_data])
             else:
                 companies = [u['company_name'] for u in all_users if u['role']=='company']
-                source_name = random.choice(companies) if companies else '某企業'
-            
+                source = random.choice(companies) if companies else "某單位"
+
             if category == 'Competition':
-                title = f"{source_name}競賽第{random.randint(1,10)}名"
+                title = f"{source}競賽第{random.randint(1, 10)}名"
             elif category == 'Research':
-                title = f"{source_name}研究成果"
+                title = f"{source}研究成果"
+            elif category == 'Intern':
+                title = f"{source}實習計畫"
+            elif category == 'Project':
+                title = f"{source}專案合作"
             else:
-                title = f"{source_name}學術活動"
+                title = f"{source}參與活動"
 
-            description = title
+            description = f"{title}相關說明。"
 
-            # creation_date
-            start_year = entry_year if level=='B' else max(0, entry_year-4)
-            start_date = datetime(start_year + 1911, 1, 1, tzinfo=TZ)
-            end_date = datetime.now(TZ)
-            creation_date = start_date + timedelta(days=random.randint(0, (end_date-start_date).days))
+            # ---------- Start / End Date 必須在入學之後 ----------
+            days_after_entry = random.randint(30, 900)
+            start_date = entry_date + timedelta(days=days_after_entry)
 
-            # status
+            # Intern / Project：end_date 可能比 creation_date 晚（ongoing）
+            if category in ['Intern', 'Project']:
+                end_date = start_date + timedelta(days=random.randint(30, 200))
+            else:
+                # 一般活動：結束時間正常結束
+                end_date = start_date + timedelta(days=random.randint(1, 90))
+
+            # ---------- creation_date 必須大於 start_date ----------
+            creation_date = start_date + timedelta(days=random.randint(1, 30))
+            
+            # ---------- status ----------
             r = random.random()
             if r < 0.05:
                 status = 'rejected'
@@ -1142,25 +1480,39 @@ def generate_achievements(all_users, department_data, max_per_student=3):
                 status = 'unrecognized'
             else:
                 status = 'recognized'
-
+            achievement_uuid = generate_achievement_uuid(achievement_data)
+            achievement_data += 1
             achievements.append({
-                'achievement_id': achievement_id,
-                'user_id': student['user_id'],
-                'category': category,
-                'title': title,
-                'description': description,
-                'creation_date': creation_date,
-                'status': status
+                'achievement_id': achievement_uuid,  # <- 自動生成 UUID
+                "user_id": student['user_id'],
+                "category": category,
+                "title": title,
+                "description": description,
+                "start_date": start_date,
+                "end_date": end_date,
+                "creation_date": creation_date,
+                "status": status
             })
-
-            achievement_id += 1  # SERIAL 自增
 
     return achievements
 
+
+# ------------------ 寫 SQL ------------------
+
+BATCH_SIZE = 1000
+
 def write_achievement_sql(achievements, filename=ACHIEVEMENT_SQL_FILE):
+
     with open(filename, 'w', encoding='utf-8') as f:
-        f.write("-- PostgreSQL INSERT script for achievement\nBEGIN;\n\n")
-        cols = "achievement_id, user_id, category, title, description, creation_date, status"
+        f.write("-- PostgreSQL INSERT script for achievement (batch mode)\nBEGIN;\n\n")
+
+        cols = (
+            "achievement_id, user_id, category, title, description, "
+            "start_date, end_date, creation_date, status"
+        )
+
+        batch = []
+
         for a in achievements:
             vals = [
                 a['achievement_id'],
@@ -1168,83 +1520,253 @@ def write_achievement_sql(achievements, filename=ACHIEVEMENT_SQL_FILE):
                 a['category'],
                 a['title'],
                 a['description'],
-                a['creation_date'],
+                a['start_date'].date(),     # DATE
+                a['end_date'].date(),       # DATE
+                a['creation_date'],         # TIMESTAMP
                 a['status']
             ]
-            vals_sql = ", ".join(sql_value(v) for v in vals)
-            f.write(f"INSERT INTO achievement ({cols}) VALUES ({vals_sql});\n")
-        f.write("\nCOMMIT;\n")
-    print(f"🎉 成功生成 {len(achievements)} 筆 'achievement' 資料到 {filename}。")
+            vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
+            batch.append(vals_sql)
 
-# 執行生成
+            # 每 1000 筆寫一次
+            if len(batch) >= BATCH_SIZE:
+                f.write(f"INSERT INTO achievement ({cols}) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
+
+        # 寫剩下的小批次
+        if batch:
+            f.write(f"INSERT INTO achievement ({cols}) VALUES\n")
+            f.write(",\n".join(batch) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
+    print(f"🎉 成功生成 {len(achievements)} 筆 'achievement' 資料到 {filename}（batch）。")
+
+
 achievements = generate_achievements(all_users, department_data)
+
+# 寫入 SQL
 write_achievement_sql(achievements)
+
+ACHIEVEMENT_VERIFICATION_SQL_FILE = "insert_achievement_verification.sql"
+
+def generate_achievement_verifications(achievements, all_users, max_verifiers=3):
+    """
+    生成 achievement_verification 假資料
+    """
+    verifications = []
+    for ach in achievements:
+        num_verifiers = random.randint(1, max_verifiers)
+        for i in range(num_verifiers):
+            # 隨機選 verifier type
+            verifier_type = random.choice(['department', 'company', 'professor'])
+            
+            # verifier_email 模擬
+            if verifier_type == 'department':
+                dept_users = [u for u in all_users if u['role'] == 'department']
+                verifier_email = random.choice(dept_users)['email'] if dept_users else 'dept@example.com'
+            elif verifier_type == 'company':
+                comp_users = [u for u in all_users if u['role'] == 'company']
+                verifier_email = random.choice(comp_users)['email'] if comp_users else 'comp@example.com'
+            else:
+                verifier_email = f"prof{i}@example.com"
+
+            # 根據 achievement.status 設定 verification_status
+            if ach['status'] == 'recognized':
+                verification_status = 'approved'
+            elif ach['status'] == 'rejected':
+                # 至少有一個是 rejected
+                if i == 0:
+                    verification_status = 'rejected'
+                else:
+                    verification_status = random.choice(['approved','rejected', 'pending'])
+            else:  # unrecognized
+                verification_status = random.choice(['pending','approved'])
+
+            # created_at: achievement.created_at 後 2~3 分鐘
+            created_at = ach['creation_date'] + timedelta(minutes=random.randint(2,3))
+
+            # decided_at: 只有 approved/rejected 才有
+            if verification_status in ['approved','rejected']:
+                decided_at = created_at + timedelta(minutes=random.randint(1,10))
+            else:
+                decided_at = None
+
+            verifications.append({
+                'achievement_id': ach['achievement_id'],
+                'verifier_type': verifier_type,
+                'verifier_email': verifier_email,
+                'verification_status': verification_status,
+                'created_at': created_at,
+                'decided_at': decided_at
+            })
+    return verifications
+
+BATCH_SIZE = 1000
+
+def write_achievement_verification_sql(verifications, filename=ACHIEVEMENT_VERIFICATION_SQL_FILE):
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write("-- PostgreSQL INSERT script for achievement_verification (batch mode)\nBEGIN;\n\n")
+        cols = "achievement_id, verifier_type, verifier_email, verification_status, created_at, decided_at"
+
+        batch = []
+
+        for v in verifications:
+            vals = [
+                v['achievement_id'],
+                v['verifier_type'],
+                v['verifier_email'],
+                v['verification_status'],
+                v['created_at'],
+                v['decided_at']
+            ]
+            vals_sql = "(" + ", ".join(sql_value(vv) for vv in vals) + ")"
+            batch.append(vals_sql)
+
+            # 每 1000 筆輸出一次
+            if len(batch) >= BATCH_SIZE:
+                f.write(f"INSERT INTO achievement_verification ({cols}) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
+
+        # 最後不足 1000 的數量也輸出
+        if batch:
+            f.write(f"INSERT INTO achievement_verification ({cols}) VALUES\n")
+            f.write(",\n".join(batch) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
+    print(f"🎉 成功生成 {len(verifications)} 筆 'achievement_verification' 資料到 {filename}（batch）。")
+
+
+
+# 假設你已經生成了 achievements 與 all_users
+verifications = generate_achievement_verifications(achievements, all_users)
+# 將 SQL 輸出到檔案
+write_achievement_verification_sql(verifications)
+
 PUSH_RECORD_SQL_FILE = "insert_push_record.sql"
 
-def generate_push_records(all_users, resources, push_prob=0.01, max_push_per_resource=10):
+def to_datetime_safe(dt):
+    """
+    將 date / datetime 統一轉成 tz-aware datetime
+    """
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            # tz-naive → 加上 TZ
+            return dt.replace(tzinfo=TZ)
+        return dt
+    # dt 是 date → 轉成 tz-aware datetime
+    return datetime(dt.year, dt.month, dt.day, tzinfo=TZ)
+
+
+def generate_push_records(all_users, resources, department_data, push_prob=0.01, max_push_per_resource=1000):
     student_users = [u for u in all_users if u['role']=='student']
     pushers = [u for u in all_users if u['role'] in ('department','company')]
-    
+
+    dept_user_ids = {dept['contact_person_id']: dept['code'] for dept in department_data}
+
     push_records = []
     push_id = 1
-    
+    resource_push_count = {r['resource_id']: 0 for r in resources}
+
     for pusher in pushers:
         # 找出該 pusher 自己的資源
-        own_resources = [r for r in resources if (
-            (r['department_supplier_id']==pusher.get('main_dept_code')) or 
-            (r['company_supplier_id']==pusher['user_id'])
-        )]
-        
+        own_resources = []
+        for r in resources:
+            if pusher['role'] == 'department':
+                r_dept_code = dept_user_ids.get(r['supplier_id'])
+                pusher_dept_code = dept_user_ids.get(pusher['user_id'])
+                if r_dept_code == pusher_dept_code or r['supplier_id'] == pusher['user_id']:
+                    own_resources.append(r)
+            else:
+                if r['supplier_id'] == pusher['user_id']:
+                    own_resources.append(r)
+
         for r in own_resources:
-            # 決定本次推送的學生數量
-            num_receivers = random.randint(1, min(max_push_per_resource, len(student_users)))
+            if resource_push_count[r['resource_id']] >= max_push_per_resource:
+                continue
+
+            num_receivers = random.randint(1, min(len(student_users), max_push_per_resource - resource_push_count[r['resource_id']]))
             receivers = random.sample(student_users, num_receivers)
-            
-            for receiver in receivers:
-                # 1% 機率推送非自己資源
-                if random.random() < push_prob:
-                    # 選一個隨機 resource 而非自己的
-                    r_random = random.choice([res for res in resources if res not in own_resources])
-                    resource_id = r_random['resource_id']
-                else:
-                    resource_id = r['resource_id']
-                
-                # push_datetime 必須在 receiver registered 後
-                start_dt = max(receiver['registered_at'], pusher['registered_at'])
-                end_dt = datetime.now(TZ)
+
+            # 1% 機率推送非自己資源
+            if random.random() < push_prob:
+                non_own_resources = [res for res in resources if res not in own_resources]
+                if non_own_resources:
+                    r = random.choice(non_own_resources)
+
+            # 同一次 push 的時間
+            start_dt = to_datetime_safe(pusher['registered_at'])
+            earliest_receiver_reg = min([to_datetime_safe(s['registered_at']) for s in receivers])
+            start_dt = max(start_dt, earliest_receiver_reg)
+            end_dt = to_datetime_safe(r.get('deadline')) if r.get('deadline') else datetime.now(TZ)
+            if end_dt <= start_dt:
+                push_datetime = start_dt
+            else:
                 delta_days = (end_dt - start_dt).days
-                push_datetime = start_dt + timedelta(days=random.randint(0, max(0, delta_days)))
-                
+                push_datetime = start_dt + timedelta(days=random.randint(0, delta_days))
+
+            for receiver in receivers:
                 push_records.append({
                     'push_id': push_id,
                     'pusher_id': pusher['user_id'],
                     'receiver_id': receiver['user_id'],
-                    'resource_id': resource_id,
+                    'resource_id': r['resource_id'],
                     'push_datetime': push_datetime
                 })
-                
                 push_id += 1
-                
+                resource_push_count[r['resource_id']] += 1
+                if resource_push_count[r['resource_id']] >= max_push_per_resource:
+                    break
+
+    # 按時間排序，重新分配 push_id
+    push_records.sort(key=lambda x: x['push_datetime'])
+    for idx, rec in enumerate(push_records, start=1):
+        rec['push_id'] = idx
+
     return push_records
 
-def write_push_record_sql(push_records, filename=PUSH_RECORD_SQL_FILE):
+
+
+
+
+def write_push_record_sql(push_records, filename=PUSH_RECORD_SQL_FILE, batch_size=1000):
     with open(filename, 'w', encoding='utf-8') as f:
         f.write("-- PostgreSQL INSERT script for push_record\nBEGIN;\n\n")
+
         cols = "push_id, pusher_id, receiver_id, resource_id, push_datetime"
-        for r in push_records:
+
+        batch = []
+        for i, r in enumerate(push_records):
             vals = [r['push_id'], r['pusher_id'], r['receiver_id'], r['resource_id'], r['push_datetime']]
-            vals_sql = ", ".join(sql_value(v) for v in vals)
-            f.write(f"INSERT INTO push_record ({cols}) VALUES ({vals_sql});\n")
-        f.write("\nCOMMIT;\n")
-    print(f"🎉 成功生成 {len(push_records)} 筆 'push_record' 資料到 {filename}。")
+            vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
+            batch.append(vals_sql)
+
+            # 每 batch_size 寫一次
+            if len(batch) == batch_size:
+                f.write(f"INSERT INTO push_record ({cols}) VALUES\n")
+                f.write(",\n".join(batch) + ";\n\n")
+                batch = []
+
+        # 寫最後一批
+        if batch:
+            f.write(f"INSERT INTO push_record ({cols}) VALUES\n")
+            f.write(",\n".join(batch) + ";\n\n")
+
+        f.write("COMMIT;\n")
+
+    print(f"🎉 成功以批次方式生成 {len(push_records)} 筆 'push_record' 至 {filename}")
 
 # 生成 push_record
-push_records = generate_push_records(all_users, resources)
+push_records = generate_push_records(all_users, resources, department_data)
 write_push_record_sql(push_records)
 
 
 
-sql_files = ["insert_user_data.sql","insert_department_profile.sql",  "insert_student_profile.sql" , "insert_company_profile.sql", "insert_student_gpa.sql", "insert_student_course_record.sql", "insert_student_department.sql", "insert_resource.sql", "insert_resource_condition.sql", "insert_application.sql", "insert_achievement.sql", "insert_push_record.sql"]
+
+sql_files = ["insert_user_data.sql","insert_department_profile.sql", "insert_student_profile.sql", "insert_company_profile.sql", "user_application.sql", "user_fk_update.sql", "insert_student_gpa.sql", "insert_student_course_record.sql", "insert_student_department.sql", "insert_resource.sql", "insert_resource_condition.sql", "insert_application.sql", "insert_achievement.sql", "insert_achievement_verification.sql", "insert_push_record.sql"]
 with open("merged.sql", "w", encoding="utf-8") as fout:
     for filename in sql_files:
         with open(filename, "r", encoding="utf-8") as fin:
