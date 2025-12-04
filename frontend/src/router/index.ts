@@ -60,19 +60,23 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // 2. 檢查是否需要完成 Profile 設定
-  // 如果已登入但還沒設定，且正要去 Dashboard -> 強制去 Setup
-  if (to.meta.requiresSetup && authStore.needProfile === true) {
+  // 2. 檢查是否需要完成 Profile 設定 (✅ 修改：僅針對學生強制檢查)
+  if (
+    to.meta.requiresSetup && 
+    authStore.role === 'student' &&   // 只有學生需要檢查
+    authStore.needProfile === true    // 且狀態顯示為「需要設定」
+  ) {
     next({ 
       name: 'ProfileSetup', 
-      query: { role: authStore.role } // <--- 加上這行
+      query: { role: 'student' } // 帶上角色參數
     });
     return;
   }
 
-  // 3. 檢查角色權限
+  // 3. 檢查角色權限 (防止學生跑到企業頁面)
   if (to.meta.role && authStore.role !== to.meta.role) {
     alert('Access Denied: Role mismatch');
+    
     // 導向回正確的角色首頁
     if (authStore.role === 'student') next('/student/dashboard');
     else if (authStore.role === 'department') next('/department/dashboard');

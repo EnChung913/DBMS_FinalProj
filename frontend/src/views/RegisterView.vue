@@ -46,18 +46,42 @@ const handleRegister = async () => {
 
     // 設定 user
     authStore.setUser(data.user);
+    console.log("user: ", data.user); 
 
+    authStore.setNeedProfile(null); // 重設 needProfile 狀態
     console.log('Need profile setup:', data.needProfile);
 
     // 註冊後一定要做 profile
-    if (data.needProfile) {
+    if (authStore.role == 'student' && data.needProfile) {
       router.push('/setup-profile');
+      return;
+    }
+    else if (authStore.role === 'department') {
+      router.push('/department/dashboard');
+      return;
+    }    
+    else if (authStore.role === 'company') {
+      router.push('/company/dashboard');
       return;
     }
 
   } catch (error: any) {
-    console.error(error);
-    alert('Registration failed');
+    // ✅ 擷取並顯示後端錯誤
+    if (error.response && error.response.status === 400) {
+      const backendError = error.response.data;
+      
+      console.error('Backend Validation Error Object:', backendError);
+
+      if (backendError.message && Array.isArray(backendError.message)) {
+        // 顯示 DTO 驗證失敗的詳細列表（通常會將所有錯誤訊息組合成陣列）
+        alert(`Registration Failed (Validation): ${backendError.message.join('; ')}`);
+      } else {
+        // 顯示一般錯誤（例如唯一性約束違反）
+        alert(`Registration Failed: ${backendError.message || 'Check your password or username/email.'}`);
+      }
+    } else {
+      alert('Registration failed due to a server error.');
+    }
   } finally {
     isLoading.value = false;
   }

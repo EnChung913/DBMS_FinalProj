@@ -35,7 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
     syncStorage();
   }
 
-  function setNeedProfile(v: boolean) {
+  function setNeedProfile(v: boolean | null) {
     needProfile.value = v;
     syncStorage();
   }
