@@ -219,7 +219,8 @@ const handleApply = async (resourceId: string) => {
 .dashboard-wrapper {
   /* 寬度解禁：最大 1440px，佔螢幕 95% */
   width: 95%;
-  max-width: 1440px;
+  max-width: 900px;
+  min-width: 900px;
   margin: 0 auto;
   padding-bottom: 60px;
   /* 加上淡入動畫 */

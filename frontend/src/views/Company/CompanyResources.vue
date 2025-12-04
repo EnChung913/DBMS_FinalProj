@@ -53,7 +53,7 @@ const handleEdit = (id: string) => {
     <div class="gallery-header">
       <div class="title-row">
         <button class="btn-back" @click="goBack">⮐ Back</button>
-        <h1>Job Management</h1>
+        <h1>Company Resource Management</h1>
       </div>
       
       <div class="filter-bar">
@@ -105,7 +105,6 @@ const handleEdit = (id: string) => {
           
           <div class="card-footer">
              <button class="btn-action outline" @click="handleEdit(res.id)">Edit</button>
-             <button class="btn-action primary">???</button>
           </div>
         </div>
         

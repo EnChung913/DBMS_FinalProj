@@ -13,6 +13,7 @@ import CreateResource from '../views/Resource/CreateResource.vue';
 import EditResource from '../views/Resource/EditResource.vue';
 import DepartmentResources from '../views/Department/DepartmentResources.vue';
 import CompanyResources from '../views/Company/CompanyResources.vue';
+import CompanyApplications from '../views/Company/CompanyApplications.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +57,12 @@ const router = createRouter({
       path: '/company/resources',
       name: 'CompanyResources',
       component: CompanyResources,
+      meta: { requiresAuth: true, role: 'company', requiresSetup: true }
+    },
+    {
+      path: '/company/applications',
+      name: 'CompanyApplications',
+      component: CompanyApplications,
       meta: { requiresAuth: true, role: 'company', requiresSetup: true }
     },
     {

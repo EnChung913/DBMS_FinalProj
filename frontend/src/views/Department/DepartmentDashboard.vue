@@ -20,6 +20,7 @@ interface MyResource {
   applicants: number;
   quota: number;
   status: 'Available' | 'Unavailable' | 'Closed';
+  publish_date: string;
 }
 
 const pendingAchievements = ref<PendingAchievement[]>([]);
@@ -60,9 +61,9 @@ onMounted(async () => {
     ];
 
     myResources.value = [
-      { id: 'r1', title: '113學年度清寒優秀獎學金', type: 'Scholarship', applicants: 12, quota: 3, status: 'Available' },
-      { id: 'r2', title: '量子計算實驗室 (Quantum Lab) 專題生', type: 'Lab', applicants: 5, quota: 2, status: 'Available' },
-      { id: 'r3', title: '系辦公室工讀生', type: 'Others', applicants: 0, quota: 1, status: 'Closed' }
+      { id: 'r1', title: '113學年度清寒優秀獎學金', type: 'Scholarship', applicants: 12, quota: 3, status: 'Available', publish_date: '2025-02-20' },
+      { id: 'r2', title: '量子計算實驗室 (Quantum Lab) 專題生', type: 'Lab', applicants: 5, quota: 2, status: 'Available', publish_date: '2025-02-20' },
+      { id: 'r3', title: '系辦公室工讀生', type: 'Others', applicants: 0, quota: 1, status: 'Closed', publish_date: '2025-02-20' }
     ];
 
   } catch (error) {
@@ -88,13 +89,13 @@ const verifyAchievement = async (id: number, decision: boolean) => {
     <header class="hero-header">
       <div class="hero-content">
         <div class="user-welcome">
-          <span class="sub-greeting">Department Portal</span>
-          <h1>系所管理中心</h1>
+          <span class="sub-greeting">Department dashboard</span>
+          <h1>某某系所</h1>
         </div>
         
         <div class="hero-actions">
            <button class="btn-primary-icon" @click="$router.push('/resource/create')">
-             <span>+</span> 發布新資源
+             <span>+</span> Publish Resource
            </button>
         </div>
       </div>
@@ -105,23 +106,23 @@ const verifyAchievement = async (id: number, decision: boolean) => {
       <section class="left-panel">
         <div class="dashboard-card full-height">
           <div class="card-header">
-            <h3>待審核特殊表現</h3>
-            <span class="badge-count">{{ pendingAchievements.length }} 筆待辦</span>
+            <h3>Pending Performance Verification</h3>
+            <span class="badge-count">{{ pendingAchievements.length }} students to be done</span>
           </div>
           
           <div class="table-container">
             <table class="styled-table">
               <thead>
                 <tr>
-                  <th>學生資訊</th>
-                  <th>類別</th>
-                  <th>成就標題</th>
-                  <th width="140">操作</th>
+                  <th>Student</th>
+                  <th>Category</th>
+                  <th>Achievement</th>
+                  <th width="140">Verify</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="pendingAchievements.length === 0">
-                  <td colspan="4" class="empty-state">🎉 目前沒有待審核項目</td>
+                  <td colspan="4" class="empty-state">There are currently no projects pending review.</td>
                 </tr>
                 <tr v-for="item in pendingAchievements" :key="item.id" class="table-row">
                   <td>
@@ -134,7 +135,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
                   <td>
                     <div class="achievement-detail">
                       <span class="title">{{ item.title }}</span>
-                      <a :href="item.proof_link" class="link-proof" @click.prevent>查看證明 📎</a>
+                      <a :href="item.proof_link" class="link-proof" @click.prevent>Check certificate</a>
                     </div>
                   </td>
                   <td>
@@ -152,8 +153,12 @@ const verifyAchievement = async (id: number, decision: boolean) => {
 
       <aside class="right-panel">
         <div class="section-header-row">
-          <h3>系所資源管理</h3>
-          <router-link to="/department/resources" class="link-more">查看全部 ➭</router-link>
+          <h3>Resource Overview</h3>
+          <span class="badge-count">{{ myResources.length }} Active</span>
+          <router-link to="/department/resources" class="btn-view-all">
+            <span class="btn-text">View All</span>
+            <span class="arrow-icon">➭➭➭</span>
+          </router-link>
         </div>
         
         <div class="resource-list">
@@ -167,23 +172,24 @@ const verifyAchievement = async (id: number, decision: boolean) => {
             
             <div class="stats-row">
               <div class="stat-item">
-                <span class="label">名額</span>
+                <span class="label">Quota</span>
                 <span class="value">{{ res.quota }}</span>
               </div>
+              <div class="divider"></div>
               <div class="stat-item">
-                <span class="label">申請人數</span>
+                <span class="label">Applicants</span>
                 <span class="value highlight">{{ res.applicants }}</span>
               </div>
             </div>
 
             <div class="card-actions">
+              <span class="date">Published on: {{ res.publish_date }}</span>
               <button 
                 class="btn-outline-sm" 
                 @click="$router.push(`/resource/edit/${res.id}`)"
               >
                 Edit
               </button>
-              <button class="btn-action primary">???</button>
             </div>
           </div>
         </div>
@@ -197,7 +203,8 @@ const verifyAchievement = async (id: number, decision: boolean) => {
 /* --- 佈局容器 (繼承 Student Dashboard 風格) --- */
 .dashboard-wrapper {
   width: 95%;
-  max-width: 1440px;
+  max-width: 1000px;
+  min-width: 1000px;
   margin: 0 auto;
   padding-bottom: 60px;
   animation: fadeIn 0.6s ease-out;
@@ -211,12 +218,11 @@ const verifyAchievement = async (id: number, decision: boolean) => {
 /* --- Hero Header (關鍵 CSS：對齊設定) --- */
 .hero-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #fff 0%, #F7F5F2 100%);
+  background: linear-gradient(135deg, #F7F5F2 0%, #ffffff 100%);
   padding: 30px 40px;
   border-radius: 24px;
-  border: 1px solid rgba(0,0,0,0.03);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-  /* 這裡不設 flex，讓內部 hero-content 負責 */
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 10px 30px rgba(125, 157, 156, 0.05); /* 極淡的莫蘭迪陰影 */
 }
 
 .hero-content {
@@ -246,8 +252,8 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 10px 24px; /* 稍微加大內距，更像 Company 的按鈕 */
-  border-radius: 12px; /* 圓角調整 */
+  padding: 10px 24px; 
+  border-radius: 12px; 
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -266,8 +272,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
 /* --- Grid Layout --- */
 .main-grid {
   display: grid;
-  /* 左邊 2/3 (審核), 右邊 1/3 (資源) */
-  grid-template-columns: 2fr 1fr; 
+  grid-template-columns: 4fr 3fr; 
   gap: 30px;
 }
 
@@ -297,11 +302,11 @@ const verifyAchievement = async (id: number, decision: boolean) => {
 .card-header h3 { margin: 0; color: var(--text-color); font-size: 1.2rem; }
 
 .badge-count {
-  background: #F0F2F5;
+  background: #EBEBE8;
   color: var(--secondary-color);
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
@@ -390,8 +395,40 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   margin-bottom: 15px;
 }
 .section-header-row h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
-.link-more { color: var(--primary-color); font-size: 0.85rem; text-decoration: none; }
 
+.btn-view-all {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+.btn-view-all:hover {
+  background: rgba(125, 157, 156, 0.1);
+  transform: translateX(3px); 
+}
+
+.arrow-icon {
+  font-size: 1.5rem;      
+  line-height: 0.8;       
+  display: flex;          
+  align-items: center;
+  margin-top: -2px;      
+}
+
+.btn-text {
+  display: inline-block;
+  padding-top: 2px; 
+}
 .resource-list {
   display: flex;
   flex-direction: column;
@@ -412,42 +449,50 @@ const verifyAchievement = async (id: number, decision: boolean) => {
 .status-dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot-green { background-color: #4CAF50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2); }
 .dot-gray { background-color: #ccc; }
-.res-type { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-
-.res-title { margin: 0 0 15px 0; font-size: 1rem; color: var(--text-color); line-height: 1.4; }
-
+.res-type { font-size: 0.75rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 4px; }
+.res-title {
+  margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+  line-height: 1.4;
+  height: 3em; /* 限制標題高度 */
+  overflow: hidden;
+}
 .stats-row {
   display: flex;
-  gap: 20px;
-  padding: 10px 0;
-  border-top: 1px solid #f5f5f5;
-  border-bottom: 1px solid #f5f5f5;
+  justify-content: space-around;
+  align-items: center;
+  background: #F9FAFB;
+  padding: 15px;
+  border-radius: 12px;
   margin-bottom: 15px;
 }
 
-.stat-item { display: flex; flex-direction: column; }
-.stat-item .label { font-size: 0.75rem; color: #aaa; }
-.stat-item .value { font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
+.stat-item { display: flex; flex-direction: column; align-items: center; }
+.stat-item .label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; }
+.stat-item .value { font-size: 1.25rem; font-weight: 700; color: var(--text-color); }
 .stat-item .highlight { color: var(--primary-color); }
+.divider { width: 1px; height: 30px; background: #e0e0e0; }
 
-.card-actions { display: flex; gap: 10px; }
+.card-actions { 
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #aaa;
+ }
 
 .btn-outline-sm {
-  flex: 1;
   background: transparent;
-  border: 1px solid #ddd;
-  color: #666;
-  padding: 6px 0;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 7px 16px;
+  border-radius: 9px;
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-outline-sm:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  background-color: rgba(125, 157, 156, 0.05);
-}
+.btn-outline-sm:hover { background: var(--primary-color); color: white; }
 .btn-action.primary {
   flex: 1; padding: 6px 0; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
   background: var(--primary-color); border: 1px solid var(--primary-color); color: white;

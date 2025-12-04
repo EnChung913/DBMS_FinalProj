@@ -81,23 +81,56 @@ const getStatusClass = (status: string) => {
     <header class="hero-header">
       <div class="hero-content">
         <div class="header-text">
-          <span class="sub-greeting">Recruitment Center</span>
-          <h1>企業人才招募管理</h1>
+          <span class="sub-greeting">Company dashboard</span>
+          <h1>某某某公司</h1>
         </div>
         <div class="header-actions">
            <button class="btn-primary-large" @click="$router.push('/resource/create')">
-             <span class="icon">＋</span> 發布新職缺
+             <span class="icon">+</span> Publish Resource
            </button>
         </div>
       </div>
     </header>
 
     <div class="main-grid">
+
+      <aside class="left-panel">
+        <div class="dashboard-card full-height">
+          <div class="card-head">
+            <h3>Latest Application</h3>
+            <router-link to="/company/applications" class="btn-view-all">
+            <span class="btn-text">View All</span>
+            <span class="arrow-icon">➭➭➭</span>
+          </router-link>
+          </div>
+
+          <ul class="applicant-list">
+            <li v-for="app in applicants" :key="app.user_id" class="applicant-item">
+              <div class="avatar">{{ app.name.charAt(0) }}</div>
+              
+              <div class="applicant-info">
+                <div class="info-top">
+                  <span class="name">{{ app.name }}</span>
+                  <span class="gpa-badge">GPA {{ app.gpa }}</span>
+                </div>
+                <span class="job-target">Recruit: {{ app.job }}</span>
+                <span class="apply-date">{{ app.date }}</span>
+              </div>
+
+              <button class="btn-review">Open</button>
+            </li>
+          </ul>
+        </div>
+      </aside>
       
-      <section class="left-panel">
-        <div class="section-title">
-          <h3>職缺概況</h3>
+      <section class="right-panel">
+        <div class="section-header-row">
+          <h3>Resource Overview</h3>
           <span class="badge-count">{{ jobs.length }} Active</span>
+          <router-link to="/company/resources" class="btn-view-all">
+            <span class="btn-text">View All</span>
+            <span class="arrow-icon">➭➭➭</span>
+          </router-link>
         </div>
 
         <div class="jobs-container">
@@ -115,18 +148,18 @@ const getStatusClass = (status: string) => {
             
             <div class="job-stats-row">
               <div class="stat-box">
-                <span class="label">需求名額</span>
+                <span class="label">Quota</span>
                 <span class="value">{{ job.quota }}</span>
               </div>
               <div class="divider"></div>
               <div class="stat-box">
-                <span class="label">投遞人數</span>
+                <span class="label">Applicants</span>
                 <span class="value highlight">{{ job.applied }}</span>
               </div>
             </div>
 
             <div class="card-footer">
-              <span class="date">發布於: {{ job.publish_date }}</span>
+              <span class="date">Published on: {{ job.publish_date }}</span>
               <button 
                 class="btn-outline-sm" 
                 @click="$router.push(`/resource/edit/${job.id}`)"
@@ -138,32 +171,6 @@ const getStatusClass = (status: string) => {
         </div>
       </section>
 
-      <aside class="right-panel">
-        <div class="dashboard-card full-height">
-          <div class="card-head">
-            <h3>最新申請</h3>
-            <router-link to="/company/resources" class="link-view-all">查看全部 ➭</router-link>
-          </div>
-
-          <ul class="applicant-list">
-            <li v-for="app in applicants" :key="app.user_id" class="applicant-item">
-              <div class="avatar">{{ app.name.charAt(0) }}</div>
-              
-              <div class="applicant-info">
-                <div class="info-top">
-                  <span class="name">{{ app.name }}</span>
-                  <span class="gpa-badge">GPA {{ app.gpa }}</span>
-                </div>
-                <span class="job-target">應徵：{{ app.job }}</span>
-                <span class="apply-date">{{ app.date }}</span>
-              </div>
-
-              <button class="btn-review">審閱</button>
-            </li>
-          </ul>
-        </div>
-      </aside>
-
     </div>
   </div>
 </template>
@@ -174,7 +181,8 @@ const getStatusClass = (status: string) => {
 /* --- 佈局容器 --- */
 .dashboard-wrapper {
   width: 95%;
-  max-width: 1440px;
+  max-width: 1000px;
+  min-width: 1000px;
   margin: 0 auto;
   padding-bottom: 60px;
   animation: fadeIn 0.6s ease-out;
@@ -188,11 +196,11 @@ const getStatusClass = (status: string) => {
 /* --- Hero Header --- */
 .hero-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #fff 0%, #F7F5F2 100%);
+  background: linear-gradient(135deg, #F7F5F2 0%, #ffffff 100%);
   padding: 30px 40px;
   border-radius: 24px;
-  border: 1px solid rgba(0,0,0,0.03);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 10px 30px rgba(125, 157, 156, 0.05); /* 極淡的莫蘭迪陰影 */
 }
 
 .hero-content {
@@ -241,8 +249,7 @@ const getStatusClass = (status: string) => {
 /* --- Main Grid --- */
 .main-grid {
   display: grid;
-  /* 左邊展示職缺 (卡片流), 右邊展示申請列表 (側邊欄) */
-  grid-template-columns: 1fr 380px; 
+  grid-template-columns: 4fr 3fr; 
   gap: 30px;
 }
 
@@ -253,11 +260,12 @@ const getStatusClass = (status: string) => {
 /* --- Section Title --- */
 .section-title {
   display: flex;
+  justify-content: flex-start;
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
 }
-.section-title h3 { margin: 0; color: var(--text-color); font-size: 1.25rem; }
+.section-title h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
 .badge-count {
   background: #EBEBE8;
   color: var(--secondary-color);
@@ -296,7 +304,13 @@ const getStatusClass = (status: string) => {
   justify-content: space-between;
   margin-bottom: 10px;
 }
-
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.section-header-row h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
 .job-meta { display: flex; align-items: center; gap: 8px; }
 .job-type { font-size: 0.75rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 4px; }
 
@@ -347,8 +361,8 @@ const getStatusClass = (status: string) => {
   background: transparent;
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
-  padding: 5px 12px;
-  border-radius: 6px;
+  padding: 7px 16px;
+  border-radius: 9px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -373,7 +387,40 @@ const getStatusClass = (status: string) => {
   border-bottom: 1px solid #f5f5f5;
 }
 .card-head h3 { margin: 0; font-size: 1.2rem; color: var(--text-color); }
-.link-view-all { font-size: 0.85rem; color: var(--secondary-color); text-decoration: none; }
+
+.btn-view-all {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+.btn-view-all:hover {
+  background: rgba(125, 157, 156, 0.1);
+  transform: translateX(3px); 
+}
+
+.arrow-icon {
+  font-size: 1.5rem;      
+  line-height: 0.8;       
+  display: flex;          
+  align-items: center;
+  margin-top: -2px;      
+}
+
+.btn-text {
+  display: inline-block;
+  padding-top: 2px; 
+}
 
 .applicant-list {
   list-style: none;
