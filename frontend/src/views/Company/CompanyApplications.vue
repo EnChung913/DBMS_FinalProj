@@ -5,32 +5,48 @@ import apiClient from '@/api/axios';
 
 const router = useRouter();
 const isLoading = ref(false);
-const myResources = ref<any[]>([]);
+const applications = ref<any[]>([]);
 const activeTab = ref('All');
 
-// 資源類型篩選
-const filteredResources = computed(() => {
-  if (activeTab.value === 'All') return myResources.value;
-  return myResources.value.filter(r => r.type === activeTab.value);
+// 篩選邏輯
+const filteredApps = computed(() => {
+  if (activeTab.value === 'All') return applications.value;
+  // 簡單篩選：可根據需求調整，這裡假設 tab 對應 status
+  return applications.value.filter(app => app.status === activeTab.value.toLowerCase());
 });
 
 onMounted(async () => {
   isLoading.value = true;
   try {
     // ----------------------------------------------------------------
-    // TO DO: [GET] /api/resource/my (或 /department/resources)
+    // TO DO: [GET] /api/company/applications
     // ----------------------------------------------------------------
-    // const res = await apiClient.get('/resource/my');
-    // myResources.value = res.data;
+    // const res = await apiClient.get('/company/applications');
+    // applications.value = res.data;
 
     // --- Mock Data ---
-    await new Promise(r => setTimeout(r, 500));
-    myResources.value = [
-      { id: 'r1', title: '113學年度清寒優秀獎學金', type: 'Scholarship', applicants: 12, quota: 3, status: 'Available', date: '2025-02-01' },
-      { id: 'r2', title: '量子計算實驗室 (Quantum Lab) 專題生', type: 'Lab', applicants: 5, quota: 2, status: 'Available', date: '2025-02-10' },
-      { id: 'r3', title: '系辦公室工讀生', type: 'Others', applicants: 0, quota: 1, status: 'Closed', date: '2024-12-01' },
-      { id: 'r4', title: '人工智慧學程助教 (TA)', type: 'Internship', applicants: 8, quota: 4, status: 'Available', date: '2025-02-20' },
-      { id: 'r5', title: '海外交換計畫補助', type: 'Scholarship', applicants: 20, quota: 5, status: 'Unavailable', date: '2025-01-15' },
+    await new Promise(r => setTimeout(r, 600));
+    applications.value = [
+      { 
+        id: 'a1', applicant: 'Alex Chen', job_title: 'Frontend Engineer Intern', 
+        gpa: 3.9, date: '2025-02-24', status: 'submitted', school: 'NTU - CS'
+      },
+      { 
+        id: 'a2', applicant: 'Betty Wu', job_title: 'Frontend Engineer Intern', 
+        gpa: 4.1, date: '2025-02-21', status: 'reviewed', school: 'NCCU - MIS'
+      },
+      { 
+        id: 'a3', applicant: 'Charlie Lin', job_title: 'Backend Developer', 
+        gpa: 3.5, date: '2025-02-20', status: 'interview', school: 'NTHU - CS'
+      },
+      { 
+        id: 'a4', applicant: 'David Wang', job_title: 'UI/UX Designer', 
+        gpa: 3.8, date: '2025-02-18', status: 'rejected', school: 'NTUST - Design'
+      },
+      { 
+        id: 'a5', applicant: 'Eva Chang', job_title: 'Product Manager', 
+        gpa: 4.0, date: '2025-02-15', status: 'hired', school: 'NTU - BA'
+      }
     ];
 
   } catch (error) {
@@ -42,8 +58,30 @@ onMounted(async () => {
 
 const goBack = () => router.back();
 
-const handleEdit = (id: string) => {
-  router.push(`/resource/edit/${id}`);
+const getStatusClass = (status: string) => {
+  switch (status) {
+    case 'hired': return 'status-green';
+    case 'rejected': return 'status-red';
+    case 'interview': return 'status-purple';
+    case 'reviewed': return 'status-blue';
+    default: return 'status-gray'; // submitted
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  const map: Record<string, string> = {
+    submitted: '未審閱',
+    reviewed: '已審閱',
+    interview: '面試中',
+    hired: '已錄取',
+    rejected: '未錄取'
+  };
+  return map[status] || status;
+};
+
+const handleReview = (id: string) => {
+  // TODO: 導向詳細審閱頁面 or 開啟 Modal
+  alert(`Reviewing applicant ${id}`);
 };
 </script>
 
@@ -53,15 +91,15 @@ const handleEdit = (id: string) => {
     <div class="gallery-header">
       <div class="title-row">
         <button class="btn-back" @click="goBack">⮐ Back</button>
-        <h1>Department Resource Management</h1>
+        <h1>Company Applicant Review</h1>
       </div>
       
       <div class="filter-bar">
         <button 
-          v-for="tab in ['All', 'Scholarship', 'Lab', 'Internship', 'Others']" 
+          v-for="tab in ['All', 'Submitted', 'Interview', 'Hired', 'Rejected']" 
           :key="tab"
-          :class="['filter-pill', { active: activeTab === tab }]"
-          @click="activeTab = tab"
+          :class="['filter-pill', { active: activeTab === tab || (activeTab === 'All' && tab === 'All') }]"
+          @click="activeTab = tab.toLowerCase() === 'all' ? 'All' : tab.toLowerCase()"
         >
           {{ tab }}
         </button>
@@ -70,41 +108,45 @@ const handleEdit = (id: string) => {
 
     <div v-if="isLoading" class="loading-area">
       <div class="spinner"></div>
-      <p>Loading resources...</p>
+      <p>Loading applicants...</p>
     </div>
     
     <div v-else class="gallery-grid">
-      <div v-for="res in filteredResources" :key="res.id" class="gallery-card">
+      <div v-for="app in filteredApps" :key="app.id" class="gallery-card">
         
         <div class="card-body">
           
           <div class="card-top-row">
-            <span class="type-badge">{{ res.type }}</span>
-            <span :class="['status-badge', res.status === 'Available' ? 'status-green' : 'status-gray']">
-              {{ res.status }}
+            <span :class="['status-badge', getStatusClass(app.status)]">
+              {{ getStatusLabel(app.status) }}
             </span>
+            <span class="date-text">{{ app.date }}</span>
           </div>
 
-          <h3 class="card-title">{{ res.title }}</h3>
+          <h3 class="card-title">
+            <span class="avatar">{{ app.applicant.charAt(0) }}</span>
+            {{ app.applicant }}
+          </h3>
           
+          <div class="card-meta">
+            <span class="job-label">Applied for:</span>
+            <span class="job-value">{{ app.job_title }}</span>
+          </div>
+
           <div class="stats-container">
             <div class="stat-box">
-              <span class="stat-label">Quota</span>
-              <span class="stat-value">{{ res.quota }}</span>
+              <span class="stat-label">GPA</span>
+              <span class="stat-value highlight">{{ app.gpa }}</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-box">
-              <span class="stat-label">Applicants</span>
-              <span class="stat-value highlight">{{ res.applicants }}</span>
+              <span class="stat-label">School</span>
+              <span class="stat-value small-text">{{ app.school }}</span>
             </div>
           </div>
           
-          <div class="card-meta">
-            <span>📅 Published: {{ res.date }}</span>
-          </div>
-          
           <div class="card-footer">
-             <button class="btn-action outline" @click="handleEdit(res.id)">Edit</button>
+             <button class="btn-action primary" @click="handleReview(app.id)">Approve</button>
           </div>
         </div>
         
@@ -117,9 +159,10 @@ const handleEdit = (id: string) => {
 <style scoped>
 @import '@/assets/main.css';
 
-/* --- Container & Header (與 AllResources 一致) --- */
+/* --- Container & Header (一致風格) --- */
 .gallery-container {
   padding: 40px 5%;
+  min-width: 1200px;
   max-width: 1400px;
   margin: 0 auto;
   min-height: 100vh;
@@ -180,7 +223,7 @@ const handleEdit = (id: string) => {
 @media (max-width: 1024px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .gallery-grid { grid-template-columns: 1fr; } }
 
-/* --- Management Card --- */
+/* --- Application Card --- */
 .gallery-card {
   background: #fff;
   border-radius: 20px;
@@ -210,51 +253,57 @@ const handleEdit = (id: string) => {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
 }
 
-.type-badge {
-  background: rgba(125, 157, 156, 0.1); color: var(--primary-color);
-  padding: 4px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
-}
+.date-text { font-size: 0.85rem; color: #aaa; }
 
 .status-badge {
   padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
 }
 .status-green { background: #E8F5E9; color: #4CAF50; }
+.status-red { background: #FFEBEE; color: #EF5350; }
+.status-blue { background: #E3F2FD; color: #42A5F5; }
+.status-purple { background: #F3E5F5; color: #AB47BC; }
 .status-gray { background: #F5F5F5; color: #999; }
 
 .card-title {
-  margin: 0 0 20px 0; font-size: 1.3rem; color: var(--text-color); line-height: 1.4;
+  margin: 0 0 10px 0; font-size: 1.4rem; color: var(--text-color);
+  display: flex; align-items: center; gap: 10px;
 }
 
-/* 數據統計區 */
+.avatar {
+  width: 32px; height: 32px; background: var(--input-bg); color: var(--secondary-color);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 600;
+}
+
+.card-meta {
+  margin-bottom: 20px; font-size: 0.95rem; color: #666;
+}
+.job-label { color: #aaa; margin-right: 5px; font-size: 0.85rem; }
+.job-value { font-weight: 500; color: var(--primary-color); }
+
+/* 數據區塊 */
 .stats-container {
   display: flex; justify-content: space-around; align-items: center;
-  background: #F9FAFB; padding: 15px; border-radius: 12px; margin-bottom: 20px;
+  background: #F9FAFB; padding: 15px; border-radius: 12px; margin-bottom: 25px;
 }
-.stat-box { display: flex; flex-direction: column; align-items: center; }
+.stat-box { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .stat-label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
 .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--text-color); }
 .stat-value.highlight { color: var(--primary-color); }
+.stat-value.small-text { font-size: 0.95rem; font-weight: 500; }
 .stat-divider { width: 1px; height: 30px; background: #E0E0E0; }
-
-.card-meta { font-size: 0.85rem; color: #aaa; margin-bottom: 20px; text-align: center; }
 
 .card-footer {
   margin-top: auto;
-  display: flex; gap: 10px;
 }
 
 .btn-action {
-  flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
-.btn-action.outline {
-  background: transparent; border: 1px solid #ddd; color: #666;
-}
-.btn-action.outline:hover { border-color: var(--primary-color); color: var(--primary-color); }
-
 .btn-action.primary {
   background: var(--primary-color); border: 1px solid var(--primary-color); color: white;
 }
-.btn-action.primary:hover { opacity: 0.9; box-shadow: 0 4px 10px rgba(125, 157, 156, 0.3); }
+.btn-action.primary:hover { opacity: 0.9; box-shadow: 0 4px 12px rgba(125, 157, 156, 0.3); }
 
 /* Loading */
 .loading-area { text-align: center; padding: 60px; color: var(--secondary-color); }

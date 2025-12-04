@@ -25,20 +25,20 @@ const formData = ref({
 
 // 判斷角色，顯示對應的標題與選項
 const isCompany = authStore.role === 'company';
-const pageTitle = isCompany ? '編輯職缺' : '編輯資源';
-const pageSubtitle = isCompany ? 'Update Job Details' : 'Update Resource Information';
+const pageTitle = isCompany ? 'Edit Company Resource' : 'Edit Department Resource';
+const pageSubtitle = 'Update Detail Information';
 
 const resourceTypes = isCompany 
   ? [
-      { value: 'Internship', label: '實習 (Internship)' },
-      { value: 'Full-time', label: '正職 (Full-time)' },
-      { value: 'Others', label: '其他 (Others)' }
+      { value: 'Internship', label: 'Internship' },
+      { value: 'Full-time', label: 'Full-time' },
+      { value: 'Others', label: 'Others' }
     ]
   : [
-      { value: 'Scholarship', label: '獎學金 (Scholarship)' },
-      { value: 'Lab', label: '實驗室/專題 (Lab)' },
-      { value: 'Internship', label: '校內實習 (Internship)' },
-      { value: 'Others', label: '其他 (Others)' }
+      { value: 'Scholarship', label: 'Scholarship' },
+      { value: 'Lab', label: 'Lab' },
+      { value: 'Internship', label: 'Internship' },
+      { value: 'Others', label: 'Others' }
     ];
 
 // 初始化：取得現有資料
@@ -65,7 +65,7 @@ onMounted(async () => {
 
   } catch (error) {
     console.error(error);
-    alert('無法讀取資料');
+    alert('Cannot fetch resource data. Returning to previous page.');
     router.back();
   } finally {
     isFetching.value = false;
@@ -87,13 +87,13 @@ const handleSubmit = async () => {
     console.log(`[Mock] Updating ID ${resourceId}`, formData.value);
     await new Promise(r => setTimeout(r, 1000));
 
-    alert('更新成功！');
+    alert('Update successful!');
     if (isCompany) router.push('/company/dashboard');
     else router.push('/department/dashboard');
 
   } catch (error: any) {
     console.error(error);
-    alert('更新失敗，請稍後再試。');
+    alert('Update failed. Please check the fields and try again.');
   } finally {
     isLoading.value = false;
   }
@@ -113,7 +113,7 @@ const goBack = () => router.back();
 
     <div v-if="isFetching" class="loading-wrapper">
       <div class="spinner"></div>
-      <p>正在讀取資料...</p>
+      <p>Loading...</p>
     </div>
 
     <div v-else class="form-card">
@@ -128,13 +128,13 @@ const goBack = () => router.back();
       <form @submit.prevent="handleSubmit" class="main-form">
         
         <div class="form-group">
-          <label>標題 (Title)</label>
-          <input v-model="formData.title" type="text" required placeholder="請輸入標題" />
+          <label>Title</label>
+          <input v-model="formData.title" type="text" />
         </div>
 
         <div class="row">
           <div class="form-group col">
-            <label>類型 (Type)</label>
+            <label>Type</label>
             <div class="select-wrapper">
               <select v-model="formData.resource_type" required>
                 <option v-for="opt in resourceTypes" :key="opt.value" :value="opt.value">
@@ -146,30 +146,30 @@ const goBack = () => router.back();
           </div>
 
           <div class="form-group col">
-            <label>名額 (Quota)</label>
+            <label>Quota</label>
             <input v-model="formData.quota" type="number" min="1" required />
           </div>
         </div>
 
         <div class="form-group">
-          <label>截止日期 (Deadline)</label>
+          <label>Deadline</label>
           <input v-model="formData.deadline" type="date" required />
         </div>
 
         <div class="form-group">
-          <label>詳細描述 (Description)</label>
+          <label>Description</label>
           <textarea 
             v-model="formData.description" 
             rows="8" 
             required
-            placeholder="請詳細說明內容..."
+            placeholder="Provide detailed information about the resource here..."
           ></textarea>
         </div>
 
         <div class="form-actions">
-          <button type="button" class="btn-cancel" @click="goBack">取消</button>
+          <button type="button" class="btn-cancel" @click="goBack">Cancel</button>
           <button type="submit" class="btn-primary-gradient" :disabled="isLoading">
-            {{ isLoading ? '儲存中...' : '儲存變更' }}
+            {{ isLoading ? 'Saving...' : 'Saved' }}
           </button>
         </div>
 
