@@ -185,4 +185,39 @@ I should add uuid to each condition. If a resource has multiple conditions, the 
 I update the router of resource condition.
 
 [2025-12-4 19:56]
-I decide to remove the function that count eligible students. It's a minor funciton that I need to focus on the major functions first.
+I decide to remove the function that count eligible students. It's a minor funciton that I need to focus on the major functions first. Besides, now the frontend would store data in localStorage to enhance user experience. Utilize swagger to generate the api manual.
+
+[2025-12-4 23:08]
+I'm trying to implement the recommendation function. Now recording the click history of student on resources. The api of recording click would be /events/...  not /api/... to independently handle the rate limiting.
+The rule of recommendation is, 
+
+For pushing resource to student:
+1. I have great advantage (my condition is better than other applicants)
+2. What I've clicked before
+3. What people like me clicked before
+4. (new) Hot resources (most clicks in recent period)
+
+For pushing student to company:
+1. Students that the company has clicked before
+2. Students that are similar to the students that the company has clicked before (based on department, gpa, grade, achievements, etc)
+3. Hot students (most viewed in recent period)
+
+A BIG TASK.
+Timezone should be consider later.
+
+I've finish the record click api and recommendation function for resources. I havn't test them yet.
+
+I leverage wrk to test my rate limiting function. It works well.
+(base) josh@josh-ubuntu:proj$ wrk -t12 -c400 -d30s \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5YjU0MWE4Ny03ZWVjLTQ3MGItYmFhZi1hMjZlOTUyMDYyYzkiLCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc2NDY1MTQ1MiwiZXhwIjoxNzY1NTE1NDUyfQ.9VioKGbyW9DR6xh7AT5eAFZrHYcEOJ7__WNVlr4Gg1M" \
+  http://localhost:3000/api/resource/list
+Running 30s test @ http://localhost:3000/api/resource/list
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    75.00ms  191.31ms   1.96s    94.28%
+    Req/Sec   781.45    508.62     2.98k    65.52%
+  160822 requests in 30.03s, 1.14GB read
+  Socket errors: connect 0, read 0, write 0, timeout 366
+  Non-2xx or 3xx responses: 159823
+Requests/sec:   5355.46
+Transfer/sec:     38.91MB

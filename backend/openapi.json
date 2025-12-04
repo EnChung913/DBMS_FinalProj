@@ -407,6 +407,92 @@
         ]
       }
     },
+    "/api/push/resource": {
+      "get": {
+        "operationId": "PushController_pushResources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved recommended resources list"
+          }
+        },
+        "summary": "Push Resources to Student",
+        "tags": [
+          "Push"
+        ]
+      }
+    },
+    "/api/push/student": {
+      "get": {
+        "operationId": "PushController_pushStudents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved recommended students list"
+          }
+        },
+        "summary": "Push Students to Company",
+        "tags": [
+          "Push"
+        ]
+      }
+    },
+    "/api/event/resource/{id}/click": {
+      "post": {
+        "operationId": "EventController_clickResource",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-resource-type",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Click recorded successfully."
+          }
+        },
+        "summary": "Record a click on a resource by a user",
+        "tags": [
+          "Event"
+        ]
+      }
+    },
+    "/api/event/student/{id}/view": {
+      "post": {
+        "operationId": "EventController_viewStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "View recorded successfully."
+          }
+        },
+        "summary": "Record a company viewing a student profile",
+        "tags": [
+          "Event"
+        ]
+      }
+    },
     "/api/common/departments": {
       "get": {
         "operationId": "CommonController_getDepartments",

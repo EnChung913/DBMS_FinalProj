@@ -8,11 +8,14 @@ import rateLimit from 'express-rate-limit';
 import * as fs from 'fs';
 
 async function bootstrap() {
+  const rawOrigins = process.env.CORS_ORIGINS ?? '*';
+  const allowedOrigins = rawOrigins.split(',').map(origin => origin.trim());
+
   console.log('NODE_ENV =', process.env.NODE_ENV);
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: true, // 允許所有來源連線 (開發階段方便)
+    origin: allowedOrigins.includes('*') ? true : allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -36,10 +39,21 @@ async function bootstrap() {
       error: 'Too Many Requests',
       message: 'Too many requests, please try again later.',
     },
+    skip: (req) => {
+      const url = req.originalUrl;
+
+      // exclude event tracking endpoints
+      if (url.startsWith('/api/event/')) return true;
+
+      // exclude swagger
+      if (url.startsWith('/api-docs')) return true;
+      if (url.startsWith('/openapi.json')) return true;
+
+      return false;
+    },
   });
   app.use(globalLimiter);
 
-  //app.useGlobalGuards(new JwtAuthGuard());
 
   const port = process.env.PORT ?? 3000;
   const host =
@@ -47,16 +61,14 @@ async function bootstrap() {
       ? '127.0.0.1' // local, localhost only
       : '0.0.0.0';  // docker 
 
+  // Swagger API Docs
   const documentConfig = new DocumentBuilder()
     .setTitle('API docs')
     .setDescription('My NestJS API manual')
     .setVersion('1.0')
     .build();
-
   const document = SwaggerModule.createDocument(app, documentConfig);
   SwaggerModule.setup('api-docs', app, document);
-
-
   fs.writeFileSync('./openapi.json', JSON.stringify(document, null, 2));
 
   await app.listen(port, host);
