@@ -146,10 +146,6 @@ export class ResourceService {
       return;
     }
 
-    // 根據是否有符合學生決定 Available / Unavailable
-    const eligible = await this.rcService.countEligibleStudents(resource_id);
-    resource.status = eligible > 0 ? 'Available' : 'Unavailable';
-
     await this.resourceRepo.save(resource);
   }
 

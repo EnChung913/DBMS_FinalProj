@@ -10,41 +10,72 @@ const router = useRouter();
 const isLoading = ref(false);
 const allResources = ref<Resource[]>([]);
 const activeTab = ref('All');
-
+const student = useStudentStore();
 
 // 篩選邏輯
 const filteredResources = computed(() => {
-  // Step 1: 依 tab 過濾
   const list = activeTab.value === 'All'
     ? allResources.value
     : allResources.value.filter(r => r.resource_type === activeTab.value);
 
-  // Step 2: 使用 Map 依 resource_id 去重
   const map = new Map<string, Resource>();
   for (const r of list) {
-    if (!map.has(r.resource_id)) {
-      map.set(r.resource_id, r);
-    }
+    if (!map.has(r.resource_id)) map.set(r.resource_id, r);
   }
 
-  const uniqueList = [...map.values()];
+  const enriched = [...map.values()].map(r => {
+    const e = meetsCondition(r);
 
-  // Step 3: enriched resource (加入 eligibility 結果)
-  return uniqueList.map(r => ({
-    ...r,
-    eligibility: meetsCondition(r)
-  }));
+    // ====== DEBUG LOG ======
+    // console.log('DEBUG Resource:', r.resource_id, r.title, {
+    //   student: {
+    //     dept: student.department_id,
+    //     avg_gpa: student.avg_gpa,
+    //     current_gpa: student.current_gpa,
+    //     is_poor: student.is_poor
+    //   },
+    //   resource: {
+    //     dept: r.department_id,
+    //     avg_gpa: r.avg_gpa,
+    //     current_gpa: r.current_gpa,
+    //     is_poor: r.is_poor
+    //   },
+    //   eligibility: e
+    // });
+    // ========================
+    
+    return { ...r, eligibility: e };
+  });
+
+  enriched.sort((a, b) => {
+    return Number(b.eligibility.overall) - Number(a.eligibility.overall);
+  });
+
+  return enriched;
 });
 
 
 
-const meetsCondition = (cond: any) => {
-  const st = useStudentStore();
+const meetsCondition = (r: Resource) => {
+  const deptOK =
+    r.department_id === null ||
+    r.department_id === undefined ||
+    r.department_id === student.department_id;
 
-  const deptOK = !cond.department_id || cond.department_id === st.department_id;
-  const avgGpaOK = !cond.avg_gpa || (st.avg_gpa !== null && st.avg_gpa >= cond.avg_gpa);
-  const currentGpaOK = !cond.current_gpa || (st.current_gpa !== null && st.current_gpa >= cond.current_gpa);
-  const poorOK = cond.is_poor === null || cond.is_poor === st.is_poor;
+  const avgGpaOK =
+    r.avg_gpa === null ||
+    r.avg_gpa === undefined ||
+    (student.avg_gpa !== null && student.avg_gpa >= r.avg_gpa);
+
+  const currentGpaOK =
+    r.current_gpa === null ||
+    r.current_gpa === undefined ||
+    (student.current_gpa !== null && student.current_gpa >= r.current_gpa);
+
+  const poorOK =
+    r.is_poor === null ||
+    r.is_poor === undefined ||
+    r.is_poor === student.is_poor;
 
   return {
     deptOK,
@@ -56,12 +87,32 @@ const meetsCondition = (cond: any) => {
 };
 
 
+
 onMounted(async () => {
   isLoading.value = true;
   try {
     const res = await apiClient.get('/api/resource/list');
     allResources.value = res.data;
     console.log('First 5 resources:', allResources.value.slice(0, 5));
+    // Profile
+    if (!student.hasProfile) {
+      const resInfo = await apiClient.get('/api/student/profile');
+      const info = resInfo.data;
+
+      student.setProfile({
+        user_id: info.user.user_id,
+        name: info.user.real_name,
+        student_id: info.student_id,
+        department_id: info.department_id,
+        grade: info.grade,
+        is_poor: info.is_poor,
+      });
+    }
+    // GPA Records
+    if (!student.hasGpaRecords) {
+      const resGpa = await apiClient.get('/api/student/gpa');
+      student.setGpaRecords(resGpa.data);
+    }
 
     await new Promise(r => setTimeout(r, 300));
   } catch (error) {
@@ -339,6 +390,18 @@ h1 {
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+/* 符合 = 綠色 */
+.match-badge.eligible {
+  background: #ECFDF5; /* 淺綠背景 */
+  color: #059669;      /* 深綠文字 */
+}
+
+/* 不符合 = 紅色 */
+.match-badge.not-eligible {
+  background: #FDF2F2; /* 淺紅背景 */
+  color: #D98C8C;      /* 深紅文字 */
 }
 
 .card-title {

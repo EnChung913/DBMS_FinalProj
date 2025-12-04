@@ -19,6 +19,9 @@ export class StudentProfile {
   @Column({ name: 'entry_year', type: 'int' })
   entry: number;
 
+  @Column({ name: 'is_poor', type: 'boolean', default: false })
+  is_poor: boolean;
+
   @Column({ type: 'int' })
   grade: number;
 }

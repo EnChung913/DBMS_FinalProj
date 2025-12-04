@@ -8,8 +8,7 @@ import type { AuthResponse } from '@/types';
 const router = useRouter();
 const authStore = useAuthStore();
 const isLoading = ref(false);
-// TODO: Add password confirmation field
-// 和後端 curl 一致
+
 const credentials = ref({
   identifier: '',
   password: '',

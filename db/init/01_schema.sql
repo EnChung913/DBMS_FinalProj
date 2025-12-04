@@ -58,6 +58,7 @@ CREATE TABLE student_profile (
     student_id VARCHAR(10) UNIQUE NOT NULL,
     department_id VARCHAR(50) NOT NULL REFERENCES department_profile(department_id),
     entry_year INT NOT NULL,
+    is_poor BOOLEAN DEFAULT FALSE NOT NULL,
     grade INT NOT NULL
 );
 

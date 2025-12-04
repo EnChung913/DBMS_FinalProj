@@ -20,9 +20,7 @@ onMounted(async () => {
   console.log('studentStore initialized:', studentStore);
 
   try {
-    // ===============================
-    // 1. Profile
-    // ===============================
+    // Profile
     if (!studentStore.hasProfile) {
       const resInfo = await apiClient.get('/api/student/profile');
       const info = resInfo.data;
@@ -37,9 +35,7 @@ onMounted(async () => {
       });
     }
 
-    // ===============================
-    // 2. GPA records
-    // ===============================
+    // GPA Records
     if (!studentStore.hasGpaRecords) {
       const resGpa = await apiClient.get('/api/student/gpa');
       studentStore.setGpaRecords(resGpa.data);
@@ -54,9 +50,7 @@ onMounted(async () => {
 
     gpaRecords.value = studentStore.gpa_records;
     
-    // ---------------------------------------------------------
-    // 3. Achievement（不存 store，用於 Dashboard 顯示）
-    // ---------------------------------------------------------
+    // Achievements
     const resAchiev = await apiClient.get('/api/student/achievement');
     achievements.value = resAchiev.data;
 

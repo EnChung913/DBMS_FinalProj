@@ -45,6 +45,8 @@ export class ResourceController {
     return this.resourceService.getAllResources();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('company', 'department')
   @Patch(':resource_id/status')
   async updateStatus(
     @Param('resource_id') resourceId: string,

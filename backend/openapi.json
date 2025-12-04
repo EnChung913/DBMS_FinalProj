@@ -1,0 +1,484 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/api/auth/test": {
+      "post": {
+        "operationId": "AuthController_verifyAccessToken",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/student/profile": {
+      "put": {
+        "operationId": "StudentController_upsertProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertStudentProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile upserted successfully."
+          }
+        },
+        "summary": "Upsert student profile",
+        "tags": [
+          "Student"
+        ]
+      },
+      "get": {
+        "operationId": "StudentController_getMyProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved successfully."
+          }
+        },
+        "summary": "Get student profile for frontend store",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/api/student/gpa": {
+      "get": {
+        "operationId": "StudentController_getGpa",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "GPA retrieved successfully."
+          }
+        },
+        "summary": "Get student GPA for frontend store",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/api/student/achievement": {
+      "get": {
+        "operationId": "StudentController_getAchievement",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Achievements retrieved successfully."
+          }
+        },
+        "summary": "Get student achievements for dashboard",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/api/company/filter-students": {
+      "post": {
+        "operationId": "CompanyController_searchStudents",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchStudentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Company"
+        ]
+      }
+    },
+    "/api/resource/create": {
+      "post": {
+        "operationId": "ResourceController_createResource",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/my": {
+      "get": {
+        "operationId": "ResourceController_getMyResources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/list": {
+      "get": {
+        "operationId": "ResourceController_getAllResources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/{resource_id}/status": {
+      "patch": {
+        "operationId": "ResourceController_updateStatus",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/{id}": {
+      "get": {
+        "operationId": "ResourceController_getResourceById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/{resource_id}/condition": {
+      "put": {
+        "operationId": "ResourceConditionController_upsertCondition",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertResourceConditionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ResourceCondition"
+        ]
+      },
+      "get": {
+        "operationId": "ResourceConditionController_getConditions",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ResourceCondition"
+        ]
+      },
+      "delete": {
+        "operationId": "ResourceConditionController_deleteAllByResource",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ResourceCondition"
+        ]
+      }
+    },
+    "/api/resource/{resource_id}/condition/{condition_id}": {
+      "delete": {
+        "operationId": "ResourceConditionController_deleteCondition",
+        "parameters": [
+          {
+            "name": "condition_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ResourceCondition"
+        ]
+      }
+    },
+    "/api/common/departments": {
+      "get": {
+        "operationId": "CommonController_getDepartments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Common"
+        ]
+      }
+    },
+    "/api/common/set-admin/{userId}": {
+      "post": {
+        "operationId": "CommonController_setAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Common"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "API docs",
+    "description": "My NestJS API manual",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertStudentProfileDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SearchStudentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateResourceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertResourceConditionDto": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+}

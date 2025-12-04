@@ -5,7 +5,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { StudentService } from './student.service';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Student')
 @Controller('student')
 @Roles('student')
 export class StudentController {
@@ -15,8 +17,9 @@ export class StudentController {
   ) {}
   
   @Put('profile')
+  @ApiOperation({ summary: 'Upsert student profile' })
+  @ApiResponse({ status: 200, description: 'Profile upserted successfully.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Put()
   async upsertProfile(
     @Body() dto: UpsertStudentProfileDto,
     @Req() req: any,
@@ -29,6 +32,8 @@ export class StudentController {
   // Get data for dashboard
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('profile')
+  @ApiOperation({ summary: 'Get student profile for frontend store' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
   async getMyProfile(@Req() req: any) {
     const userId = req.user.sub;
 
@@ -37,11 +42,15 @@ export class StudentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('student')
   @Get('gpa')
+  @ApiOperation({ summary: 'Get student GPA for frontend store' })
+  @ApiResponse({ status: 200, description: 'GPA retrieved successfully.' })
   getGpa(@Req() req: any) {
     console.log('Fetching GPA for userId:', req.user.sub);
     return this.studentService.getGpa(req.user.sub);
   }
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Get student achievements for dashboard' })
+  @ApiResponse({ status: 200, description: 'Achievements retrieved successfully.' })
   @Roles('student')
   @Get('achievement')
   getAchievement(@Req() req: any) {

@@ -184,3 +184,5 @@ I should add uuid to each condition. If a resource has multiple conditions, the 
 [2025-12-4 11:28]
 I update the router of resource condition.
 
+[2025-12-4 19:56]
+I decide to remove the function that count eligible students. It's a minor funciton that I need to focus on the major functions first.

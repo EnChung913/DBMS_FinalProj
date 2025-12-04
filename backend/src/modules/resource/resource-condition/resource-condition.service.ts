@@ -88,46 +88,7 @@ export class ResourceConditionService {
 
     const saved = await this.rcRepo.save(condition);
 
-    // ==========================
-    // 2. eligibility 檢查
-    // ==========================
-    const count = await this.countEligibleStudents(resource_id);
-    if (count < 1) {
-      throw new BadRequestException(
-        `No students meet the eligibility criteria after this update, please adjust the conditions.`,
-      );
-    }
-
     return saved;
-  }
-
-
-  // 計算符合任一條件的學生
-  async countEligibleStudents(resource_id: string): Promise<number> {
-    const conditions = await this.getConditionsByResource(resource_id);
-
-    if (conditions.length === 0) return 0;
-
-    const qb = this.studentRepo.createQueryBuilder('s');
-
-    for (const cond of conditions) {
-      qb.orWhere(
-        `(
-          (:dept IS NULL OR s.department_id = :dept)
-          AND (:avg IS NULL OR s.avg_gpa >= :avg)
-          AND (:curr IS NULL OR s.current_gpa >= :curr)
-          AND (:poor IS NULL OR s.is_poor = :poor)
-        )`,
-        {
-          dept: cond.department_id,
-          avg: cond.avg_gpa,
-          curr: cond.current_gpa,
-          poor: cond.is_poor,
-        },
-      );
-    }
-
-    return qb.getCount();
   }
 
   // 取得某 resource 的所有條件

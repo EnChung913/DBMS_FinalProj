@@ -21,30 +21,31 @@ export class ProfileService {
       where: { user_id: userId },
       relations: ['user'],
     });
+    // console.log('Fetched profile data for userId', userId, ':', data);
     if (data)
       data.user.password = "*********";
     return data;
   }
 
-  async getOrCreateProfile(userId: string) {
-    let profile = await this.getProfile(userId);
+  // async getOrCreateProfile(userId: string) {
+  //   let profile = await this.getProfile(userId);
 
-    if (!profile) {
-      const user = await this.userRepo.findOne({
-        where: { user_id: userId },
-      });
-      if (!user) throw new NotFoundException('User not found');
+  //   if (!profile) {
+  //     const user = await this.userRepo.findOne({
+  //       where: { user_id: userId },
+  //     });
+  //     if (!user) throw new NotFoundException('User not found');
 
-      profile = this.studentProfileRepo.create({
-        user_id: user.user_id,
-        user: user,
-      });
+  //     profile = this.studentProfileRepo.create({
+  //       user_id: user.user_id,
+  //       user: user,
+  //     });
 
-      await this.studentProfileRepo.save(profile);
-    }
+  //     await this.studentProfileRepo.save(profile);
+  //   }
 
-    return profile;
-  }
+  //   return profile;
+  // }
 
   async upsertProfile(userId: string, dto: UpsertStudentProfileDto) {
     console.log(`Requested userId: ${userId}`);

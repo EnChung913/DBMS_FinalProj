@@ -54,11 +54,16 @@ export const useStudentStore = defineStore('student', {
         this.avg_gpa = null;
         return;
       }
-
       const latest = records[records.length - 1];
-			if(!latest) return;
+      if(!latest) {
+        this.current_gpa = null;
+        this.avg_gpa = null;
+        return;
+      }
+
       this.current_gpa = latest.gpa;
-      this.avg_gpa = latest.avg_gpa;
+      const sum = records.reduce((acc, r) => acc + r.gpa, 0);
+      this.avg_gpa = sum / records.length;
     }
   }
 });
