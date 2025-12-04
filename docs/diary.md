@@ -166,9 +166,17 @@ I fix the bug that usrt need to fill his profile again after next login even if 
 I've finished the list resource api and optimized the frontend that it would show if the student is eligible for that resource. Next step would be the recommendation function.
 
 [2025-12-3 01:26]
-I'm trying to implement the recommendation function. 
+I'll try to implement the recommendation function. 
 There are three rules for recommendation:
 1. I have great advantage (my condition is better than other applicants)
 2. What I've clicked before
 3. What people like me clicked before
 And the final score would be calculated by weighted sum of these three factors.
+
+[2025-12-4 09:30]
+I'm trying to implement the recommendation function. 
+
+A test student
+std_479_159067
+
+I should add uuid to each condition. If a resource has multiple conditions, the system would find if there's any condition that matches the student's department. If so, applying this condition to this student. Otherwise, if there's no condition matching the student's department and there's a condition that doesn't has eligible department (which means this resource is for all departments), this condition would be applied to this student. If there's no condition matching the student's department and no condition for all departments, then this student is not eligible for this resource.
