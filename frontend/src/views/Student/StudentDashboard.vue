@@ -100,6 +100,36 @@ const getStatusClass = (status: string) => {
   if (status === 'rejected') return 'status-err';
   return 'status-wait';
 };
+
+// ✅ 新增：申請功能的邏輯
+const handleApply = async (resourceId: string) => {
+  if (!confirm('Are you sure you want to apply for this resource?')) return;
+
+  try {
+    // ----------------------------------------------------------------
+    // TO DO: 連接後端 API 申請資源
+    // [POST] /api/student/application
+    // Body: { resource_id: string }
+    // ----------------------------------------------------------------
+    
+    // await apiClient.post('/student/application', { resource_id: resourceId });
+
+    // --- Mock Data (模擬成功) ---
+    console.log(`[Mock] Applied for resource: ${resourceId}`);
+    await new Promise(r => setTimeout(r, 500));
+    // ---------------------------
+
+    alert('Application Submitted Successfully!');
+    
+    // 選用：申請後可以更新列表狀態 (例如把該卡片標記為 Applied)
+    // fetchDashboardData(); 
+
+  } catch (error) {
+    console.error(error);
+    alert('Application failed. Please try again later.');
+  }
+};
+
 </script>
 
 
@@ -116,6 +146,10 @@ const getStatusClass = (status: string) => {
             <span class="label">Grade</span>
             <span class="value">{{ studentInfo.grade }}</span>
           </div>
+          <router-link to="/student/applications" class="stat-box clickable">
+            <span class="label">My Applications</span>
+            <span class="value">4</span> 
+          </router-link>
         </div>
       </div>
     </header>
@@ -165,7 +199,12 @@ const getStatusClass = (status: string) => {
             <div class="res-content">
               <h3 class="res-title">{{ res.title }}</h3>
               <p class="res-supplier">{{ res.supplier_name }}</p>
-              <button class="btn-apply">View Details</button>
+              <button 
+                class="btn-apply" 
+                @click="handleApply(res.resource_id)"
+              >
+                Apply Now !
+              </button>
             </div>
           </div>
         </div>
@@ -588,5 +627,18 @@ const getStatusClass = (status: string) => {
 .btn-text {
   display: inline-block;
   padding-top: 2px; /* 視字體情況微調 */
+}
+
+.stat-box.clickable {
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: block; /* 讓 router-link 變成區塊 */
+}
+.stat-box.clickable:hover {
+  transform: translateY(-3px);
+}
+.stat-box.clickable .value {
+  color: var(--primary-color); /* 保持顏色一致 */
 }
 </style>

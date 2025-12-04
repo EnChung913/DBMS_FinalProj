@@ -6,10 +6,10 @@ import apiClient from '@/api/axios';
 interface PendingAchievement {
   id: number;
   student: string;
-  student_id: string; // 新增學號欄位 Mock
+  student_id: string; 
   title: string;
-  category: string;   // 新增類別欄位 Mock
-  proof_link: string; // 證明文件連結
+  category: string;   
+  proof_link: string; 
   date: string;
 }
 
@@ -31,7 +31,7 @@ onMounted(async () => {
 
   try {
     // ----------------------------------------------------------------
-    // TODO: 連接後端 API (Department Dashboard)
+    // TO DO: 連接後端 API (Department Dashboard)
     // ----------------------------------------------------------------
 
     // 1. [GET] /api/department/achievements/pending
@@ -73,20 +73,12 @@ onMounted(async () => {
 const verifyAchievement = async (id: number, decision: boolean) => {
   // ----------------------------------------------------------------
   // TODO: [POST] /api/department/achievement/{id}/verify
-  // Body: { decision: boolean }
   // ----------------------------------------------------------------
-  // await apiClient.post(`/department/achievement/${id}/verify`, { decision });
-  
   console.log(`[Mock] Verify ID:${id} -> ${decision ? 'Approved' : 'Rejected'}`);
-  
-  // 模擬刪除動畫
   const index = pendingAchievements.value.findIndex(a => a.id === id);
   if (index !== -1) {
     pendingAchievements.value.splice(index, 1);
   }
-  
-  // 實際上線建議改用 Toast 提示
-  // alert(`已${decision ? '通過' : '駁回'}申請`);
 };
 </script>
 
@@ -99,8 +91,9 @@ const verifyAchievement = async (id: number, decision: boolean) => {
           <span class="sub-greeting">Department Portal</span>
           <h1>系所管理中心</h1>
         </div>
+        
         <div class="hero-actions">
-           <button class="btn-primary-icon">
+           <button class="btn-primary-icon" @click="$router.push('/resource/create')">
              <span>+</span> 發布新資源
            </button>
         </div>
@@ -146,12 +139,8 @@ const verifyAchievement = async (id: number, decision: boolean) => {
                   </td>
                   <td>
                     <div class="action-buttons">
-                      <button class="btn-icon btn-approve" @click="verifyAchievement(item.id, true)" title="通過">
-                        ✓
-                      </button>
-                      <button class="btn-icon btn-reject" @click="verifyAchievement(item.id, false)" title="駁回">
-                        ✕
-                      </button>
+                      <button class="btn-icon btn-approve" @click="verifyAchievement(item.id, true)" title="通過">✓</button>
+                      <button class="btn-icon btn-reject" @click="verifyAchievement(item.id, false)" title="駁回">✕</button>
                     </div>
                   </td>
                 </tr>
@@ -164,7 +153,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
       <aside class="right-panel">
         <div class="section-header-row">
           <h3>系所資源管理</h3>
-          <a href="#" class="link-more">查看全部 &rarr;</a>
+          <router-link to="/department/resources" class="link-more">查看全部 ➭</router-link>
         </div>
         
         <div class="resource-list">
@@ -188,8 +177,13 @@ const verifyAchievement = async (id: number, decision: boolean) => {
             </div>
 
             <div class="card-actions">
-              <button class="btn-outline-sm">編輯</button>
-              <button class="btn-outline-sm">審核申請</button>
+              <button 
+                class="btn-outline-sm" 
+                @click="$router.push(`/resource/edit/${res.id}`)"
+              >
+                Edit
+              </button>
+              <button class="btn-action primary">???</button>
             </div>
           </div>
         </div>
@@ -214,7 +208,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Hero Header --- */
+/* --- Hero Header (關鍵 CSS：對齊設定) --- */
 .hero-header {
   margin-bottom: 30px;
   background: linear-gradient(135deg, #fff 0%, #F7F5F2 100%);
@@ -222,9 +216,14 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   border-radius: 24px;
   border: 1px solid rgba(0,0,0,0.03);
   box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+  /* 這裡不設 flex，讓內部 hero-content 負責 */
+}
+
+.hero-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: space-between; /* ✅ 關鍵：這會把左邊文字和右邊按鈕推到最兩側 */
+  align-items: center;            /* ✅ 關鍵：垂直置中對齊 */
+  width: 100%;
 }
 
 .sub-greeting {
@@ -247,9 +246,10 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 50px;
-  font-size: 0.95rem;
+  padding: 10px 24px; /* 稍微加大內距，更像 Company 的按鈕 */
+  border-radius: 12px; /* 圓角調整 */
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -448,4 +448,9 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   color: var(--primary-color);
   background-color: rgba(125, 157, 156, 0.05);
 }
+.btn-action.primary {
+  flex: 1; padding: 6px 0; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  background: var(--primary-color); border: 1px solid var(--primary-color); color: white;
+}
+.btn-action.primary:hover { opacity: 0.9; box-shadow: 0 4px 10px rgba(125, 157, 156, 0.3); }
 </style>

@@ -72,6 +72,24 @@ onMounted(async () => {
 });
 
 const goBack = () => router.back();
+
+// ✅ 新增：申請功能 (邏輯與 Dashboard 相同)
+const handleApply = async (resourceId: string) => {
+  if (!confirm('Confirm application for this resource?')) return;
+
+  try {
+    // TO DO: [POST] /api/student/application
+    // await apiClient.post('/student/application', { resource_id: resourceId });
+    
+    console.log(`[Mock] Applied for: ${resourceId}`);
+    await new Promise(r => setTimeout(r, 500));
+
+    alert('Application sent! You can check status in "My Applications".');
+  } catch (error) {
+    alert('Failed to apply.');
+  }
+};
+
 </script>
 
 <template>
@@ -149,7 +167,12 @@ const goBack = () => router.back();
           <p class="card-desc">{{ res.description }}</p>
           
           <div class="card-footer">
-             <button class="btn-explore">Explore Details</button>
+             <button 
+               class="btn-explore" 
+               @click="handleApply(res.resource_id)"
+             >
+               Apply
+             </button>
           </div>
         </div>
         

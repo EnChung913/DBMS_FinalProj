@@ -85,7 +85,7 @@ const getStatusClass = (status: string) => {
           <h1>企業人才招募管理</h1>
         </div>
         <div class="header-actions">
-           <button class="btn-primary-large">
+           <button class="btn-primary-large" @click="$router.push('/resource/create')">
              <span class="icon">＋</span> 發布新職缺
            </button>
         </div>
@@ -127,7 +127,12 @@ const getStatusClass = (status: string) => {
 
             <div class="card-footer">
               <span class="date">發布於: {{ job.publish_date }}</span>
-              <button class="btn-outline-sm">管理職缺</button>
+              <button 
+                class="btn-outline-sm" 
+                @click="$router.push(`/resource/edit/${job.id}`)"
+              >
+                Edit
+              </button>
             </div>
           </div>
         </div>
@@ -137,7 +142,7 @@ const getStatusClass = (status: string) => {
         <div class="dashboard-card full-height">
           <div class="card-head">
             <h3>最新申請</h3>
-            <a href="#" class="link-view-all">查看全部</a>
+            <router-link to="/company/resources" class="link-view-all">查看全部 ➭</router-link>
           </div>
 
           <ul class="applicant-list">

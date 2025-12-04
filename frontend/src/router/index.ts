@@ -8,6 +8,11 @@ import DepartmentDashboard from '../views/Department/DepartmentDashboard.vue';
 import CompanyDashboard from '../views/Company/CompanyDashboard.vue';
 import ForgotPasswordView from '../views/ForgotPasswordView.vue';
 import AllResources from '../views/Student/AllResources.vue';
+import MyApplications from '../views/Student/MyApplications.vue';
+import CreateResource from '../views/Resource/CreateResource.vue';
+import EditResource from '../views/Resource/EditResource.vue';
+import DepartmentResources from '../views/Department/DepartmentResources.vue';
+import CompanyResources from '../views/Company/CompanyResources.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,17 +41,48 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'department', requiresSetup: true }
     },
     {
+      path: '/department/resources',
+      name: 'DepartmentResources',
+      component: DepartmentResources,
+      meta: { requiresAuth: true, role: 'department', requiresSetup: true }
+    },
+    {
       path: '/company/dashboard',
       name: 'CompanyDashboard',
       component: CompanyDashboard,
       meta: { requiresAuth: true, role: 'company', requiresSetup: true }
     },
     {
+      path: '/company/resources',
+      name: 'CompanyResources',
+      component: CompanyResources,
+      meta: { requiresAuth: true, role: 'company', requiresSetup: true }
+    },
+    {
+      path: '/resource/create',
+      name: 'CreateResource',
+      component: CreateResource,
+      // 設定權限：只有企業和系所可以進入
+      meta: { requiresAuth: true, roles: ['company', 'department'] } 
+    },
+    {
+      path: '/resource/edit/:id', // ✅ 帶參數的路由
+      name: 'EditResource',
+      component: EditResource,
+      meta: { requiresAuth: true, roles: ['company', 'department'] }
+    },
+    {
       path: '/student/resources',
       name: 'AllResources',
       component: AllResources,
       meta: { requiresAuth: true, role: 'student', requiresSetup: true }
-    }
+    },
+    {
+      path: '/student/applications',
+      name: 'MyApplications',
+      component: MyApplications,
+      meta: { requiresAuth: true, role: 'student', requiresSetup: true }
+    },
   ]
 });
 
@@ -74,15 +110,30 @@ router.beforeEach((to, from, next) => {
   }
 
   // 3. 檢查角色權限 (防止學生跑到企業頁面)
-  if (to.meta.role && authStore.role !== to.meta.role) {
-    alert('Access Denied: Role mismatch');
+  const allowedRoles = to.meta.roles as string[] | undefined;
+  const singleRole = to.meta.role as string | undefined;
+  
+  if (allowedRoles) {
+    if (!authStore.role || !allowedRoles.includes(authStore.role)) {
+      alert('Access Denied');
+      return next('/');
+    }
+  } else if (singleRole) {
+    if (authStore.role !== singleRole) {
+      alert('Access Denied');
+      // ... (原本的導向邏輯)
+      if (to.meta.role && authStore.role !== to.meta.role) {
+      alert('Access Denied: Role mismatch');
     
-    // 導向回正確的角色首頁
-    if (authStore.role === 'student') next('/student/dashboard');
-    else if (authStore.role === 'department') next('/department/dashboard');
-    else if (authStore.role === 'company') next('/company/dashboard');
-    else next('/login');
-    return;
+      // 導向回正確的角色首頁
+      if (authStore.role === 'student') next('/student/dashboard');
+      else if (authStore.role === 'department') next('/department/dashboard');
+      else if (authStore.role === 'company') next('/company/dashboard');
+      else next('/login');
+      return;
+      }
+      return next('/');
+    }
   }
 
   next();

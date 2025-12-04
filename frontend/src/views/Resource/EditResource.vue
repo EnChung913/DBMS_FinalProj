@@ -1,0 +1,387 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import apiClient from '@/api/axios';
+import { useAuthStore } from '@/stores/auth';
+
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+
+const isLoading = ref(false);
+const isFetching = ref(true);
+
+// 取得 URL 參數中的 ID
+const resourceId = route.params.id as string;
+
+// 表單資料
+const formData = ref({
+  title: '',
+  resource_type: '',
+  quota: 1,
+  deadline: '',
+  description: ''
+});
+
+// 判斷角色，顯示對應的標題與選項
+const isCompany = authStore.role === 'company';
+const pageTitle = isCompany ? '編輯職缺' : '編輯資源';
+const pageSubtitle = isCompany ? 'Update Job Details' : 'Update Resource Information';
+
+const resourceTypes = isCompany 
+  ? [
+      { value: 'Internship', label: '實習 (Internship)' },
+      { value: 'Full-time', label: '正職 (Full-time)' },
+      { value: 'Others', label: '其他 (Others)' }
+    ]
+  : [
+      { value: 'Scholarship', label: '獎學金 (Scholarship)' },
+      { value: 'Lab', label: '實驗室/專題 (Lab)' },
+      { value: 'Internship', label: '校內實習 (Internship)' },
+      { value: 'Others', label: '其他 (Others)' }
+    ];
+
+// 初始化：取得現有資料
+onMounted(async () => {
+  try {
+    // ----------------------------------------------------------------
+    // TO DO: [GET] /api/resource/:id
+    // ----------------------------------------------------------------
+    // const res = await apiClient.get(`/resource/${resourceId}`);
+    // formData.value = res.data;
+    
+    // --- Mock Data ---
+    console.log(`[Mock] Fetching resource ID: ${resourceId}`);
+    await new Promise(r => setTimeout(r, 800));
+    
+    formData.value = {
+      title: isCompany ? 'Frontend Engineer Intern' : '好棒棒獎學金',
+      resource_type: isCompany ? 'Internship' : 'Scholarship',
+      quota: 3,
+      deadline: '2025-06-30',
+      description: '這是一個模擬的回填描述內容...\n\n我們正在尋找熱情的夥伴加入我們！'
+    };
+    // -----------------
+
+  } catch (error) {
+    console.error(error);
+    alert('無法讀取資料');
+    router.back();
+  } finally {
+    isFetching.value = false;
+  }
+});
+
+// 送出更新
+const handleSubmit = async () => {
+  if (isLoading.value) return;
+  isLoading.value = true;
+
+  try {
+    // ----------------------------------------------------------------
+    // TO DO: [PATCH] /api/resource/:id
+    // ----------------------------------------------------------------
+    // await apiClient.patch(`/resource/${resourceId}`, formData.value);
+
+    // Mock
+    console.log(`[Mock] Updating ID ${resourceId}`, formData.value);
+    await new Promise(r => setTimeout(r, 1000));
+
+    alert('更新成功！');
+    if (isCompany) router.push('/company/dashboard');
+    else router.push('/department/dashboard');
+
+  } catch (error: any) {
+    console.error(error);
+    alert('更新失敗，請稍後再試。');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const goBack = () => router.back();
+</script>
+
+<template>
+  <div class="page-container">
+    
+    <div class="outer-header">
+      <button class="btn-back-outer" @click="goBack">
+        <span class="icon">⮐ </span>Back
+      </button>
+    </div>
+
+    <div v-if="isFetching" class="loading-wrapper">
+      <div class="spinner"></div>
+      <p>正在讀取資料...</p>
+    </div>
+
+    <div v-else class="form-card">
+      
+      <div class="card-header">
+        <div class="header-content">
+          <h2>{{ pageTitle }}</h2>
+          <span class="subtitle">{{ pageSubtitle }}</span>
+        </div>
+      </div>
+
+      <form @submit.prevent="handleSubmit" class="main-form">
+        
+        <div class="form-group">
+          <label>標題 (Title)</label>
+          <input v-model="formData.title" type="text" required placeholder="請輸入標題" />
+        </div>
+
+        <div class="row">
+          <div class="form-group col">
+            <label>類型 (Type)</label>
+            <div class="select-wrapper">
+              <select v-model="formData.resource_type" required>
+                <option v-for="opt in resourceTypes" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+              <span class="arrow">▼</span>
+            </div>
+          </div>
+
+          <div class="form-group col">
+            <label>名額 (Quota)</label>
+            <input v-model="formData.quota" type="number" min="1" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>截止日期 (Deadline)</label>
+          <input v-model="formData.deadline" type="date" required />
+        </div>
+
+        <div class="form-group">
+          <label>詳細描述 (Description)</label>
+          <textarea 
+            v-model="formData.description" 
+            rows="8" 
+            required
+            placeholder="請詳細說明內容..."
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" @click="goBack">取消</button>
+          <button type="submit" class="btn-primary-gradient" :disabled="isLoading">
+            {{ isLoading ? '儲存中...' : '儲存變更' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+@import '@/assets/main.css';
+
+/* 背景與容器 */
+.page-container {
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 外部 Header */
+.outer-header {
+  width: 100%;
+  max-width: 720px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.btn-back-outer {
+  background: transparent;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.btn-back-outer:hover { 
+  background: rgba(0,0,0,0.03);
+  color: var(--primary-color); 
+  transform: translateX(-3px); 
+}
+
+/* Form Card - 精緻卡片 */
+.form-card {
+  width: 100%;
+  max-width: 700px;
+  min-width: 700px;
+  background: #fff;
+  padding: 0; /* 內部用 header/body padding */
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.02);
+  overflow: hidden;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card Header */
+.card-header {
+  background: linear-gradient(135deg, #fff 0%, #fcfcfc 100%);
+  padding: 30px 40px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h2 {
+  margin: 0 0 5px 0;
+  color: var(--text-color);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.header-icon {
+  font-size: 2rem;
+  opacity: 0.8;
+  background: #f5f5f5;
+  width: 50px; height: 50px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+
+/* Form Body */
+.main-form {
+  padding: 40px;
+}
+
+.row { display: flex; gap: 25px; }
+.col { flex: 1; }
+.form-group { margin-bottom: 25px; }
+
+label { 
+  display: block; margin-bottom: 8px; 
+  color: var(--text-color); 
+  font-weight: 600; 
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+}
+
+/* 輸入框優化 */
+input, select, textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #fff;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  color: #333;
+}
+
+input:hover, select:hover, textarea:hover {
+  border-color: #ccc;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(125, 157, 156, 0.15);
+  background: #fff;
+}
+
+textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+/* 自訂 Select 箭頭 */
+.select-wrapper { position: relative; }
+.select-wrapper select { appearance: none; cursor: pointer; }
+.select-wrapper .arrow {
+  position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+  font-size: 0.7rem; color: #888; pointer-events: none;
+}
+
+/* Form Actions */
+.form-actions {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid #f5f5f5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cancel:hover { background: #f5f5f5; color: #333; }
+
+.btn-primary-gradient {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #6b8c8b 100%);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(125, 157, 156, 0.3);
+}
+
+.btn-primary-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(125, 157, 156, 0.4);
+}
+
+.btn-primary-gradient:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading State */
+.loading-wrapper {
+  text-align: center;
+  padding: 80px 0;
+  color: var(--secondary-color);
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #f0f0f0;
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
