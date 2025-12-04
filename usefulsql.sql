@@ -54,8 +54,21 @@ ORDER BY push_id
 SELECT r.*, rc.*
 FROM "resource" AS r
 	JOIN "resource_condition" AS rc USING(resource_id)
-WHERE rc.department_id = '5080'
+WHERE rc.department_id = '5080' or rc.department_id is null
 
+SELECT r.*, rc.*, d.department_id
+FROM "resource" AS r
+	JOIN "resource_condition" AS rc USING(resource_id)
+	JOIN "department_profile" AS d ON d.contact_person = r.supplier_id
+order by d.department_id
+
+SELECT r.*, rc.*
+FROM "resource" AS r
+	JOIN "resource_condition" AS rc USING(resource_id)
+	JOIN "company_profile" AS c ON c.contact_person = r.supplier_id
+where rc.department_id is null
+order by r.resource_id
+ 
 SELECT *
 FROM "user" as u
 WHERE u.role = 'department' or u.role = 'company'

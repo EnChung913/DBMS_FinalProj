@@ -2,3 +2,7 @@ db/init/02_insert.sql linguist-generated -linguist-count
 docs/backup.sql linguist-generated -linguist-count
 usefulsql.sql linguist-generated -linguist-count
 db/init/light.py linguist-generated -linguist-count
+db/init/01_schema.sql linguist-generated -linguist-count
+db/init/merged.sql linguist-generated -linguist-count
+學系代碼表.csv linguist-generated -linguist-count
+課程_校碼3.csv linguist-generated -linguist-count

@@ -468,19 +468,21 @@ def write_student_profile_sql(all_users):
             u['student_id'] = student_id  # 回寫回 all_users
 
             grade = datetime.now().year - (entry_year + 1911) + 1
+            is_poor = 'TRUE' if random.random() < 0.1 else 'FALSE'
 
             batch_values.append(
-                f"('{u['user_id']}', '{student_id}', '{dept_code}', {entry_year}, {grade})"
+                f"('{u['user_id']}', '{student_id}', '{dept_code}', {entry_year}, {grade}, {is_poor})"
             )
 
+
             if idx % BATCH_SIZE == 0:
-                f.write("INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade) VALUES\n")
+                f.write("INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade, is_poor) VALUES\n")
                 f.write(",\n".join(batch_values) + ";\n\n")
                 batch_values = []
 
         # 寫入剩餘資料
         if batch_values:
-            f.write("INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade) VALUES\n")
+            f.write("INSERT INTO student_profile (user_id, student_id, department_id, entry_year, grade, is_poor) VALUES\n")
             f.write(",\n".join(batch_values) + ";\n\n")
 
         f.write("COMMIT;\n")
@@ -1227,7 +1229,15 @@ RESOURCE_CONDITION_SQL_FILE = "insert_resource_condition.sql"
 def generate_resource_conditions(resources, department_data):
     """
     生成 resource_condition 假資料。
-    如果 resource 的 supplier 是 department，必須包含自己。
+    
+    supplier 是 department：
+        1. 必須包含自己
+        2. 只能給 dept_code 第一碼相同的系所
+        3. department_id 不能是 NULL
+    
+    supplier 是 company：
+        1. 可自由指定給任何系所
+        2. 有機率（預設 20%）department_id = NULL → 給全部系所
     """
     resource_conditions = []
 
@@ -1236,28 +1246,65 @@ def generate_resource_conditions(resources, department_data):
     dept_codes = [dept['code'] for dept in department_data]
 
     for r in resources:
-        # 隨機選一些科系，至少 1 個
-        num_depts = random.randint(1, len(dept_codes))
-        selected_depts = random.sample(dept_codes, num_depts)
+        supplier_is_dept = r['supplier_id'] in dept_user_ids
 
-        # 如果 supplier 是 department，必須包含它
-        if r['supplier_id'] in dept_user_ids:
+        # ---------------------------
+        # CASE 1: supplier 是 company
+        # ---------------------------
+        if not supplier_is_dept:
+            # 20% 機率 → 全部系所（department_id = NULL）
+            if random.random() < 0.2:
+                avg_gpa = round(random.uniform(3.7, 4.3), 2) if random.random() < 0.5 else None
+                current_gpa = round(random.uniform(3.7, 4.3), 2) if random.random() < 0.5 else None
+                is_poor = r['resource_type'] == 'Scholarship' and random.random() < 0.2
+
+                resource_conditions.append({
+                    'condition_id': uuid.uuid4(),
+                    'resource_id': r['resource_id'],
+                    'department_id': None,   # ⭐ NULL 表示給全部系所
+                    'avg_gpa': avg_gpa,
+                    'current_gpa': current_gpa,
+                    'is_poor': is_poor
+                })
+                continue
+
+            # 否則 → 正常隨機給系所
+            num_depts = random.randint(1, len(dept_codes))
+            selected_depts = random.sample(dept_codes, num_depts)
+
+        # ------------------------------
+        # CASE 2: supplier 是 department
+        # ------------------------------
+        else:
             supplier_dept_code = dept_user_ids[r['supplier_id']]
+            supplier_prefix = supplier_dept_code[0]
+
+            # 隨機挑科系
+            num_depts = random.randint(1, len(dept_codes))
+            selected_depts = random.sample(dept_codes, num_depts)
+
+            # ⭐ 只能給 prefix 一樣的
+            selected_depts = [d for d in selected_depts if d[0] == supplier_prefix]
+
+            # 全部被過濾掉 → 加自己
+            if not selected_depts:
+                selected_depts = [supplier_dept_code]
+
+            # 確保包含自己
             if supplier_dept_code not in selected_depts:
-                # 把第一個替換成 supplier 自己
-                selected_depts[0] = supplier_dept_code
+                selected_depts.insert(0, supplier_dept_code)
 
+        # ------------------------------
+        # 實際生成條件
+        # ------------------------------
         for dept_code in selected_depts:
-            # avg_gpa: 50% 機率有值，介於 3.7~4.3
             avg_gpa = round(random.uniform(3.7, 4.3), 2) if random.random() < 0.5 else None
-
-            # current_gpa: 50% 機率有值，介於 3.7~4.3
             current_gpa = round(random.uniform(3.7, 4.3), 2) if random.random() < 0.5 else None
 
-            # is_poor: 只有 Scholarship 可能 True，20% 機率
             is_poor = r['resource_type'] == 'Scholarship' and random.random() < 0.2
 
             resource_conditions.append({
+                'condition_id': uuid.uuid4(),
                 'resource_id': r['resource_id'],
                 'department_id': dept_code,
                 'avg_gpa': avg_gpa,
@@ -1268,17 +1315,16 @@ def generate_resource_conditions(resources, department_data):
     return resource_conditions
 
 
-BATCH_SIZE = 1000
-
 def write_resource_condition_sql(resource_conditions, filename=RESOURCE_CONDITION_SQL_FILE):
     with open(filename, "w", encoding="utf-8") as f:
         f.write("-- PostgreSQL INSERT for resource_condition (batch mode)\nBEGIN;\n\n")
 
-        cols = "resource_id, department_id, avg_gpa, current_gpa, is_poor"
+        cols = "condition_id, resource_id, department_id, avg_gpa, current_gpa, is_poor"
         batch = []
 
         for rc in resource_conditions:
             vals = [
+                rc['condition_id'],
                 rc['resource_id'],
                 rc['department_id'],
                 rc['avg_gpa'],
@@ -1288,13 +1334,11 @@ def write_resource_condition_sql(resource_conditions, filename=RESOURCE_CONDITIO
             vals_sql = "(" + ", ".join(sql_value(v) for v in vals) + ")"
             batch.append(vals_sql)
 
-            # 每 1000 筆寫入一次
             if len(batch) >= BATCH_SIZE:
                 f.write(f"INSERT INTO resource_condition ({cols}) VALUES\n")
                 f.write(",\n".join(batch) + ";\n\n")
                 batch = []
 
-        # 寫入最後一批未達 1000 筆的資料
         if batch:
             f.write(f"INSERT INTO resource_condition ({cols}) VALUES\n")
             f.write(",\n".join(batch) + ";\n\n")
