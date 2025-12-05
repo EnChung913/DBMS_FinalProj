@@ -41,6 +41,9 @@ const handleLogin = async () => {
 
     console.log('User role:', data.user.role);
     switch (data.user.role) {
+      case 'admin':
+        router.push('/admin/dashboard');
+        break;
       case 'department':
         router.push('/department/dashboard');
         break;

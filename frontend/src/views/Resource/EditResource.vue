@@ -225,12 +225,10 @@ const goBack = () => router.back();
   max-width: 700px;
   min-width: 700px;
   background: #fff;
-  padding: 0; /* 內部用 header/body padding */
-  border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
   border: 1px solid rgba(0,0,0,0.02);
-  overflow: hidden;
-  animation: slideUp 0.5s ease-out;
 }
 
 @keyframes slideUp {
@@ -247,12 +245,10 @@ const goBack = () => router.back();
   justify-content: space-between;
   align-items: center;
 }
-
 .header-content h2 {
-  margin: 0 0 5px 0;
-  color: var(--text-color);
-  font-size: 1.6rem;
-  font-weight: 700;
+  margin: 0;
+  color: var(--accent-color);
+  font-size: 1.8rem;
 }
 
 .subtitle {
@@ -280,39 +276,35 @@ const goBack = () => router.back();
 .col { flex: 1; }
 .form-group { margin-bottom: 25px; }
 
-label { 
-  display: block; margin-bottom: 8px; 
-  color: var(--text-color); 
-  font-weight: 600; 
-  font-size: 0.9rem;
-  letter-spacing: 0.3px;
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 /* 輸入框優化 */
 input, select, textarea {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
+  padding: 12px 15px;
+  border: 1px solid #E0E0E0;
+  border-radius: 10px;
   font-size: 1rem;
-  background: #fff;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #FAFAFA;
+  transition: all 0.3s;
   box-sizing: border-box;
-  color: #333;
-}
-
-input:hover, select:hover, textarea:hover {
-  border-color: #ccc;
+  font-family: inherit;
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px rgba(125, 157, 156, 0.15);
-  background: #fff;
+  background: #FFF;
+  box-shadow: 0 0 0 3px rgba(125, 157, 156, 0.1);
 }
 
-textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+textarea { resize: vertical; }
 
 /* 自訂 Select 箭頭 */
 .select-wrapper { position: relative; }

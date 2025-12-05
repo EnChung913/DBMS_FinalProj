@@ -95,7 +95,7 @@ const getStatusClass = (status: string) => {
   return 'status-wait';
 };
 
-// ✅ 新增：申請功能的邏輯
+// 申請功能的邏輯
 const handleApply = async (resourceId: string) => {
   if (!confirm('Are you sure you want to apply for this resource?')) return;
 
@@ -164,7 +164,15 @@ const handleApply = async (resourceId: string) => {
         </div>
 
         <div class="dashboard-card">
-          <div class="card-header"><h3>Achievements</h3></div>
+          <div class="card-header"><h3>Achievements</h3>
+          <button 
+            class="btn-icon-add" 
+            title="新增成就"
+            @click="$router.push('/student/upload-achievement')"
+          >
+            +
+          </button>
+          </div>
           <ul class="achieve-list">
             <li v-for="item in achievements" :key="item.achievement_id">
               <span class="achieve-title">{{ item.title }}</span>

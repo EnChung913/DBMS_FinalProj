@@ -14,6 +14,8 @@ import EditResource from '../views/Resource/EditResource.vue';
 import DepartmentResources from '../views/Department/DepartmentResources.vue';
 import CompanyResources from '../views/Company/CompanyResources.vue';
 import CompanyApplications from '../views/Company/CompanyApplications.vue';
+import UploadAchievement from '../views/Student/UploadAchievement.vue';
+import AdminDashboard from '../views/Admin/AdminDashboard.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,9 +32,22 @@ const router = createRouter({
     },
     // --- 角色專屬路由 ---
     {
+      path: '/admin/dashboard',
+      name: 'AdminDashboard',
+      component: AdminDashboard,
+      meta: { requiresAuth: true, role: ['company','admin'] } 
+     // meta: { requiresAuth: true, role: 'admin' } 
+    },
+    {
       path: '/student/dashboard',
       name: 'StudentDashboard',
       component: StudentDashboard,
+      meta: { requiresAuth: true, role: 'student', requiresSetup: true }
+    },
+    {
+      path: '/student/upload-achievement',
+      name: 'UploadAchievement',
+      component: UploadAchievement,
       meta: { requiresAuth: true, role: 'student', requiresSetup: true }
     },
     {
@@ -73,7 +88,7 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['company', 'department'] } 
     },
     {
-      path: '/resource/edit/:id', // ✅ 帶參數的路由
+      path: '/resource/edit/:id',
       name: 'EditResource',
       component: EditResource,
       meta: { requiresAuth: true, roles: ['company', 'department'] }
@@ -99,50 +114,59 @@ router.beforeEach((to, from, next) => {
 
   // 1. 檢查是否需要登入
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-    next('/login');
-    return;
+    // 未登入 -> 去登入頁
+    return next('/login');
   }
 
-  // 2. 檢查是否需要完成 Profile 設定 (✅ 修改：僅針對學生強制檢查)
+  // 2. 檢查是否需要完成 Profile 設定 (僅針對學生強制檢查)
   if (
     to.meta.requiresSetup && 
     authStore.role === 'student' &&   // 只有學生需要檢查
     authStore.needProfile === true    // 且狀態顯示為「需要設定」
   ) {
-    next({ 
+    // 學生未填資料 -> 強制去 Setup
+    return next({ 
       name: 'ProfileSetup', 
-      query: { role: 'student' } // 帶上角色參數
+      query: { role: 'student' } 
     });
-    return;
   }
 
-  // 3. 檢查角色權限 (防止學生跑到企業頁面)
-  const allowedRoles = to.meta.roles as string[] | undefined;
-  const singleRole = to.meta.role as string | undefined;
+  // 3. 檢查角色權限 (支援單一 role 或多重 roles)
+  const allowedRoles = to.meta.roles as string[] | undefined; // 支援陣列 (例如 ['company', 'department'])
+  const requiredRole = to.meta.role as string | undefined;    // 支援單一字串 (例如 'admin')
   
+  let hasPermission = true;
+
   if (allowedRoles) {
+    // 檢查是否在允許的角色列表中
     if (!authStore.role || !allowedRoles.includes(authStore.role)) {
-      alert('Access Denied');
-      return next('/');
+      hasPermission = false;
     }
-  } else if (singleRole) {
-    if (authStore.role !== singleRole) {
-      alert('Access Denied');
-      // ... (原本的導向邏輯)
-      if (to.meta.role && authStore.role !== to.meta.role) {
-      alert('Access Denied: Role mismatch');
-    
-      // 導向回正確的角色首頁
-      if (authStore.role === 'student') next('/student/dashboard');
-      else if (authStore.role === 'department') next('/department/dashboard');
-      else if (authStore.role === 'company') next('/company/dashboard');
-      else next('/login');
-      return;
-      }
-      return next('/');
+  } else if (requiredRole) {
+    // 檢查是否符合單一角色
+    if (authStore.role !== requiredRole) {
+      hasPermission = false;
     }
   }
 
+  // // 如果沒有權限，執行智慧導向
+  // if (!hasPermission) {
+  //   // 避免無限迴圈：如果使用者已經在首頁或登入頁，就不跳警告
+  //   if (to.path !== '/' && to.path !== '/login') {
+  //     alert('Access Denied: You do not have permission to view this page.');
+  //   }
+
+  //   // 根據使用者的真實身分，送回正確的首頁
+  //   switch (authStore.role) {
+  //     case 'admin': return next('/admin/dashboard');
+  //     case 'student': return next('/student/dashboard');
+  //     case 'department': return next('/department/dashboard');
+  //     case 'company': return next('/company/dashboard');
+  //     default: return next('/login');
+  //   }
+  // }
+
+  // 通過所有檢查
   next();
 });
 

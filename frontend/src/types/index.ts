@@ -1,7 +1,7 @@
 // src/types/index.ts
 
 // --- DB Schema 對應 ---
-export type UserRole = 'student' | 'department' | 'company';
+export type UserRole = 'student' | 'department' | 'company' | 'admin';
 export type ResourceType = 'Scholarship' | 'Internship' | 'Lab' | 'Others';
 export type AppStatus = 'submitted' | 'under_review' | 'approved' | 'rejected';
 export type AchievStatus = 'unrecognized' | 'recognized' | 'rejected';

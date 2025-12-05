@@ -2,34 +2,24 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
-import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const isLoading = ref(false);
 
 const formData = ref({
   title: '',
-  resource_type: '', 
-  quota: 1,
-  deadline: '',
-  description: ''
+  category: '',
+  description: '',
+  proof_link: '' // 用來存放證明連結 (如 Google Drive)
 });
 
-const isCompany = authStore.role === 'company';
-const pageTitle = isCompany ? 'Publish Company Resource' : 'Publish Department Resource';
-
-const resourceTypes = isCompany 
-  ? [
-      { value: 'Internship', label: 'Internship' },
-      { value: 'Others', label: 'Others' }
-    ]
-  : [
-      { value: 'Scholarship', label: 'Scholarship' },
-      { value: 'Lab', label: 'Lab' },
-      { value: 'Internship', label: 'Internship' },
-      { value: 'Others', label: 'Others' }
-    ];
+const categories = [
+  'Competition',
+  'Research',
+  'Service',
+  'Certification',
+  'Others'
+];
 
 const handleSubmit = async () => {
   if (isLoading.value) return;
@@ -37,21 +27,21 @@ const handleSubmit = async () => {
 
   try {
     // ----------------------------------------------------------------
-    // [POST] /api/resource/create
+    // TO DO: [POST] /api/student/achievement
     // ----------------------------------------------------------------
-    await apiClient.post('/resource/create', formData.value);
+    // await apiClient.post('/student/achievement', formData.value);
 
-    // Mock Data
-    // await new Promise(r => setTimeout(r, 800));
+    // --- Mock Data ---
+    console.log('[Mock] Uploading Achievement:', formData.value);
+    await new Promise(r => setTimeout(r, 800));
+    // -----------------
 
-    alert('Upload successful!');
-    
-    if (isCompany) router.push('/company/dashboard');
-    else router.push('/department/dashboard');
+    alert('上傳成功！等待系所審核。');
+    router.push('/student/dashboard');
 
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    alert('Upload failed, please try again later.');
+    alert('上傳失敗，請稍後再試。');
   } finally {
     isLoading.value = false;
   }
@@ -69,10 +59,9 @@ const goBack = () => router.back();
       </button>
     </div>
 
-    <div class="card form-card">
-      
+    <div class="form-card">
       <div class="card-header">
-        <h2>{{ pageTitle }}</h2>
+        <h2>Upload Achievement</h2>
       </div>
 
       <form @submit.prevent="handleSubmit" class="main-form">
@@ -83,43 +72,39 @@ const goBack = () => router.back();
             v-model="formData.title" 
             type="text" 
             required 
-            placeholder="e.g., 2024 Summer Internship / NTU Scholarship"
+            placeholder="e.g., 2023 ACM ICPC Asia Regional Contest" 
           />
         </div>
 
-        <div class="row">
-          <div class="form-group col">
-            <label>Type</label>
-            <select v-model="formData.resource_type" required>
-              <option v-for="opt in resourceTypes" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
+        <div class="form-group">
+          <label>Category</label>
+          <div class="select-wrapper">
+            <select v-model="formData.category" required>
+              <option v-for="cat in categories" :key="cat" :value="cat">
+                {{ cat }}
               </option>
             </select>
-          </div>
-
-          <div class="form-group col">
-            <label>Quota</label>
-            <input 
-              v-model="formData.quota" 
-              type="number" 
-              min="1" 
-              required 
-            />
           </div>
         </div>
 
         <div class="form-group">
-          <label>Deadline</label>
-            <input v-model="formData.deadline" type="date" required />
+          <label>Proof Link</label>
+          <input 
+            v-model="formData.proof_link" 
+            type="url" 
+            required 
+            placeholder="https://drive.google.com/..." 
+          />
+          <small class="hint">Please provide a cloud link (Google Drive, Dropbox) and grant viewing permissions.</small>
         </div>
 
         <div class="form-group">
           <label>Description</label>
           <textarea 
             v-model="formData.description" 
-            rows="6" 
-            required 
-            placeholder="Provide detailed information about the resource here..."
+            rows="5" 
+            required
+            placeholder="Briefly describe your achievement..."
           ></textarea>
         </div>
 
@@ -137,7 +122,6 @@ const goBack = () => router.back();
 
 <style scoped>
 @import '@/assets/main.css';
-
 .page-container {
   padding: 40px 20px;
   min-height: 100vh;
@@ -146,7 +130,6 @@ const goBack = () => router.back();
   align-items: center;  
 }
 
-
 .outer-header {
   width: 100%;
   max-width: 700px; 
@@ -154,7 +137,6 @@ const goBack = () => router.back();
   display: flex;
   justify-content: flex-start;
 }
-
 
 .btn-back-outer {
   background: transparent;
@@ -180,7 +162,6 @@ const goBack = () => router.back();
   line-height: 1;
 }
 
-
 .form-card {
   width: 100%;
   max-width: 700px;
@@ -192,19 +173,21 @@ const goBack = () => router.back();
   border: 1px solid rgba(0,0,0,0.02);
 }
 
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
 .card-header {
   background: linear-gradient(135deg, #fff 0%, #fcfcfc 100%);
   padding: 30px 40px;
   border-bottom: 1px solid #f0f0f0;
   position: relative;
 }
-
 .card-header h2 {
   margin: 0;
   color: var(--accent-color);
   font-size: 1.8rem;
 }
 
+.subtitle { color: #999; font-size: 0.9rem; font-weight: 500; }
 
 .main-form { padding: 40px; }
 .form-group { margin-bottom: 25px; }
@@ -238,37 +221,8 @@ input:focus, select:focus, textarea:focus {
 
 textarea { resize: vertical; }
 
-.form-actions {
-  margin-top: 30px;
-  display: flex;
-  justify-content: center;
-}
+.hint { display: block; margin-top: 6px; font-size: 0.8rem; color: #aaa; }
 
-.btn-primary-large {
-  width: 100%;
-  padding: 14px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(125, 157, 156, 0.3);
-}
-
-.btn-primary-large:hover {
-  background-color: var(--accent-color);
-  transform: translateY(-2px);
-}
-
-.btn-primary-large:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
 .form-actions {
   margin-top: 40px; padding-top: 30px; border-top: 1px solid #f5f5f5;
   display: flex; justify-content: flex-end; gap: 15px;

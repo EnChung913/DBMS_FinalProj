@@ -38,7 +38,7 @@ async function handleLogout() {
   <div class="app-wrapper">
     <header class="main-header">
       <div class="header-content" style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
-        <div class="logo" @click="router.push('/')" style="cursor: pointer;">
+        <div class="logo">
           <span class="logo-icon">❖</span>
           <span class="logo-text">UniConnect - University / Unity / Universe Connect</span>
         </div>
