@@ -71,6 +71,7 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
   fs.writeFileSync('./openapi.json', JSON.stringify(document, null, 2));
 
+  app.enableShutdownHooks();
   await app.listen(port, host);
 
   console.log(`Application is running on: ${await app.getUrl()}`);
