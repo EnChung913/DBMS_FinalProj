@@ -4,7 +4,7 @@ import { Transform } from 'class-transformer';
 export class CreateAchievementDto {
   @IsString()
   @IsNotEmpty()
-  @IsIn(['Competition','Research','Intern','Project','Others'])
+  @IsIn(['Competition','Research','Intern','Project','Service','Others'])
   category: string;
 
   @IsString()

@@ -32,33 +32,15 @@ onMounted(async () => {
 
   try {
     // ----------------------------------------------------------------
-    // TO DO: 連接後端 API (Department Dashboard)
+    // TODO: 連接後端 API (Department Dashboard)
     // ----------------------------------------------------------------
 
     // 1. [GET] /api/department/achievements/pending
-    // pendingAchievements.value = (await apiClient.get('/department/achievements/pending')).data;
-
+    pendingAchievements.value = (await apiClient.get('/api/department/achievements/list')).data;
+    console.log(pendingAchievements.value);
     // 2. [GET] /api/department/resources
     // myResources.value = (await apiClient.get('/department/resources')).data;
 
-    // --- MOCK DATA ---
-    pendingAchievements.value = [
-      { 
-        id: 101, student: '王大明', student_id: 'B09901001', 
-        title: 'ICPC 國際程式設計競賽 - 金牌', category: 'Competition',
-        proof_link: '#', date: '2025-02-15'
-      },
-      { 
-        id: 102, student: '李小華', student_id: 'B09901023', 
-        title: '第15屆系學會會長', category: 'Service',
-        proof_link: '#', date: '2025-02-18'
-      },
-      { 
-        id: 103, student: '張偉', student_id: 'B09901055', 
-        title: '校園親善大使', category: 'Service',
-        proof_link: '#', date: '2025-02-20'
-      }
-    ];
 
     myResources.value = [
       { id: 'r1', title: '113學年度清寒優秀獎學金', type: 'Scholarship', applicants: 12, quota: 3, status: 'Available', publish_date: '2025-02-20' },
@@ -72,15 +54,23 @@ onMounted(async () => {
 });
 
 const verifyAchievement = async (id: number, decision: boolean) => {
-  // ----------------------------------------------------------------
-  // TODO: [POST] /api/department/achievement/{id}/verify
-  // ----------------------------------------------------------------
-  console.log(`[Mock] Verify ID:${id} -> ${decision ? 'Approved' : 'Rejected'}`);
-  const index = pendingAchievements.value.findIndex(a => a.id === id);
-  if (index !== -1) {
-    pendingAchievements.value.splice(index, 1);
+  try {
+    await apiClient.patch(`/api/department/achievements/${id}/review`, {
+      approve: decision
+    });
+
+    
+    const index = pendingAchievements.value.findIndex(a => a.id === id);
+    if (index !== -1) {
+      pendingAchievements.value.splice(index, 1);
+    }
+
+  } catch (error) {
+    console.error(error);
+    alert('Verification failed.');
   }
 };
+
 </script>
 
 <template>
@@ -135,7 +125,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
                   <td>
                     <div class="achievement-detail">
                       <span class="title">{{ item.title }}</span>
-                      <a :href="item.proof_link" class="link-proof" @click.prevent>Check certificate</a>
+                      <a :href="item.proof_link" target="_blank" class="link-proof"> Check certificate </a>
                     </div>
                   </td>
                   <td>

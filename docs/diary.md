@@ -273,3 +273,8 @@ There should be a status attribute for user entity, the status can be 'active', 
 [2025-12-6 21:49]
 Now I want to implement the 2FA function. I know it's a minor function but I want to take a rest now.
 I've finished the apis for 2FA but Lyy thinks that we are running out of time, so I'll implement the 2FA function frontend later. Now I'm going to implement the review achievement function for department.
+
+[2025-12-6 22:50]
+If user cancel the application, the file uploaded would be deleted too. Great!
+I finish the verify achievement api for department. Department can review the achievements uploaded by students. Next step would be the review application function for company and department.
+Some details need to be improved later: the review ui should show the achievement title and description, the status of recognized should be green not gray.

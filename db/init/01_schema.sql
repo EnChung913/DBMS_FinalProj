@@ -107,7 +107,7 @@ CREATE TABLE student_course_record (
 CREATE TABLE achievement (
     achievement_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES "user"(user_id) ON DELETE CASCADE,
-    category VARCHAR(20) CHECK(category IN ('Competition','Research','Intern','Project','Others')),
+    category VARCHAR(20) CHECK(category IN ('Competition','Research','Intern','Project','Service','Others')),
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
     attachment_path TEXT ,
@@ -115,24 +115,6 @@ CREATE TABLE achievement (
     end_date DATE,
     creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) CHECK(status IN ('unrecognized','recognized','rejected')) NOT NULL
-);
-
--------------------------------------------------
--- Achievement verification (NEW TABLE)
--------------------------------------------------
-CREATE TABLE achievement_verification (
-    verification_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    achievement_id UUID REFERENCES achievement(achievement_id) ON DELETE CASCADE,
-    
-    verifier_type VARCHAR(20) CHECK(verifier_type IN ('department','company','professor')) NOT NULL,
-    verifier_email VARCHAR(100) NOT NULL,
-    
-    verification_status VARCHAR(20)
-        CHECK(verification_status IN ('pending','approved','rejected'))
-        DEFAULT 'pending',
-    
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    decided_at TIMESTAMP
 );
 
 -------------------------------------------------

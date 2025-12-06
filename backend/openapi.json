@@ -339,6 +339,92 @@
         ]
       }
     },
+    "/api/department/achievements/list": {
+      "get": {
+        "operationId": "DepartmentController_getPendingAchievements",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "Get pending achievements for department"
+          }
+        },
+        "summary": "Get pending achievements for department",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}/file": {
+      "get": {
+        "operationId": "DepartmentController_getAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement attachment file retrieved successfully."
+          }
+        },
+        "summary": "Get achievement attachment file",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}/download": {
+      "get": {
+        "operationId": "DepartmentController_downloadAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement attachment file downloaded successfully."
+          }
+        },
+        "summary": "Download achievement attachment file",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}/review": {
+      "patch": {
+        "operationId": "DepartmentController_reviewAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Department"
+        ]
+      }
+    },
     "/api/company/filter-students": {
       "post": {
         "operationId": "CompanyController_searchStudents",
