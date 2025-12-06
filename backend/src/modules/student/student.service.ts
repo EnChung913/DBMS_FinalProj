@@ -5,6 +5,7 @@ import { User } from '../../entities/user.entity';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { StudentGpa } from '../../entities/student-gpa.entity';
 import { Achievement } from '../../entities/achievement.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class StudentService {
@@ -20,6 +21,9 @@ export class StudentService {
 
     @InjectRepository(Achievement)
     private readonly achievementRepo: Repository<Achievement>,
+
+    @InjectRepository(DataSource)
+    private readonly dataSource: DataSource,
   ) {}
 
   
@@ -46,4 +50,38 @@ export class StudentService {
       order: { creation_date: 'DESC' },
     });
   }
+
+  async getMyApplications(userId: string) {
+    const sql = `
+SELECT
+  a.user_id,
+  a.resource_id,
+  r.title AS resource_title,
+  COALESCE(dp.department_name, cp.company_name) AS supplier_name,
+  a.apply_date,
+  a.review_status AS status
+FROM application a
+JOIN "user" u
+  ON u.user_id = a.user_id
+JOIN resource r
+  ON r.resource_id = a.resource_id
+
+LEFT JOIN "user" AS department_supplier_user
+  ON department_supplier_user.user_id = r.department_supplier_id
+
+LEFT JOIN department_profile dp
+  ON dp.department_id = department_supplier_user.department_id
+
+LEFT JOIN "user" AS company_supplier_user
+  ON company_supplier_user.user_id = r.company_supplier_id
+  
+LEFT JOIN company_profile cp
+  ON cp.company_id = company_supplier_user.company_id
+
+WHERE a.user_id = $1
+ORDER BY a.apply_date DESC;
+    `;
+    return this.dataSource.query(sql, [userId]);
+  }
+
 }

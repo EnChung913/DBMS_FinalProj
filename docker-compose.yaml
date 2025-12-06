@@ -12,6 +12,12 @@ services:
     ports:
       - "127.0.0.1:6666:5432"
     restart: "no"
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
@@ -19,40 +25,39 @@ services:
     ports:
       - "127.0.0.1:6667:6379"
     restart: "no"
+    # [新增] 健康檢查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: group7_backend
-
-    volumes:
-      - ./backend:/app
-
     env_file:
       - ./backend/.env.docker
-
     depends_on:
-      - db
-      - redis
-
-    # 一定要確認你的 Nest 是跑在 8000
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:8000:8000"
-
-    command: node dist/main.js
+      - "127.0.0.1:12345:3000"
     restart: "no"
+
 
   frontend:
     build: ./frontend
     container_name: group7_frontend
     ports:
-      - "127.0.0.1:5173:80"
+      - "127.0.0.1:5173:80" # 假設 Dockerfile 是 build 完用 nginx 跑
     depends_on:
       - backend
     env_file:
       - ./frontend/.env.docker
-
     restart: "no"
 
 volumes:

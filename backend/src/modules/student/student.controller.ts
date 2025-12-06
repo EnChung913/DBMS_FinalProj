@@ -56,4 +56,14 @@ export class StudentController {
   getAchievement(@Req() req: any) {
     return this.studentService.getAchievement(req.user.sub);
   }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('student')
+  @Get('applications')
+  @ApiOperation({ summary: 'Get student applications' })
+  @ApiResponse({ status: 200, description: 'Applications retrieved successfully.' })
+  async getApplications(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.studentService.getMyApplications(userId);
+  }
+
 }

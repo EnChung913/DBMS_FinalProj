@@ -9,10 +9,11 @@ import { User } from '../../entities/user.entity';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { StudentGpa } from '../../entities/student-gpa.entity';
 import { Achievement } from '../../entities/achievement.entity';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, StudentProfile, StudentGpa, Achievement]),
+    TypeOrmModule.forFeature([User, StudentProfile, StudentGpa, Achievement, DataSource]),
     ProfileModule,
     ApplicationModule,
     AchievementModule,

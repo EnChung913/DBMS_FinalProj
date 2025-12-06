@@ -110,6 +110,7 @@ CREATE TABLE achievement (
     category VARCHAR(20) CHECK(category IN ('Competition','Research','Intern','Project','Others')),
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
+    attachment_path TEXT ,
     start_date DATE,
     end_date DATE,
     creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

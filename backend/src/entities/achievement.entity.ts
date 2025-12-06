@@ -28,4 +28,7 @@ export class Achievement {
 
   @Column({ type: 'varchar', length: 20 })
   status: string;
+
+  @Column({ type: 'text', nullable: true })
+  attachment_path: string | null;
 }

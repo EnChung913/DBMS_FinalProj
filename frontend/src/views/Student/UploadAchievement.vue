@@ -6,13 +6,19 @@ import apiClient from '@/api/axios';
 const router = useRouter();
 const isLoading = ref(false);
 
+// 表單欄位（純文字）
 const formData = ref({
   title: '',
   category: '',
   description: '',
-  proof_link: '' // 用來存放證明連結 (如 Google Drive)
+  start_date: '',
+  end_date: ''
 });
 
+// 所選 PDF 檔案
+const selectedFile = ref<File | null>(null);
+
+// 可選類別
 const categories = [
   'Competition',
   'Research',
@@ -21,27 +27,63 @@ const categories = [
   'Others'
 ];
 
+// 處理使用者選擇 PDF
+const onFileSelected = (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  if (!file){
+    selectedFile.value = null;
+    return;
+  }
+
+  // 前端限制 PDF + 20MB
+  if (file.type !== 'application/pdf') {
+    alert('僅允許上傳 PDF 檔案');
+    input.value = '';
+    return;
+  }
+
+  if (file.size > 20 * 1024 * 1024) { // 20MB
+    alert('檔案大小不可超過 20MB');
+    input.value = '';
+    return;
+  }
+
+  selectedFile.value = file;
+};
+
 const handleSubmit = async () => {
+  console.log(formData)
+
   if (isLoading.value) return;
   isLoading.value = true;
 
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [POST] /api/student/achievement
-    // ----------------------------------------------------------------
-    // await apiClient.post('/student/achievement', formData.value);
+    if (!selectedFile.value) {
+      selectedFile.value = null;
+    }
 
-    // --- Mock Data ---
-    console.log('[Mock] Uploading Achievement:', formData.value);
-    await new Promise(r => setTimeout(r, 800));
-    // -----------------
+    const fd = new FormData();
+    fd.append('title', formData.value.title);
+    fd.append('category', formData.value.category);
+    fd.append('description', formData.value.description);
+    fd.append('start_date', formData.value.start_date || '');
+    fd.append('end_date', formData.value.end_date || '');
+    fd.append('file', selectedFile.value!);
+
+    await apiClient.post('/api/student/achievement/create', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
 
     alert('上傳成功！等待系所審核。');
     router.push('/student/dashboard');
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     alert('上傳失敗，請稍後再試。');
+
   } finally {
     isLoading.value = false;
   }
@@ -49,10 +91,10 @@ const handleSubmit = async () => {
 
 const goBack = () => router.back();
 </script>
-
 <template>
   <div class="page-container">
     
+    <!-- 返回鍵 -->
     <div class="outer-header">
       <button class="btn-back-outer" @click="goBack">
         <span class="icon">⮐</span> Back
@@ -60,65 +102,88 @@ const goBack = () => router.back();
     </div>
 
     <div class="form-card">
+
       <div class="card-header">
         <h2>Upload Achievement</h2>
       </div>
 
       <form @submit.prevent="handleSubmit" class="main-form">
-        
+
+        <!-- Title -->
         <div class="form-group">
           <label>Title</label>
           <input 
-            v-model="formData.title" 
-            type="text" 
+            v-model="formData.title"
+            type="text"
             required 
-            placeholder="e.g., 2023 ACM ICPC Asia Regional Contest" 
+            placeholder="e.g., 2023 ACM ICPC Asia Regional Contest"
           />
         </div>
 
+        <!-- Category -->
         <div class="form-group">
           <label>Category</label>
-          <div class="select-wrapper">
-            <select v-model="formData.category" required>
-              <option v-for="cat in categories" :key="cat" :value="cat">
-                {{ cat }}
-              </option>
-            </select>
-          </div>
+          <select v-model="formData.category" required>
+            <option disabled value="">請選擇類別</option>
+            <option v-for="cat in categories" :key="cat" :value="cat">
+              {{ cat }}
+            </option>
+          </select>
         </div>
 
-        <div class="form-group">
-          <label>Proof Link</label>
-          <input 
-            v-model="formData.proof_link" 
-            type="url" 
-            required 
-            placeholder="https://drive.google.com/..." 
-          />
-          <small class="hint">Please provide a cloud link (Google Drive, Dropbox) and grant viewing permissions.</small>
-        </div>
-
+        <!-- Description -->
         <div class="form-group">
           <label>Description</label>
-          <textarea 
-            v-model="formData.description" 
-            rows="5" 
+          <textarea
+            v-model="formData.description"
+            rows="5"
             required
             placeholder="Briefly describe your achievement..."
           ></textarea>
         </div>
 
+        <!-- Dates -->
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" v-model="formData.start_date" />
+        </div>
+
+        <div class="form-group">
+          <label>End Date</label>
+          <input type="date" v-model="formData.end_date" />
+        </div>
+
+        <!-- PDF Upload -->
+        <div class="form-group">
+          <label>Upload PDF (max 20MB)</label>
+          <input
+            type="file"
+            accept="application/pdf"
+            @change="onFileSelected"
+            required
+          />
+          <small v-if="selectedFile" class="hint">
+            Selected: {{ selectedFile.name }} ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
+          </small>
+        </div>
+
+        <!-- Buttons -->
         <div class="form-actions">
-          <button type="button" class="btn-cancel" @click="goBack">Cancel</button>
+          <button type="button" class="btn-cancel" @click="goBack">
+            Cancel
+          </button>
+
           <button type="submit" class="btn-primary-gradient" :disabled="isLoading">
             {{ isLoading ? 'Uploading...' : 'Upload' }}
           </button>
         </div>
 
       </form>
+
     </div>
   </div>
 </template>
+
 
 <style scoped>
 @import '@/assets/main.css';

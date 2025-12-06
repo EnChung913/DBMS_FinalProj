@@ -1,11 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
 
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import * as fs from 'fs';
+import * as express from 'express';
+
 
 async function bootstrap() {
   const rawOrigins = process.env.CORS_ORIGINS ?? '*';
@@ -22,9 +25,13 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
       transform: true,
-    }),
+      exceptionFactory: (errors) => {
+        console.error(errors);
+        return new BadRequestException('Validation failed');
+      },
+    })
   );
   app.use(cookieParser());
 
@@ -71,7 +78,22 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
   fs.writeFileSync('./openapi.json', JSON.stringify(document, null, 2));
 
+  // allow static access to uploaded files
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+
+  // shutdown module
   app.enableShutdownHooks();
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received. Closing app...');
+    await app.close();
+    process.exit(0);
+  });
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received. Closing app...');
+    await app.close();
+    process.exit(0);
+  }); 
+  
   await app.listen(port, host);
 
   console.log(`Application is running on: ${await app.getUrl()}`);

@@ -187,6 +187,46 @@
         ]
       }
     },
+    "/api/student/applications": {
+      "get": {
+        "operationId": "StudentController_getApplications",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Applications retrieved successfully."
+          }
+        },
+        "summary": "Get student applications",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/api/student/achievement/create": {
+      "post": {
+        "operationId": "AchievementController_createAchievement",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAchievementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Achievement created successfully."
+          }
+        },
+        "summary": "Create a new achievement",
+        "tags": [
+          "Student Achievement"
+        ]
+      }
+    },
     "/api/company/filter-students": {
       "post": {
         "operationId": "CompanyController_searchStudents",
@@ -550,6 +590,10 @@
         "properties": {}
       },
       "UpsertStudentProfileDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateAchievementDto": {
         "type": "object",
         "properties": {}
       },

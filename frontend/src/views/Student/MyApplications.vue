@@ -25,48 +25,48 @@ onMounted(async () => {
     // ----------------------------------------------------------------
     // TO DO: [GET] /api/student/applications
     // ----------------------------------------------------------------
-    // const res = await apiClient.get('/student/applications');
-    // applications.value = res.data;
+    const res = await apiClient.get('/api/student/applications');
+    applications.value = res.data;
 
     // --- Mock Data ---
     await new Promise(r => setTimeout(r, 600));
-    applications.value = [
-      {
-        application_id: 'a1', resource_id: 'r1',
-        resource_title: 'Software Engineer Intern',
-        supplier_name: 'TSMC',
-        apply_date: '2025-02-24',
-        status: 'submitted'
-      },
-      {
-        application_id: 'a2', resource_id: 'r2',
-        resource_title: 'Lab Research Assistant',
-        supplier_name: 'Prof. Chang (Quantum Lab)',
-        apply_date: '2025-02-10',
-        status: 'under_review'
-      },
-      {
-        application_id: 'a3', resource_id: 'r3',
-        resource_title: 'Merit Scholarship 2024',
-        supplier_name: 'Academic Office',
-        apply_date: '2024-11-15',
-        status: 'approved'
-      },
-      {
-        application_id: 'a4', resource_id: 'r5',
-        resource_title: 'Exchange Program - USA',
-        supplier_name: 'Intl. Office',
-        apply_date: '2024-10-01',
-        status: 'rejected'
-      },
-      {
-        application_id: 'a5', resource_id: 'r6',
-        resource_title: 'Data Analyst Intern',
-        supplier_name: 'Shopee',
-        apply_date: '2024-09-20',
-        status: 'rejected'
-      }
-    ];
+    // applications.value = [
+    //   {
+    //     application_id: 'a1', resource_id: 'r1',
+    //     resource_title: 'Software Engineer Intern',
+    //     supplier_name: 'TSMC',
+    //     apply_date: '2025-02-24',
+    //     status: 'submitted'
+    //   },
+    //   {
+    //     application_id: 'a2', resource_id: 'r2',
+    //     resource_title: 'Lab Research Assistant',
+    //     supplier_name: 'Prof. Chang (Quantum Lab)',
+    //     apply_date: '2025-02-10',
+    //     status: 'under_review'
+    //   },
+    //   {
+    //     application_id: 'a3', resource_id: 'r3',
+    //     resource_title: 'Merit Scholarship 2024',
+    //     supplier_name: 'Academic Office',
+    //     apply_date: '2024-11-15',
+    //     status: 'approved'
+    //   },
+    //   {
+    //     application_id: 'a4', resource_id: 'r5',
+    //     resource_title: 'Exchange Program - USA',
+    //     supplier_name: 'Intl. Office',
+    //     apply_date: '2024-10-01',
+    //     status: 'rejected'
+    //   },
+    //   {
+    //     application_id: 'a5', resource_id: 'r6',
+    //     resource_title: 'Data Analyst Intern',
+    //     supplier_name: 'Shopee',
+    //     apply_date: '2024-09-20',
+    //     status: 'rejected'
+    //   }
+    // ];
   } catch (error) {
     console.error(error);
   } finally {
@@ -76,10 +76,10 @@ onMounted(async () => {
 
 const getStatusLabel = (status: string) => {
   const map: Record<string, string> = {
-    submitted: '已送出',
-    under_review: '審核中',
-    approved: '已錄取',
-    rejected: '未錄取'
+    submitted: 'Submitted',
+    under_review: 'Under Review',
+    approved: 'Approved',
+    rejected: 'Rejected'
   };
   return map[status] || status;
 };

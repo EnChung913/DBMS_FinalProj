@@ -9,8 +9,9 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+COPY .env.docker .env
 
-RUN npm run build
+RUN npm run build -- --mode docker
 
 
 # ----------------------

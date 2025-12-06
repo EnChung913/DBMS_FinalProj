@@ -224,3 +224,34 @@ Transfer/sec:     38.91MB
 
 [2025-12-5 17:03]
 I tried to implement the project to docker but failed. Need to study more about docker networking.
+
+[2025-12-6 01:02]
+I successfully established the docker environment for the whole project. Now everyone can run the whole system in docker container smoothly.
+To rebuild the docker containers, just run:
+``` shell
+docker compose build
+```
+The command above would build images, to create and start containers, run:
+``` shell
+docker compose up
+```
+
+Here are the containers I want to add:
+pgAdmin
+Prometheus
+Grafana
+Loki
+Autohealth
+
+Perhaps I'll use GHCR to store the docker images. Of course I'll also provide the source code and Dockerfile for building the images locally.
+
+[2025-12-6 13:40]
+This is a test account for company
+comp_8_683397
+and for department
+1010_host_629903
+
+I'm trying to deploy a file upload function so that user can upload the cert. files to the system. Now this only applys on the achievement function, next step would be application.
+
+I successfully implemented the file upload function for achievement. User can upload a cert. file while creating an achievement. The file would be stored in the server's local storage under /uploads/achievement/ folder. The file path would be stored in the database. Good news! 
+Now I finished the get application and create application api. Student can apply for a resource now. Next step would be the company or the department to review the applications.
