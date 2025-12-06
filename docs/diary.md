@@ -269,3 +269,7 @@ std_196_515035
 I've finished the create application api. Now student can apply for a resource. Next step would be the company or department to review the applications.
 Besides, I modify the design of the resource page, now if user clicks the "Apply" button, a modal would pop up to show the resource conditions and ask for confirmation. This can enhance user experience.
 There should be a status attribute for user entity, the status can be 'active', 'suspended', 'deleted'. This can enhance the user management function, but this is a minor function. Resource page also need to be modified that hidden the resources that the student has applied. 
+
+[2025-12-6 21:49]
+Now I want to implement the 2FA function. I know it's a minor function but I want to take a rest now.
+I've finished the apis for 2FA but Lyy thinks that we are running out of time, so I'll implement the 2FA function frontend later. Now I'm going to implement the review achievement function for department.

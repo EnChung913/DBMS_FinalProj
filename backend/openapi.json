@@ -20,12 +20,16 @@
         "operationId": "AuthController_verifyAccessToken",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "Access token is valid."
+          },
+          "401": {
+            "description": "Invalid or expired access token."
           }
         },
+        "summary": "Verify Access Token",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -45,11 +49,15 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "User registered successfully."
+          },
+          "400": {
+            "description": "Email or username already exists."
           }
         },
+        "summary": "Register a new user",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -69,11 +77,15 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "User logged in successfully."
+          },
+          "400": {
+            "description": "Invalid credentials or account locked."
           }
         },
+        "summary": "User login",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -83,11 +95,15 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Access token refreshed successfully."
+          },
+          "401": {
+            "description": "No refresh token provided or invalid refresh token."
           }
         },
+        "summary": "Refresh access token",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -97,11 +113,12 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Current user info retrieved successfully."
           }
         },
+        "summary": "Get current user info",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -110,12 +127,58 @@
         "operationId": "AuthController_logout",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "User logged out successfully."
           }
         },
+        "summary": "User logout",
         "tags": [
-          "Auth"
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/2fa/generate": {
+      "post": {
+        "operationId": "AuthController_generate2FA",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "2FA secret and QR code generated successfully."
+          }
+        },
+        "summary": "Generate 2FA secret and QR code",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/2fa/enable": {
+      "post": {
+        "operationId": "AuthController_enable2FA",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "2FA enabled successfully."
+          }
+        },
+        "summary": "Enable 2FA",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/2fa/unlock": {
+      "post": {
+        "operationId": "AuthController_unlock",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Account unlocked successfully."
+          }
+        },
+        "summary": "Unlock account using 2FA",
+        "tags": [
+          "Authentication"
         ]
       }
     },

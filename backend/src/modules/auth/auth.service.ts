@@ -11,6 +11,9 @@ import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import Redis from 'ioredis';
 
+import * as speakeasy from 'speakeasy';
+import * as qrcode from 'qrcode';
+
 import { User } from '../../entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -91,21 +94,29 @@ export class AuthService {
      ===========================================================*/
   // TODO: Login Fail 5 times, usr need to verify Authenticator app or Email to continue
   private async addLoginFail(identifier: string) {
-    const key = `login:fail:${identifier}`;
-    const fails = await this.redis.incr(key);
+    const failKey = `login:fail:${identifier}`;
+    const lockKey = `login:lock:${identifier}`;
+
+    const fails = await this.redis.incr(failKey);
+
     if (fails === 1) {
-      await this.redis.expire(key, 300); // 5 minutes
+      await this.redis.expire(failKey, 300); // 5 minutes
     }
-    if (fails === 5) {
-      await this.redis.expire(key, 300); // 5 minutes
-      throw new UnauthorizedException('Too many failed attempts. Try later.');
-    }
-    if (fails > 5) {
-      const ttl = await this.redis.ttl(key);
+
+    if (fails >= 5) {
+      await this.redis.set(lockKey, 'locked', 'EX', 3600); // 1 hour lock
+
       throw new UnauthorizedException(
-        `Too many failed attempts. Try again in ${ttl} seconds.`
+        'Too many failed attempts. Account locked for 1 hour. Use 2FA to unlock in 1 hour.'
       );
     }
+    // fail 1~4
+    throw new UnauthorizedException(`Invalid password (${fails}/5)`);
+  }
+
+  async unlockAccount(identifier: string) {
+    await this.redis.del(`login:lock:${identifier}`);
+    await this.redis.del(`login:fail:${identifier}`);
   }
 
   private async clearLoginFail(identifier: string) {
@@ -199,6 +210,13 @@ export class AuthService {
 
     if (!user) throw new BadRequestException('User not exists');
 
+    const lockKey = `login:lock:${identifier}`;
+    const locked = await this.redis.get(lockKey);
+
+    if (locked) {
+      throw new BadRequestException('Account locked, require 2fa');
+    }
+
     const pwMatches = await bcrypt.compare(password, user.password);
     if (!pwMatches) {
       await this.addLoginFail(identifier);
@@ -207,7 +225,6 @@ export class AuthService {
 
     await this.clearLoginFail(identifier);
 
-    // 若你不想支援多裝置，可啟用此行
     await this.clearOldSessions(user.user_id);
 
     const tokens = await this.generateTokens(user);
@@ -276,6 +293,92 @@ export class AuthService {
     };
   }
 
+  /* ===========================================================
+     2FA modules
+     ===========================================================*/
+  // 1. generate secret + QRCode
+  async generate2FASecret(userId: string) {
+    const user = await this.userRepo.findOne({ where: { user_id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const secret = speakeasy.generateSecret({
+      name: `UniConnect (${user.username})`,
+      length: 32,
+    });
+
+    // store at redis 10 minutes
+    const key = `2fa:pending:${userId}`;
+    await this.redis.set(key, secret.base32, 'EX', 600);  
+
+    const qrDataURL = await qrcode.toDataURL(secret.otpauth_url);
+
+    return {
+      otpauth_url: secret.otpauth_url,
+      secret: secret.base32,
+      qr: qrDataURL,
+    };
+  }
+
+  verifyOtp(secret: string | null, token: string): boolean {
+    if (!secret) return false;
+    return speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token,
+      window: 1,
+    });
+  }
+  // 3. enable 2FA for user
+  async enable2FA(userId: string, code: string) {
+    const pendingKey = `2fa:pending:${userId}`;
+    const secret = await this.redis.get(pendingKey);
+
+    if (!secret) {
+      throw new BadRequestException('2FA setup expired or not started.');
+    }
+
+    const valid = speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+
+    if (!valid) {
+      throw new UnauthorizedException('Invalid OTP.');
+    }
+
+    // 重要：成功後才寫入 DB
+    await this.userRepo.update(userId, {
+      otp_secret: secret,
+      is_2fa_enabled: true,
+    });
+
+    // 清除 Redis 暫存資料
+    await this.redis.del(pendingKey);
+
+    return { enabled: true };
+  }
+
+
+  // 4. 用 2FA 解鎖 Redis 鎖定
+  async unlockAccountBy2FA(userId: string, code: string) {
+    const user = await this.userRepo.findOne({ where: { user_id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    if (!user.is_2fa_enabled) {
+      throw new UnauthorizedException('You must enable 2FA first.');
+    }
+
+    const ok = this.verifyOtp(user.otp_secret, code);
+    if (!ok) throw new UnauthorizedException('Invalid OTP.');
+
+    // 清除 redis 鎖
+    await this.redis.del(`login:lock:${userId}`);
+    await this.redis.del(`login:fail:${userId}`);
+
+    return { unlocked: true };
+  }
 
   /* ===========================================================
      Logout（刪除 session）
