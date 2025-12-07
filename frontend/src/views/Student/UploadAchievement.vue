@@ -20,11 +20,7 @@ const selectedFile = ref<File | null>(null);
 
 // 可選類別
 const categories = [
-  'Competition',
-  'Research',
-  'Service',
-  'Certification',
-  'Others'
+  'Competition','Research','Intern','Project','Service','Others'
 ];
 
 // 處理使用者選擇 PDF

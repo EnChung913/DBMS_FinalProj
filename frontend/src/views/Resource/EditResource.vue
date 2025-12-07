@@ -54,14 +54,10 @@ const resourceTypes = isCompany
 // 初始化：取得現有資料
 onMounted(async () => {
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/resource/:id
-    // ----------------------------------------------------------------
-    // const res = await apiClient.get(`/resource/${resourceId}`);
-    // formData.value = res.data;
+    const res = await apiClient.get(`api/resource/${resourceId}`);
+    formData.value = res.data;
     
-    // --- Mock Data ---
-    console.log(`[Mock] Fetching resource ID: ${resourceId}`);
+    console.log(`Fetching resource ID: ${resourceId}`);
     await new Promise(r => setTimeout(r, 800));
     
     formData.value = {
@@ -118,7 +114,6 @@ const handleSubmit = async () => {
     alert('Upload sucess!');
     if (isCompany) router.push('/company/dashboard');
     else router.push('/department/dashboard');
-
   } catch (error: any) {
     console.error(error);
     alert('Upload failed')

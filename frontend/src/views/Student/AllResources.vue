@@ -223,7 +223,93 @@ const handleApply = (resourceId: string) => {
       </div>
     </div>
 
-    
+    <Teleport to="body">
+      <div v-if="showModal && selectedResource" class="modal-overlay" @click.self="closeModal">
+        <div class="modal-content">
+          
+          <div class="modal-header">
+            <h2>Apply for Resource</h2>
+            <button class="btn-close" @click="closeModal">✕</button>
+          </div>
+          
+          <div class="modal-body">
+            <div class="detail-section">
+              <h3 class="modal-title">{{ selectedResource.title }}</h3>
+              <div class="modal-tags">
+                  <span class="tag">{{ selectedResource.resource_type }}</span>
+                  <span class="tag">Deadline: {{ selectedResource.deadline }}</span>
+              </div>
+              <p class="modal-desc">{{ selectedResource.description }}</p>
+              <div class="supplier-info">
+                  <strong>Provided by:</strong> {{ selectedResource.supplier_name }}
+              </div>
+            </div>
+
+            <hr class="divider" />
+
+          <div class="form-section">
+              <h4>Submission Required</h4>
+              
+              <div class="form-group">
+                <p class="form-label">Upload Supporting Document</p>
+                
+                <div class="file-upload-wrapper">
+                  <input 
+                    type="file" 
+                    id="file-upload" 
+                    @change="handleFileChange"
+                    class="hidden-input"
+                    accept=".pdf,.zip" 
+                  />
+                  
+                  <label for="file-upload" class="custom-file-upload" :class="{ 'has-file': uploadFile }">
+                    <div v-if="!uploadFile" class="upload-placeholder">
+                      <span class="upload-icon">📂</span>
+                      <span class="upload-text">Click to upload PDF or ZIP</span>
+                      <span class="upload-hint">Max size: 5MB</span>
+                    </div>
+                    <div v-else class="file-info">
+                      <span class="file-icon">📄</span>
+                      <div class="file-details">
+                        <span class="file-name">{{ uploadFile.name }}</span>
+                        <span class="file-size">{{ (uploadFile.size / 1024 / 1024).toFixed(2) }} MB</span>
+                      </div>
+                      <span class="change-btn">Change</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group checkbox-group">
+                  <input 
+                      type="checkbox" 
+                      id="agreement" 
+                      v-model="isAgreed"
+                  />
+                  <label for="agreement">
+                      I confirm that the information provided is accurate and I meet all the eligibility criteria.
+                  </label>
+              </div>
+            </div>
+
+
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="closeModal" :disabled="isSubmitting">Cancel</button>
+            <button 
+              type="button"
+              class="btn-submit" 
+              @click.prevent="submitApplication"
+              :disabled="isSubmitting || !isAgreed"
+            >
+              {{ isSubmitting ? 'Submitting...' : 'Confirm Application' }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
 
   </div>
 </template>
@@ -271,4 +357,101 @@ h1 { font-size: 2.2rem; color: var(--accent-color); letter-spacing: 1px; margin:
 .cond-label { font-weight: 600; margin-bottom: 0.25rem; }
 .cond-list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .cond-pill { padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid #ddd; font-size: 0.8rem; }
+
+
+/* ========================================= */
+/* ✅ Modal 樣式 (獨立於原本版面) */
+/* ========================================= */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex; justify-content: center; align-items: center;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: white; width: 90%; max-width: 600px; max-height: 90vh;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header { padding: 16px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+.modal-header h2 { margin: 0; font-size: 1.25rem; color: #333; }
+.btn-close { background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; padding: 0 8px; line-height: 1; }
+.btn-close:hover { color: #333; }
+
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-title { font-size: 1.5rem; color: #2c3e50; margin: 0 0 12px 0; }
+.modal-tags { margin-bottom: 16px; }
+.tag { background: #f0f4f8; color: #555; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; margin-right: 8px; font-weight: 500; }
+.modal-desc { color: #444; line-height: 1.6; margin-bottom: 16px; white-space: pre-wrap; }
+.supplier-info { font-size: 0.9rem; color: #666; }
+.divider { border: 0; border-top: 1px solid #eee; margin: 24px 0; }
+.form-section h4 { margin: 0 0 16px 0; color: #333; }
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem; }
+
+/* --- 🌟 新增：漂亮的檔案上傳樣式 --- */
+.hidden-input { display: none; }
+
+.custom-file-upload {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; min-height: 110px;
+  border: 2px dashed #d1d5db; border-radius: 12px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 20px;
+}
+.custom-file-upload:hover { border-color: var(--primary-color); background: #f0fdfa; }
+
+/* 上傳後的實線樣式 */
+.custom-file-upload.has-file { border-style: solid; border-color: var(--primary-color); background: #fff; }
+
+.upload-placeholder { text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.upload-icon { font-size: 2rem; opacity: 0.6; }
+.upload-text { font-size: 0.95rem; color: #555; font-weight: 500; }
+.upload-hint { font-size: 0.8rem; color: #999; }
+
+.file-info { display: flex; align-items: center; width: 100%; gap: 12px; }
+.file-icon { font-size: 1.5rem; background: #f3f4f6; padding: 10px; border-radius: 8px; }
+.file-details { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.file-name { font-size: 0.9rem; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-size { font-size: 0.75rem; color: #888; }
+.change-btn { font-size: 0.8rem; color: var(--primary-color); font-weight: 600; background: rgba(0,0,0,0.03); padding: 4px 10px; border-radius: 6px; }
+
+.custom-file-upload {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; 
+  box-sizing: border-box; /* ✅ 一定要加這行 */
+  min-height: 110px;
+  /* ...其他保持不變... */
+}
+/* --- 🌟 漂亮的 Checkbox (你選的 Morandi 風格) --- */
+.checkbox-group {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(125, 157, 156, 0.08); /* 柔和背景 */
+  padding: 16px; border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer; transition: all 0.2s;
+}
+.checkbox-group:hover { background: rgba(125, 157, 156, 0.15); }
+.checkbox-group input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer; flex-shrink: 0; }
+.checkbox-group label { font-size: 0.9rem; color: #2c3e50; line-height: 1.5; cursor: pointer; }
+
+/* Footer */
+.modal-footer { padding: 16px 24px; background: #f9f9f9; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 12px; }
+.btn-cancel { padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 8px; cursor: pointer; color: #666; font-weight: 500; transition: all 0.2s; }
+.btn-cancel:hover { background: #f0f0f0; }
+.btn-submit { padding: 10px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+.btn-submit:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+.btn-submit:disabled { background: #a5b4fc; cursor: not-allowed; opacity: 0.7; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
 </style>

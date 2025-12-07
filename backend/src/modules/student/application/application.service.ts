@@ -3,7 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import * as fs from 'fs';
-import { extname } from 'path';
+import { join, extname } from 'path';
 import * as Multer from 'multer';
 
 @Injectable()
@@ -201,36 +201,39 @@ ORDER BY a.apply_date DESC;
 			throw new BadRequestException('You have already applied for this resource.');
 		}
 
-		let filePath: string | null = null;
+		let diskPath: string | null = null;
+		let publicUrl: string | null = null;
 
 		if (file) {
-			const uploadDir = './uploads/applications';
-			if (!fs.existsSync(uploadDir)) {
-				fs.mkdirSync(uploadDir, { recursive: true });
-			}
+			const uploadsRoot = join(process.cwd(), 'uploads', 'achievements');
+			await fs.promises.mkdir(uploadsRoot, { recursive: true });
 
-			const filename = `${Date.now()}-${Math.random()}${extname(file.originalname)}`;
-			filePath = `${uploadDir}/${filename}`;
+			const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+			const finalPath = join(uploadsRoot, filename);
 
-			fs.writeFileSync(filePath, file.buffer);
+			await fs.promises.writeFile(finalPath, file.buffer);
+
+			diskPath = finalPath;                             // 實體檔案路徑
+			publicUrl = `/uploads/achievements/${filename}`;  // 提供前端顯示
 		}
 
-		// Step 7. 若要將 filePath 存進 DB，你可加欄位並更新
+		// Step 7. Insert DB
 		await this.dataSource.query(
 			`
 			INSERT INTO application
-				(user_id, resource_id, apply_date, review_status, resource_status_at_apply, file_path)
+				(user_id, resource_id, apply_date, review_status, resource_status_at_apply, file_disk_path, file_public_url)
 			VALUES
-				($1, $2, CURRENT_DATE, 'submitted', 'Available', $3)
+				($1, $2, CURRENT_DATE, 'submitted', 'Available', $3, $4)
 			`,
-			[userId, resource_id, filePath]
+			[userId, resource_id, diskPath, publicUrl]
 		);
 
 		return {
 			success: true,
 			resource_id,
 			applied_condition_id: cond.condition_id,
-			file_path: filePath,
+			file_disk_path: diskPath,
+			file_public_url: publicUrl,
 		};
 	}
 

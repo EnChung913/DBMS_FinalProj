@@ -20,12 +20,16 @@
         "operationId": "AuthController_verifyAccessToken",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "Access token is valid."
+          },
+          "401": {
+            "description": "Invalid or expired access token."
           }
         },
+        "summary": "Verify Access Token",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -45,11 +49,15 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "User registered successfully."
+          },
+          "400": {
+            "description": "Email or username already exists."
           }
         },
+        "summary": "Register a new user",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -69,11 +77,15 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "User logged in successfully."
+          },
+          "400": {
+            "description": "Invalid credentials or account locked."
           }
         },
+        "summary": "User login",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -83,11 +95,15 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Access token refreshed successfully."
+          },
+          "401": {
+            "description": "No refresh token provided or invalid refresh token."
           }
         },
+        "summary": "Refresh access token",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -97,11 +113,12 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Current user info retrieved successfully."
           }
         },
+        "summary": "Get current user info",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -110,12 +127,58 @@
         "operationId": "AuthController_logout",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "User logged out successfully."
           }
         },
+        "summary": "User logout",
         "tags": [
-          "Auth"
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/2fa/generate": {
+      "post": {
+        "operationId": "AuthController_generate2FA",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "2FA secret and QR code generated successfully."
+          }
+        },
+        "summary": "Generate 2FA secret and QR code",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/2fa/enable": {
+      "post": {
+        "operationId": "AuthController_enable2FA",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "2FA enabled successfully."
+          }
+        },
+        "summary": "Enable 2FA",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/2fa/unlock": {
+      "post": {
+        "operationId": "AuthController_unlock",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Account unlocked successfully."
+          }
+        },
+        "summary": "Unlock account using 2FA",
+        "tags": [
+          "Authentication"
         ]
       }
     },
@@ -276,6 +339,92 @@
         ]
       }
     },
+    "/api/department/achievements/list": {
+      "get": {
+        "operationId": "DepartmentController_getPendingAchievements",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "Get pending achievements for department"
+          }
+        },
+        "summary": "Get pending achievements for department",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}/file": {
+      "get": {
+        "operationId": "DepartmentController_getAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement attachment file retrieved successfully."
+          }
+        },
+        "summary": "Get achievement attachment file",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}/download": {
+      "get": {
+        "operationId": "DepartmentController_downloadAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement attachment file downloaded successfully."
+          }
+        },
+        "summary": "Download achievement attachment file",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}/review": {
+      "patch": {
+        "operationId": "DepartmentController_reviewAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Department"
+        ]
+      }
+    },
     "/api/company/filter-students": {
       "post": {
         "operationId": "CompanyController_searchStudents",
@@ -316,9 +465,10 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Resource created successfully."
           }
         },
+        "summary": "Create a new resource",
         "tags": [
           "Resource"
         ]
@@ -330,9 +480,10 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully retrieved user resources."
           }
         },
+        "summary": "Get resources belonging to the authenticated user",
         "tags": [
           "Resource"
         ]
@@ -344,9 +495,10 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully retrieved all resources."
           }
         },
+        "summary": "Get all resources visible to students",
         "tags": [
           "Resource"
         ]
@@ -367,9 +519,10 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully updated resource status."
           }
         },
+        "summary": "Update the status of a resource",
         "tags": [
           "Resource"
         ]
@@ -390,9 +543,44 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully retrieved a resource by ID."
           }
         },
+        "summary": "Get a resource by its ID",
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/{resource_id}/modify": {
+      "post": {
+        "operationId": "ResourceController_modifyResource",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully modified resource."
+          }
+        },
+        "summary": "Modify a resource",
         "tags": [
           "Resource"
         ]
@@ -616,6 +804,34 @@
         },
         "tags": [
           "Common"
+        ]
+      }
+    },
+    "/api/common/health": {
+      "get": {
+        "operationId": "CommonController_healthCheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Common"
+        ]
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "operationId": "PrometheusController_index",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Prometheus"
         ]
       }
     }

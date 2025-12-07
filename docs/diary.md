@@ -269,3 +269,19 @@ std_196_515035
 I've finished the create application api. Now student can apply for a resource. Next step would be the company or department to review the applications.
 Besides, I modify the design of the resource page, now if user clicks the "Apply" button, a modal would pop up to show the resource conditions and ask for confirmation. This can enhance user experience.
 There should be a status attribute for user entity, the status can be 'active', 'suspended', 'deleted'. This can enhance the user management function, but this is a minor function. Resource page also need to be modified that hidden the resources that the student has applied. 
+
+[2025-12-6 21:49]
+Now I want to implement the 2FA function. I know it's a minor function but I want to take a rest now.
+I've finished the apis for 2FA but Lyy thinks that we are running out of time, so I'll implement the 2FA function frontend later. Now I'm going to implement the review achievement function for department.
+
+[2025-12-6 22:50]
+If user cancel the application, the file uploaded would be deleted too. Great!
+I finish the verify achievement api for department. Department can review the achievements uploaded by students. Next step would be the review application function for company and department.
+Some details need to be improved later: the review ui should show the achievement title and description, the status of recognized should be green not gray.
+
+[2025-12-7 13:16]
+I add "last_modified" timestamp column to resource table to record the last modified time of a resource. If the resource is canceled for 1 month, the system would automatically delete this resource and all its related applications and conditions. This function would be implemented in the scheduled task module later.
+There should be a function that the database prunges the soft deleted items each year after it makes a snapshot backup.
+
+[2025-12-7 15:17]
+I tried to implement the docker version of my project, especially for tyhe file upload function. Besides, I found that the resource condition function has some bugs: user can't upsert the condition by its id. 

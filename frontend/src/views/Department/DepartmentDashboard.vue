@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
+import { useAuthStore } from '@/stores/auth';
 
 // 定義資料型別
 interface PendingAchievement {
@@ -14,73 +15,50 @@ interface PendingAchievement {
 }
 
 interface MyResource {
-  id: string;
+  resource_id: string;
   title: string;
-  type: string;
+  resource_type: string;
   applicants: number;
   quota: number;
   status: 'Available' | 'Unavailable' | 'Closed';
-  publish_date: string;
+  deadline: string;
 }
 
 const pendingAchievements = ref<PendingAchievement[]>([]);
 const myResources = ref<MyResource[]>([]);
 const showAnimation = ref(false);
+const authStore = useAuthStore();
 
 onMounted(async () => {
   setTimeout(() => showAnimation.value = true, 100);
-
+  
   try {
-    // ----------------------------------------------------------------
-    // TO DO: 連接後端 API (Department Dashboard)
-    // ----------------------------------------------------------------
-
-    // 1. [GET] /api/department/achievements/pending
-    // pendingAchievements.value = (await apiClient.get('/department/achievements/pending')).data;
-
-    // 2. [GET] /api/department/resources
-    // myResources.value = (await apiClient.get('/department/resources')).data;
-
-    // --- MOCK DATA ---
-    pendingAchievements.value = [
-      { 
-        id: 101, student: '王大明', student_id: 'B09901001', 
-        title: 'ICPC 國際程式設計競賽 - 金牌', category: 'Competition',
-        proof_link: '#', date: '2025-02-15'
-      },
-      { 
-        id: 102, student: '李小華', student_id: 'B09901023', 
-        title: '第15屆系學會會長', category: 'Service',
-        proof_link: '#', date: '2025-02-18'
-      },
-      { 
-        id: 103, student: '張偉', student_id: 'B09901055', 
-        title: '校園親善大使', category: 'Service',
-        proof_link: '#', date: '2025-02-20'
-      }
-    ];
-
-    myResources.value = [
-      { id: 'r1', title: '113學年度清寒優秀獎學金', type: 'Scholarship', applicants: 12, quota: 3, status: 'Available', publish_date: '2025-02-20' },
-      { id: 'r2', title: '量子計算實驗室 (Quantum Lab) 專題生', type: 'Lab', applicants: 5, quota: 2, status: 'Available', publish_date: '2025-02-20' },
-      { id: 'r3', title: '系辦公室工讀生', type: 'Others', applicants: 0, quota: 1, status: 'Closed', publish_date: '2025-02-20' }
-    ];
-
+    pendingAchievements.value = (await apiClient.get('/api/department/achievements/list')).data;
+    myResources.value = (await apiClient.get('api/resource/my')).data;
+    console.log(myResources)
   } catch (error) {
     console.error(error);
   }
 });
 
 const verifyAchievement = async (id: number, decision: boolean) => {
-  // ----------------------------------------------------------------
-  // TODO: [POST] /api/department/achievement/{id}/verify
-  // ----------------------------------------------------------------
-  console.log(`[Mock] Verify ID:${id} -> ${decision ? 'Approved' : 'Rejected'}`);
-  const index = pendingAchievements.value.findIndex(a => a.id === id);
-  if (index !== -1) {
-    pendingAchievements.value.splice(index, 1);
+  try {
+    await apiClient.patch(`/api/department/achievements/${id}/review`, {
+      approve: decision
+    });
+
+    
+    const index = pendingAchievements.value.findIndex(a => a.id === id);
+    if (index !== -1) {
+      pendingAchievements.value.splice(index, 1);
+    }
+
+  } catch (error) {
+    console.error(error);
+    alert('Verification failed.');
   }
 };
+
 </script>
 
 <template>
@@ -89,8 +67,8 @@ const verifyAchievement = async (id: number, decision: boolean) => {
     <header class="hero-header">
       <div class="hero-content">
         <div class="user-welcome">
-          <span class="sub-greeting">Department dashboard</span>
-          <h1>某某系所</h1>
+          <span class="sub-greeting">{{ authStore.user?.department_id }} | DEPT</span>
+          <h1>{{ authStore.user?.real_name ?? authStore.user?.username }}</h1>
         </div>
         
         <div class="hero-actions">
@@ -135,7 +113,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
                   <td>
                     <div class="achievement-detail">
                       <span class="title">{{ item.title }}</span>
-                      <a :href="item.proof_link" class="link-proof" @click.prevent>Check certificate</a>
+                      <a :href="item.proof_link" target="_blank" class="link-proof"> Check certificate </a>
                     </div>
                   </td>
                   <td>
@@ -162,10 +140,10 @@ const verifyAchievement = async (id: number, decision: boolean) => {
         </div>
         
         <div class="resource-list">
-          <div v-for="res in myResources" :key="res.id" class="manage-card">
+          <div v-for="res in myResources" :key="res.resource_id" class="manage-card">
             <div class="card-top">
               <span :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"></span>
-              <span class="res-type">{{ res.type }}</span>
+              <span class="res-type">{{ res.resource_type }}</span>
             </div>
             
             <h4 class="res-title">{{ res.title }}</h4>
@@ -183,10 +161,10 @@ const verifyAchievement = async (id: number, decision: boolean) => {
             </div>
 
             <div class="card-actions">
-              <span class="date">Published on: {{ res.publish_date }}</span>
+              <span class="date">Deadline: {{ res.deadline }}</span>
               <button 
                 class="btn-outline-sm" 
-                @click="$router.push(`/resource/edit/${res.id}`)"
+                @click="$router.push(`/resource/edit/${res.resource_id}`)"
               >
                 Edit
               </button>

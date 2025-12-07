@@ -14,6 +14,8 @@ export interface User {
   needProfile: boolean;
 
   is_admin?: boolean;
+  department_id?: string;
+  company_id?: string;
 }
 
 export interface Resource {

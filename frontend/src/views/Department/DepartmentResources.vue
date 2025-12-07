@@ -9,27 +9,32 @@ const myResources = ref<any[]>([]);
 const activeTab = ref('All');
 
 const filteredResources = computed(() => {
-  if (activeTab.value === 'All') return myResources.value;
-  return myResources.value.filter((r: any) => r.type === activeTab.value);
+  let list = activeTab.value === 'All'
+    ? myResources.value
+    : myResources.value.filter((r: any) => r.type === activeTab.value);
+
+  return list.slice().sort((a: any, b: any) => {
+    // 1. Cancelled 一律排最後
+    const aCancelled = a.status === 'Canceled';
+    const bCancelled = b.status === 'Canceled';
+    if (aCancelled && !bCancelled) return 1;
+    if (!aCancelled && bCancelled) return -1;
+
+    // 2. 其他按照 deadline 排序
+    // 假設 deadline 是可比較的 Date 或 timestamp
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
 });
+
 
 onMounted(async () => {
   isLoading.value = true;
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/department/resources
-    // ----------------------------------------------------------------
-    // const res = await apiClient.get('/department/resources');
-    // myResources.value = res.data;
+    const res = await apiClient.get('api/resource/my');
+    myResources.value = res.data;
+    // console.log(res.data);
+    await new Promise(r => setTimeout(r, 300));
 
-    await new Promise(r => setTimeout(r, 500));
-    myResources.value = [
-      { id: 'r1', title: '113學年度清寒優秀獎學金', type: 'Scholarship', applicants: 12, quota: 3, status: 'Available', date: '2025-02-01' },
-      { id: 'r2', title: '量子計算實驗室 (Quantum Lab) 專題生', type: 'Lab', applicants: 5, quota: 2, status: 'Available', date: '2025-02-10' },
-      { id: 'r3', title: '系辦公室工讀生', type: 'Others', applicants: 0, quota: 1, status: 'Closed', date: '2024-12-01' },
-      { id: 'r4', title: '人工智慧學程助教 (TA)', type: 'Internship', applicants: 8, quota: 4, status: 'Available', date: '2025-02-20' },
-      { id: 'r5', title: '海外交換計畫補助', type: 'Scholarship', applicants: 20, quota: 5, status: 'Unavailable', date: '2025-01-15' },
-    ];
 
   } catch (error) {
     console.error(error);
@@ -50,15 +55,10 @@ const handleReview = (id: string) => {
 
 const handleStatusChange = async (resource: any, newStatus: string) => {
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [PATCH] /api/resource/:id/status
-    // Body: { status: newStatus }
-    // ----------------------------------------------------------------
-    // await apiClient.patch(`/resource/${resource.id}/status`, { status: newStatus });
+    await apiClient.patch(`api/resource/${resource.resource_id}/status`, { status: newStatus });
     
-    console.log(`[Mock] Update status of ${resource.id} to ${newStatus}`);
+    console.log(`Update status of ${resource.resource_id} to ${newStatus}`);
     
-    // 前端即時更新
     resource.status = newStatus;
     
   } catch (e) {
@@ -107,9 +107,11 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
           <div class="info-header">
             <span :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"></span>
             <h3 class="res-title">{{ res.title }}</h3>
-            <span class="type-badge">{{ res.type }}</span>
+            <span class="type-badge">{{ res.resource_type }}</span>
             <div class="info-meta">
-                <span class="meta-date">Posted: {{ res.date }}</span>
+                <span class="meta-date" :style="{ color: new Date(res.deadline) < new Date() ? 'red' : 'inherit' }">
+                  Deadline: {{ res.deadline }}
+                </span>
             </div>
           </div>
         </div>
@@ -127,19 +129,21 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         </div>
 
         <div class="action-section">
-           <button class="btn-action outline" @click.stop="handleEdit(res.id)">Edit</button>
-           <div class="status-changer" @click.stop>
+           <button class="btn-action outline" @click="handleEdit(res.resource_id)">Edit</button>
+           <div class="status-changer">
              <select 
                :value="res.status" 
                @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
                class="select-status"
                :class="{
                  'st-avail': res.status === 'Available',
-                 'st-unavail': res.status === 'Unavailable'
+                 'st-unavail': res.status === 'Unavailable',
+                 'st-canceled': res.status === 'Canceled'
                }"
              >
                <option value="Available">Available</option>
                <option value="Unavailable">Unavailable</option>
+               <option value="Canceled">Canceled</option>
              </select>
            </div>
         </div>
@@ -364,6 +368,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 /* 根據狀態改變選單顏色 */
 .select-status.st-avail { border-color: #4CAF50; color: #659568; }
 .select-status.st-unavail { border-color: #ccc; color: #848382; }
+.select-status.st-canceled { border-color: #f44336; color: #d17c76; }
 
 .select-status:hover {
   filter: brightness(0.95);
