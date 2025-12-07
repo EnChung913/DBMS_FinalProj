@@ -11,14 +11,14 @@ const allResources = ref<Resource[]>([]);
 const activeTab = ref('All');
 const student = useStudentStore();
 
-// --- Modal 相關狀態 (新增) ---
-const showModal = ref(false);
-const selectedResource = ref<Resource | null>(null);
-const uploadFile = ref<File | null>(null);
-const isAgreed = ref(false);
-const isSubmitting = ref(false);
+// // --- Modal 相關狀態 (新增) ---
+// const showModal = ref(false);
+// const selectedResource = ref<Resource | null>(null);
+// const uploadFile = ref<File | null>(null);
+// const isAgreed = ref(false);
+// const isSubmitting = ref(false);
 
-// 篩選邏輯 (保持不變)
+// Filter
 const filteredResources = computed(() => {
   const list = activeTab.value === 'All'
     ? allResources.value
@@ -85,70 +85,74 @@ onMounted(async () => {
 
 const goBack = () => router.back();
 
-// --- Modal 邏輯 (新增) ---
-
-// 開啟 Modal
-const openApplicationModal = (resource: Resource) => {
-  selectedResource.value = resource;
-  showModal.value = true;
-  // 重置表單
-  uploadFile.value = null;
-  isAgreed.value = false;
+const handleApply = (resourceId: string) => {
+  router.push(`/student/apply/${resourceId}`);
 };
 
-// 關閉 Modal
-const closeModal = () => {
-  showModal.value = false;
-  selectedResource.value = null;
-};
+// // --- Modal 邏輯 (新增) ---
 
-// 處理檔案選擇
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    uploadFile.value = file;
-  }
-};
+// // 開啟 Modal
+// const openApplicationModal = (resource: Resource) => {
+//   selectedResource.value = resource;
+//   showModal.value = true;
+//   // 重置表單
+//   uploadFile.value = null;
+//   isAgreed.value = false;
+// };
 
-// 送出申請
-const submitApplication = async () => {
-  console.log("submitApplication called");
+// // 關閉 Modal
+// const closeModal = () => {
+//   showModal.value = false;
+//   selectedResource.value = null;
+// };
 
-  if (!selectedResource.value) return;
+// // 處理檔案選擇
+// const handleFileChange = (event: Event) => {
+//   const target = event.target as HTMLInputElement;
+//   const file = target.files?.[0];
+//   if (file) {
+//     uploadFile.value = file;
+//   }
+// };
 
-  if (!isAgreed.value) {
-    alert('Please agree to the terms to proceed.');
-    return;
-  }
+// // 送出申請
+// const submitApplication = async () => {
+//   console.log("submitApplication called");
 
-  isSubmitting.value = true;
+//   if (!selectedResource.value) return;
 
-  try {
-    const formData = new FormData();
-    formData.append('resource_id', selectedResource.value.resource_id);
+//   if (!isAgreed.value) {
+//     alert('Please agree to the terms to proceed.');
+//     return;
+//   }
 
-    // 檔案是「可選」的
-    if (uploadFile.value) {
-      formData.append('file', uploadFile.value);
-    }
+//   isSubmitting.value = true;
 
-    await apiClient.post('api/student/application/create', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+//   try {
+//     const formData = new FormData();
+//     formData.append('resource_id', selectedResource.value.resource_id);
 
-    alert('Application submitted successfully!');
-    closeModal();
-  } catch (error: any) {
-    console.error(error);
-    const msg = error?.response?.data?.message;
-    alert(msg || 'Failed to apply.');
-  } finally {
-    isSubmitting.value = false;
-  }
-};
+//     // 檔案是「可選」的
+//     if (uploadFile.value) {
+//       formData.append('file', uploadFile.value);
+//     }
+
+//     await apiClient.post('api/student/application/create', formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data',
+//       },
+//     });
+
+//     alert('Application submitted successfully!');
+//     closeModal();
+//   } catch (error: any) {
+//     console.error(error);
+//     const msg = error?.response?.data?.message;
+//     alert(msg || 'Failed to apply.');
+//   } finally {
+//     isSubmitting.value = false;
+//   }
+// };
 
 </script>
 
@@ -210,7 +214,7 @@ const submitApplication = async () => {
           <div class="card-footer">
              <button 
                class="btn-explore" 
-               @click="openApplicationModal(res)"
+               @click="handleApply(res.resource_id)"
              >
                Apply
              </button>
@@ -219,74 +223,7 @@ const submitApplication = async () => {
       </div>
     </div>
 
-    <Teleport to="body">
-      <div v-if="showModal && selectedResource" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content">
-          
-          <div class="modal-header">
-            <h2>Apply for Resource</h2>
-            <button class="btn-close" @click="closeModal">✕</button>
-          </div>
-          
-          <div class="modal-body">
-            <div class="detail-section">
-              <h3 class="modal-title">{{ selectedResource.title }}</h3>
-              <div class="modal-tags">
-                  <span class="tag">{{ selectedResource.resource_type }}</span>
-                  <span class="tag">Deadline: {{ selectedResource.deadline }}</span>
-              </div>
-              <p class="modal-desc">{{ selectedResource.description }}</p>
-              <div class="supplier-info">
-                  <strong>Provided by:</strong> {{ selectedResource.supplier_name }}
-              </div>
-            </div>
-
-            <hr class="divider" />
-
-            <div class="form-section">
-              <h4>Submission Required</h4>
-              
-              <div class="form-group">
-                  <label for="file-upload" class="form-label">
-                      Upload Supporting Document (CV/Transcript/etc.)
-                  </label>
-                  <input 
-                      type="file" 
-                      id="file-upload" 
-                      @change="handleFileChange"
-                      class="file-input"
-                  />
-                  <small class="form-hint">Accepted formats: PDF, ZIP (Max 5MB)</small>
-              </div>
-
-              <div class="form-group checkbox-group">
-                  <input 
-                      type="checkbox" 
-                      id="agreement" 
-                      v-model="isAgreed"
-                  />
-                  <label for="agreement">
-                      I confirm that the information provided is accurate and I meet all the eligibility criteria for this resource.
-                  </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn-cancel" @click="closeModal" :disabled="isSubmitting">Cancel</button>
-            <button 
-              type="button"
-              class="btn-submit" 
-              @click.prevent="submitApplication"
-              :disabled="isSubmitting || !isAgreed"
-            >
-              {{ isSubmitting ? 'Submitting...' : 'Confirm Application' }}
-            </button>
-          </div>
-
-        </div>
-      </div>
-    </Teleport>
+    
 
   </div>
 </template>
@@ -334,196 +271,4 @@ h1 { font-size: 2.2rem; color: var(--accent-color); letter-spacing: 1px; margin:
 .cond-label { font-weight: 600; margin-bottom: 0.25rem; }
 .cond-list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .cond-pill { padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid #ddd; font-size: 0.8rem; }
-
-
-/* ========================================= */
-/* ✅ Modal 樣式 (獨立於原本版面) */
-/* ========================================= */
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 9999; /* 確保在最上層 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(5px);
-  animation: fadeIn 0.2s ease-out;
-}
-
-.modal-content {
-  background: white;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh; /* 避免超出視窗 */
-  border-radius: 16px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modal-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fafafa;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #333;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #999;
-  cursor: pointer;
-  padding: 0 8px;
-  line-height: 1;
-}
-
-.btn-close:hover { color: #333; }
-
-.modal-body {
-  padding: 24px;
-  overflow-y: auto; /* 內容長時可捲動 */
-  flex: 1;
-}
-
-.modal-title {
-  font-size: 1.5rem;
-  color: #2c3e50;
-  margin: 0 0 12px 0;
-}
-
-.modal-tags { margin-bottom: 16px; }
-.tag {
-  background: #f0f4f8;
-  color: #555;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  margin-right: 8px;
-  font-weight: 500;
-}
-
-.modal-desc {
-  color: #444;
-  line-height: 1.6;
-  margin-bottom: 16px;
-  white-space: pre-wrap; /* 保留換行 */
-}
-
-.supplier-info { font-size: 0.9rem; color: #666; }
-
-.divider { border: 0; border-top: 1px solid #eee; margin: 24px 0; }
-
-.form-section h4 { margin: 0 0 16px 0; color: #333; }
-
-.form-group { margin-bottom: 20px; }
-.form-label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem; }
-.form-hint { display: block; margin-top: 6px; color: #888; font-size: 0.8rem; }
-
-.file-input {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
-  cursor: pointer;
-}
-
-.checkbox-group {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  
-  /* 使用帶有透明度的主題色 */
-  background: rgba(125, 157, 156, 0.08); 
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid transparent; /* 預留邊框位置 */
-  
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.checkbox-group:hover {
-  background: rgba(125, 157, 156, 0.15); /* Hover 時加深一點 */
-}
-
-/* 選中時的效果 (如果你想做的更細緻) */
-.checkbox-group:has(input:checked) {
-  border-color: var(--primary-color);
-  background: rgba(125, 157, 156, 0.1);
-}
-
-.checkbox-group input {
-  margin-top: 3px;
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary-color);
-  cursor: pointer;
-}
-
-.checkbox-group label {
-  font-size: 0.9rem;
-  color: #2c3e50;
-  line-height: 1.5;
-  cursor: pointer;
-}
-
-
-.checkbox-group input { margin-top: 4px; accent-color: var(--primary-color); }
-.checkbox-group label { font-size: 0.9rem; color: #555; line-height: 1.4; cursor: pointer; user-select: none; }
-
-.modal-footer {
-  padding: 16px 24px;
-  background: #f9f9f9;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.btn-cancel {
-  padding: 10px 20px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #666;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.btn-cancel:hover { background: #f0f0f0; }
-
-.btn-submit {
-  padding: 10px 24px;
-  background: var(--primary-color); /* 使用原本定義的主色 */
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-.btn-submit:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-.btn-submit:disabled { background: #a5b4fc; cursor: not-allowed; opacity: 0.7; }
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
 </style>

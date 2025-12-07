@@ -98,10 +98,6 @@ const getStatusClass = (status: string) => {
         <div class="dashboard-card full-height">
           <div class="card-head">
             <h3>Latest Application</h3>
-            <router-link to="/company/applications" class="btn-view-all">
-            <span class="btn-text">View All</span>
-            <span class="arrow-icon">➭➭➭</span>
-          </router-link>
           </div>
 
           <ul class="applicant-list">

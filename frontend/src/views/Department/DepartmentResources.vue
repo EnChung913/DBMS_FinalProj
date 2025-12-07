@@ -43,6 +43,11 @@ const goBack = () => router.back();
 const handleEdit = (id: string) => {
   router.push(`/resource/edit/${id}`);
 };
+
+const handleReview = (id: string) => {
+  router.push(`/department/resource/${id}/review`);
+};
+
 const handleStatusChange = async (resource: any, newStatus: string) => {
   try {
     // ----------------------------------------------------------------
@@ -89,7 +94,14 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
     </div>
     
     <div v-else class="resource-list">
-      <div v-for="res in filteredResources" :key="res.id" class="resource-item">
+      <div v-if="filteredResources.length === 0" class="empty-state">No resources found.</div>
+
+      <div 
+        v-for="res in filteredResources" 
+        :key="res.id" 
+        class="resource-item clickable-card"
+        @click="handleReview(res.id)"
+      >
         
         <div class="info-section">
           <div class="info-header">
@@ -115,8 +127,8 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         </div>
 
         <div class="action-section">
-           <button class="btn-action outline" @click="handleEdit(res.id)">Edit</button>
-           <div class="status-changer">
+           <button class="btn-action outline" @click.stop="handleEdit(res.id)">Edit</button>
+           <div class="status-changer" @click.stop>
              <select 
                :value="res.status" 
                @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
@@ -204,14 +216,24 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   grid-template-columns: 1fr auto auto; 
   align-items: center;
   gap: 40px;
-  position: relative;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer; /* ✅ 讓鼠標變成手指 */
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  position: relative; /* 為了 hover 效果 */
 }
 
 .resource-item:hover {
-  transform: translateX(5px);
-  box-shadow: 0 8px 25px rgba(125, 157, 156, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(125, 157, 156, 0.15);
+  border-color: var(--primary-color); /* ✅ 懸浮時邊框變色，暗示可點擊 */
+}
+
+/* 當滑鼠移上去，且螢幕夠寬時顯示提示 */
+@media (min-width: 1024px) {
+  .resource-item:hover::after {
+    opacity: 1;
+    right: 15px;
+  }
 }
 
 /* 左側裝飾線 */

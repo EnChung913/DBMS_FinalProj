@@ -13,9 +13,11 @@ import CreateResource from '../views/Resource/CreateResource.vue';
 import EditResource from '../views/Resource/EditResource.vue';
 import DepartmentResources from '../views/Department/DepartmentResources.vue';
 import CompanyResources from '../views/Company/CompanyResources.vue';
-import CompanyApplications from '../views/Company/CompanyApplications.vue';
 import UploadAchievement from '../views/Student/UploadAchievement.vue';
 import AdminDashboard from '../views/Admin/AdminDashboard.vue';
+import ApplyResource from '../views/Student/ApplyResource.vue';
+import DepartmentResourceReview from '../views/Department/DepartmentResourceReview.vue';
+import CompanyResourceReview from '../views/Company/CompanyResourceReview.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,6 +53,12 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'student', requiresSetup: true }
     },
     {
+      path: '/student/apply/:id', 
+      name: 'ApplyResource',
+      component: ApplyResource,
+      meta: { requiresAuth: true, role: 'student', requiresSetup: true }
+    },
+    {
       path: '/department/dashboard',
       name: 'DepartmentDashboard',
       component: DepartmentDashboard,
@@ -60,6 +68,12 @@ const router = createRouter({
       path: '/department/resources',
       name: 'DepartmentResources',
       component: DepartmentResources,
+      meta: { requiresAuth: true, role: 'department', requiresSetup: true }
+    },
+    {
+      path: '/department/resource/:id/review',
+      name: 'DepartmentResourceReview',
+      component: DepartmentResourceReview,
       meta: { requiresAuth: true, role: 'department', requiresSetup: true }
     },
     {
@@ -75,9 +89,9 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'company', requiresSetup: true }
     },
     {
-      path: '/company/applications',
-      name: 'CompanyApplications',
-      component: CompanyApplications,
+      path: '/company/resource/:id/review',
+      name: 'CompanyResourceReview',
+      component: CompanyResourceReview,
       meta: { requiresAuth: true, role: 'company', requiresSetup: true }
     },
     {
