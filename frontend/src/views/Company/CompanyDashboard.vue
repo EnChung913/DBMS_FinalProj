@@ -97,7 +97,7 @@ const getStatusClass = (status: string) => {
       <aside class="left-panel">
         <div class="dashboard-card full-height">
           <div class="card-head">
-            <h3>Latest Application</h3>
+            <h3>Recommended students</h3>
           </div>
 
           <ul class="applicant-list">
