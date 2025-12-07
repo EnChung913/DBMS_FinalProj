@@ -7,10 +7,12 @@ import { Resource } from '../../entities/resource.entity';
 import { ResourceCondition } from '../../entities/resource-condition.entity';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { ResourceConditionService } from './resource-condition/resource-condition.service';
+import { ResourceReviewController } from './resource-review/resource-review.controller';
+import { ResourceReviewService } from './resource-review/resource-review.service';
 
 @Module({
-  controllers: [ResourceController],
-  providers: [ResourceService, ResourceConditionService],
+  controllers: [ResourceController, ResourceReviewController],
+  providers: [ResourceService, ResourceConditionService, ResourceReviewService],
   imports: [
     ResourceConditionModule,
     TypeOrmModule.forFeature([Resource, ResourceCondition]),

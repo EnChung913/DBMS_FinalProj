@@ -7,12 +7,25 @@ const route = useRoute();
 const router = useRouter();
 const resourceId = route.params.id as string;
 
-// 資料
 const resourceInfo = ref<any>({});
 const applicants = ref<any[]>([]);
 const selectedIds = ref<Set<string>>(new Set());
 const isLoading = ref(false);
 const activeTab = ref('All'); 
+
+// --- [新功能] 判斷是否可進行審核 ---
+const isReviewAllowed = computed(() => {
+  if (!resourceInfo.value.deadline) return false;
+  
+  const now = new Date();
+  const deadline = new Date(resourceInfo.value.deadline);
+  
+  // 設定 Deadline 為當天的最後一刻 (23:59:59)，確保當天仍可申請，隔天才可審核
+  // 如果你的 Deadline 邏輯是「當天過了就不能申請」，這行可依需求調整
+  deadline.setHours(23, 59, 59, 999);
+
+  return now > deadline;
+});
 
 // 篩選邏輯
 const filteredApplicants = computed(() => {
@@ -25,7 +38,10 @@ const isAllSelected = computed(() => {
   return list.length > 0 && list.every(a => selectedIds.value.has(a.id));
 });
 
+// --- 修改：加入權限判斷 ---
 const toggleAll = (e: Event) => {
+  if (!isReviewAllowed.value) return; // 若期限未到，禁止全選
+
   const checked = (e.target as HTMLInputElement).checked;
   if (checked) {
     filteredApplicants.value.forEach(a => selectedIds.value.add(a.id));
@@ -34,7 +50,10 @@ const toggleAll = (e: Event) => {
   }
 };
 
+// --- 修改：加入權限判斷 ---
 const toggleSelect = (id: string) => {
+  if (!isReviewAllowed.value) return; // 若期限未到，禁止單選
+
   if (selectedIds.value.has(id)) selectedIds.value.delete(id);
   else selectedIds.value.add(id);
 };
@@ -42,42 +61,76 @@ const toggleSelect = (id: string) => {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/company/resource/:id/applicants
-    // ----------------------------------------------------------------
-    await new Promise(r => setTimeout(r, 600)); // Mock
+    const res = await apiClient.get(`/api/resource/${resourceId}`);
+    if (res.data) {
+      resourceInfo.value = res.data;
+    } else {
+      resourceInfo.value = { type: "", title: "", deadline: "", quota: 0 };
+    }
 
-    resourceInfo.value = {
-      title: 'Frontend Engineer Intern (Vue.js)',
-      type: 'Internship',
-      quota: 3,
-      total_applicants: 15,
-      deadline: '2025-06-30'
-    };
+    const app = await apiClient.get(`/api/resource/${resourceId}/applications`);
+    
+    applicants.value = app.data.applications.map((a: any) => {
+        // 1. 在這裡先處理好狀態字串
+        let displayStatus = a.status;
+        if (a.status === 'under_review' || a.status === 'pending') {
+          displayStatus = 'pending'; // 轉成前端 Tab 想要的小寫含空白格式
+        }
 
-    applicants.value = [
-      { id: 'a1', student_name: '王小明', student_id: 'B09901001', school: 'NTU - CS', gpa: 3.9, status: 'approved', date: '2025-02-24' },
-      { id: 'a2', student_name: '陳小美', student_id: 'B09901023', school: 'NCCU - MIS', gpa: 4.1, status: 'approved', date: '2025-02-23' },
-      { id: 'a3', student_name: '林大華', student_id: 'B09901055', school: 'NTHU - CS', gpa: 3.5, status: 'rejected', date: '2025-02-20' },
-      { id: 'a4', student_name: '張偉', student_id: 'B09901066', school: 'NTUST - Design', gpa: 4.0, status: 'Pending', date: '2025-02-18' },
-      { id: 'a5', student_name: '李四', student_id: 'B09901077', school: 'NYCU - CS', gpa: 3.8, status: 'approved', date: '2025-02-22' },
-    ];
-  } catch (error) { console.error(error); } finally { isLoading.value = false; }
+        // 2. 回傳整理好的物件
+        return {
+          id: a.user_id || a.student_id, 
+          student_name: a.student_name,
+          student_id: a.student_id,
+          department: a.department,
+          current_gpa: a.current_gpa,
+          avg_gpa: a.avg_gpa,
+          
+          status: displayStatus, // <--- 這裡直接用處理好的變數
+          
+          date: a.applied_date,
+        };
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    alert('Failed to load applicants');
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 const processSelection = async (decision: 'approved' | 'rejected') => {
+  // --- 修改：雙重保險 ---
+  if (!isReviewAllowed.value) {
+    alert("Cannot review before the deadline.");
+    return;
+  }
   if (selectedIds.value.size === 0) return;
-  if (!confirm(`Confirm to mark ${selectedIds.value.size} applicants as ${decision.toUpperCase()}?`)) return;
+
+  const count = selectedIds.value.size;
+  if (!confirm(`Confirm to mark ${count} applicants as ${decision.toUpperCase()}?`)) return;
 
   try {
-    // TO DO: [POST] /api/company/application/batch-review
-    console.log(`[Mock] Batch ${decision}:`, [...selectedIds.value]);
-    applicants.value.forEach(a => {
-      if (selectedIds.value.has(a.id)) a.status = decision;
+    await apiClient.put(`api/resource/${resourceId}/applications/review`, {
+      student_ids: [...selectedIds.value],
+      decision
     });
+
+    applicants.value = applicants.value.map(a => {
+      if (selectedIds.value.has(a.id)) {
+        return { ...a, status: decision };
+      }
+      return a;
+    });
+
     selectedIds.value.clear();
     alert('Processed successfully!');
-  } catch (e) { alert('Failed to process'); }
+    // window.location.reload(); // 建議非必要不 reload，因為上面已經手動更新 UI 了
+  } catch (e) {
+    console.error(e);
+    alert('Failed to process');
+  }
 };
 
 const goBack = () => router.back();
@@ -86,7 +139,7 @@ const getStatusClass = (status: string) => {
   switch(status) {
     case 'approved': return 'status-green';
     case 'rejected': return 'status-red';
-    default: return 'status-blue'; // pending
+    default: return 'status-blue';
   }
 };
 </script>
@@ -106,7 +159,7 @@ const getStatusClass = (status: string) => {
         <div class="summary-right">
           <div class="stat-bubble">
             <span class="val">{{ resourceInfo.quota }}</span>
-            <span class="lbl">Quata</span>
+            <span class="lbl">Quota</span>
           </div>
           <div class="stat-bubble highlight">
             <span class="val">{{ applicants.length }}</span>
@@ -116,9 +169,14 @@ const getStatusClass = (status: string) => {
       </div>
     </div>
 
+    <div v-if="!isLoading && !isReviewAllowed" class="warning-banner">
+      <span class="icon">⏳</span>
+      <span>Review process will be available after the deadline ({{ resourceInfo.deadline }}).</span>
+    </div>
+
     <div class="tabs-row">
       <button 
-        v-for="tab in ['All', 'Pending', 'Approved', 'Rejected']" 
+        v-for="tab in ['All', 'pending', 'Approved', 'Rejected']" 
         :key="tab"
         :class="['tab-btn', { active: activeTab === tab }]"
         @click="activeTab = tab"
@@ -137,11 +195,17 @@ const getStatusClass = (status: string) => {
         <thead>
           <tr>
             <th width="50">
-              <input type="checkbox" :checked="isAllSelected" @change="toggleAll" class="custom-checkbox header-cb" />
+              <input 
+                type="checkbox" 
+                :checked="isAllSelected" 
+                @change="toggleAll" 
+                :disabled="!isReviewAllowed"
+                class="custom-checkbox header-cb" 
+              />
             </th>
             <th>Student name(ID)</th>
-            <th>Department</th>
-            <th>GPA</th>
+            <th>Current GPA</th>
+            <th>Average GPA</th>
             <th>Applied Date</th>
             <th>Status</th>
           </tr>
@@ -153,29 +217,37 @@ const getStatusClass = (status: string) => {
           <tr 
             v-for="app in filteredApplicants" 
             :key="app.id" 
-            :class="{ 'selected-row': selectedIds.has(app.id) }"
+            :class="{ 
+              'selected-row': selectedIds.has(app.id),
+              'disabled-row': !isReviewAllowed 
+            }"
             @click="toggleSelect(app.id)"
           >
             <td @click.stop>
               <input 
-                type="checkbox" 
-                :checked="selectedIds.has(app.id)" 
-                @change="toggleSelect(app.id)"
-                class="custom-checkbox" 
+                type="checkbox"
+                :checked="selectedIds.has(app.id)"
+                @click.stop
+                @change.stop="toggleSelect(app.id)"
+                :disabled="!isReviewAllowed"
+                class="custom-checkbox"
               />
             </td>
             <td>
               <div class="student-info">
-                <div class="avatar">{{ app.student_name.charAt(0) }}</div>
+                <div class="avatar">{{ app.student_name ? app.student_name.charAt(0) : '?' }}</div>
                 <div class="text">
                   <span class="name">{{ app.student_name }}</span>
                   <span class="sid">{{ app.student_id }}</span>
                 </div>
               </div>
             </td>
-            <td>{{ app.school }}</td>
+            
             <td>
-              <span :class="['gpa-badge', app.gpa >= 4.0 ? 'high' : '']">{{ app.gpa }}</span>
+              <span :class="['gpa-badge', app.current_gpa >= 4.0 ? 'high' : '']">{{ app.current_gpa }}</span>
+            </td>
+            <td>
+              <span :class="['gpa-badge', app.avg_gpa >= 4.0 ? 'high' : '']">{{ app.avg_gpa }}</span>
             </td>
             <td class="date-cell">{{ app.date }}</td>
             <td>
@@ -206,7 +278,6 @@ const getStatusClass = (status: string) => {
 
   </div>
 </template>
-
 <style scoped>
 @import '@/assets/main.css';
 
@@ -342,4 +413,29 @@ const getStatusClass = (status: string) => {
 .slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translate(-50%, 20px); }
 
 .loading-area { text-align: center; padding: 60px; color: #aaa; }
+
+.warning-banner {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+/* 當 disabled 時的樣式 */
+.disabled-row {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  background-color: #f9f9f9;
+}
+
+input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 </style>

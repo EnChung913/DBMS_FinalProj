@@ -586,6 +586,64 @@
         ]
       }
     },
+    "/api/resource/{resourceId}/applications/review": {
+      "put": {
+        "operationId": "ResourceReviewController_reviewApplications",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewApplicationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review completed"
+          }
+        },
+        "summary": "Review resource applications",
+        "tags": [
+          "Resource Review"
+        ]
+      }
+    },
+    "/api/resource/{resourceId}/applications": {
+      "get": {
+        "operationId": "ResourceReviewController_getPendingApplications",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending applications retrieved successfully"
+          }
+        },
+        "summary": "Get pending applications for a resource",
+        "tags": [
+          "Resource Review"
+        ]
+      }
+    },
     "/api/resource/{condition_id}/edit": {
       "put": {
         "operationId": "ResourceConditionController_editCondition",
@@ -611,16 +669,20 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Condition updated successfully."
+          },
+          "404": {
+            "description": "Condition not found."
           }
         },
+        "summary": "Edit a resource condition by condition ID",
         "tags": [
-          "ResourceCondition"
+          "Resource Condition"
         ]
       }
     },
     "/api/resource/{resource_id}/condition": {
-      "put": {
+      "post": {
         "operationId": "ResourceConditionController_createCondition",
         "parameters": [
           {
@@ -643,12 +705,16 @@
           }
         },
         "responses": {
-          "200": {
-            "description": ""
+          "201": {
+            "description": "Condition created successfully."
+          },
+          "400": {
+            "description": "Invalid input."
           }
         },
+        "summary": "Create a new resource condition for a resource",
         "tags": [
-          "ResourceCondition"
+          "Resource Condition"
         ]
       },
       "get": {
@@ -665,11 +731,12 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Conditions retrieved successfully."
           }
         },
+        "summary": "Get all conditions for a resource",
         "tags": [
-          "ResourceCondition"
+          "Resource Condition"
         ]
       },
       "delete": {
@@ -686,15 +753,16 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "All conditions deleted successfully."
           }
         },
+        "summary": "Delete all conditions for a resource",
         "tags": [
-          "ResourceCondition"
+          "Resource Condition"
         ]
       }
     },
-    "/api/resource/{resource_id}/condition/{condition_id}": {
+    "/api/resource/condition/{condition_id}": {
       "delete": {
         "operationId": "ResourceConditionController_deleteCondition",
         "parameters": [
@@ -709,11 +777,15 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Condition deleted successfully."
+          },
+          "404": {
+            "description": "Condition not found."
           }
         },
+        "summary": "Delete a specific condition by condition ID",
         "tags": [
-          "ResourceCondition"
+          "Resource Condition"
         ]
       }
     },
@@ -907,6 +979,10 @@
         "properties": {}
       },
       "CreateResourceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewApplicationsDto": {
         "type": "object",
         "properties": {}
       },

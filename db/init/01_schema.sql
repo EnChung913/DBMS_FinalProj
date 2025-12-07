@@ -177,6 +177,7 @@ CREATE TABLE application (
     review_status VARCHAR(20)
         CHECK(review_status IN ('submitted','under_review','approved','rejected'))
         NOT NULL,
+    review_date DATE,
     file_path TEXT,
     PRIMARY KEY(user_id, resource_id)
 );

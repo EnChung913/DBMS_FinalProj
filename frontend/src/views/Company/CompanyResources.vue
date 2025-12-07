@@ -63,7 +63,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
     
     await apiClient.patch(`api/resource/${resource.resource_id}/status`, { status: newStatus });
     
-    console.log(`[Mock] Update status of ${resource.resource_id} to ${newStatus}`);
+    console.log(`Update status of ${resource.resource_id} to ${newStatus}`);
     resource.status = newStatus;
     
   } catch (e) {
@@ -108,7 +108,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         v-for="res in filteredResources" 
         :key="res.id" 
         class="resource-item clickable-card"
-        @click="handleReview(res.id)"
+        @click="handleReview(res.resource_id)"
       >
         
         <div class="info-section">
@@ -137,7 +137,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
           <div class="stat-divider"></div>
           <div class="stat-group">
             <span class="stat-label">Applicants</span>
-            <span class="stat-val highlight">{{ res.applicants }}</span>
+            <span class="stat-val highlight">{{ res.applied }}</span>
           </div>
         </div>
 

@@ -66,44 +66,40 @@ export class ResourceService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    const resource = await this.resourceRepo.findOne({
-      where: { resource_id: resourceId },
-    });
-    if (!resource) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    if (user.role === 'department') {
-      if (resource.department_supplier_id !== user.sub) {
-        throw new BadRequestException('You do not have permission to modify this resource');
-      }
-    }
-
-    if (user.role === 'company') {
-      if (resource.company_supplier_id !== user.sub) {
-        throw new BadRequestException('You do not have permission to modify this resource');
-      }
-    }
 
     try {
-      const resource = this.resourceRepo.create({
-        resource_type: dto.resource_type,
-        quota: dto.quota,
-        department_supplier_id:
-          user.role === 'department' ? user.sub : null,
-        company_supplier_id:
-          user.role === 'company' ? user.sub : null,
-        title: dto.title,
-        deadline: dto.deadline ?? null,
-        description: dto.description,
+      const resource = await queryRunner.manager.findOne(Resource, {
+        where: { resource_id: resourceId },
       });
+
+      if (!resource) {
+        throw new NotFoundException('Resource not found');
+      }
+
+      if (user.role === 'department') {
+        if (resource.department_supplier_id !== user.sub) {
+          throw new BadRequestException('You do not have permission to modify this resource');
+        }
+      }
+
+      if (user.role === 'company') {
+        if (resource.company_supplier_id !== user.sub) {
+          throw new BadRequestException('You do not have permission to modify this resource');
+        }
+      }
+
+      resource.resource_type = dto.resource_type ?? resource.resource_type;
+      resource.quota = dto.quota ?? resource.quota;
+      resource.title = dto.title ?? resource.title;
+      resource.deadline = dto.deadline ?? resource.deadline;
+      resource.description = dto.description ?? resource.description;
 
       const saved = await queryRunner.manager.save(Resource, resource);
 
       await queryRunner.commitTransaction();
 
       return {
-        message: 'Resource created successfully',
+        message: 'Resource updated successfully',
         resource_id: saved.resource_id,
       };
     } catch (err) {
@@ -113,6 +109,7 @@ export class ResourceService {
       await queryRunner.release();
     }
   }
+
   
   /**
    * 查詢使用者自己建立的資源

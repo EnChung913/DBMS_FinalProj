@@ -288,3 +288,16 @@ I tried to implement the docker version of my project, especially for tyhe file 
 
 [2025-12-7 22:48]
 A hell of connect apis.
+
+[2025-12-8 00:00]
+There should be some scheduled tasks:
+for purge
+1. purge soft deleted users after 1 year
+2. purge canceled applications after 1 year
+3. purge canceled resources after 1 year
+Before purging, the system should make a snapshot backup of the database.
+for daily maintenance
+1. refresh materialized view student_search_mv
+2. update application status, if the deadline is passed, the status would be changee from 'submitted' to 'pending', and students can't cancel the application anymore.
+
+I finished the review application function for company and department. Now they can review the applications submitted by students. Next step would be the scheduled tasks module.

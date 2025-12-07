@@ -30,7 +30,7 @@ const isFetching = ref(true);
 const resourceId = route.params.id as string;
 
 const pageTitle = 'Edit Resource';
-const pageSubtitle = 'Modify the details and eligibility conditions of the resource here.';
+const pageSubtitle = 'Modify details and eligibility conditions of the resource';
 
 // 表單初始值
 const formData = ref<ResourceForm>({
@@ -95,7 +95,7 @@ const addCondition = () => {
 
 const removeCondition = (index: number) => {
   const cond = conditions.value[index];
-  if (!confirm(`Are you sure to remove Rule #${index + 1}?`)) return;
+  //if (!confirm(`Are you sure to remove Rule #${index + 1}?`)) return;
   if (!cond){
     alert('Condition not found.');
     return;
@@ -136,10 +136,15 @@ const handleSubmit = async () => {
     // ==========================================
     //  @Post(':resource_id/modify')
     const resourcePayload = {
-      ...formData.value,
-      quota: Number(formData.value.quota) // 確保轉為數字
-    };
+          title: formData.value.title,
+          resource_type: formData.value.resource_type,
+          quota: Number(formData.value.quota), // 確保轉為數字
+          deadline: formData.value.deadline,
+          description: formData.value.description
+          
+        };
 
+        // 發送請求
     await apiClient.post(`api/resource/${resourceId}/modify`, resourcePayload);
 
     // ==========================================
@@ -148,7 +153,9 @@ const handleSubmit = async () => {
     for (const cond of conditions.value) {
       // 複製並清理 payload
       const payload: any = { ...cond };
-      
+      delete payload.condition_id;
+      delete payload.resource_id;
+  
       // 移除空字串的 department_id (視後端驗證需求而定)
       if (!payload.department_id) delete payload.department_id;
       
@@ -158,8 +165,8 @@ const handleSubmit = async () => {
 
       if (cond.condition_id) {
         // --- 編輯既有條件 ---
-        // 假設後端路由: PUT api/resource/condition/:condition_id
-        await apiClient.put(`api/resource/condition/${cond.condition_id}`, payload);
+        // 假設後端路由: PUT api/resource/:condition_id/edit
+        await apiClient.put(`api/resource/${cond.condition_id}/edit`, payload);
       } else {
         // --- 新增新條件 ---
         // 假設後端路由: POST api/resource/:resource_id/condition
