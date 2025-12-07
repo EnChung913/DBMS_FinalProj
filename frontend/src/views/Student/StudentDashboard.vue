@@ -4,6 +4,9 @@ import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
 import type { Resource, GPA, Achievement } from '@/types';
 import { useStudentStore } from '@/stores/student';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // UI 狀態
 const showAnimation = ref(false);
@@ -95,33 +98,9 @@ const getStatusClass = (status: string) => {
   return 'status-wait';
 };
 
-// 申請功能的邏輯
-const handleApply = async (resourceId: string) => {
-  if (!confirm('Are you sure you want to apply for this resource?')) return;
 
-  try {
-    // ----------------------------------------------------------------
-    // TO DO: 連接後端 API 申請資源
-    // [POST] /api/student/application
-    // Body: { resource_id: string }
-    // ----------------------------------------------------------------
-    
-    // await apiClient.post('/student/application', { resource_id: resourceId });
-
-    // --- Mock Data (模擬成功) ---
-    console.log(`[Mock] Applied for resource: ${resourceId}`);
-    await new Promise(r => setTimeout(r, 500));
-    // ---------------------------
-
-    alert('Application Submitted Successfully!');
-    
-    // 選用：申請後可以更新列表狀態 (例如把該卡片標記為 Applied)
-    // fetchDashboardData(); 
-
-  } catch (error) {
-    console.error(error);
-    alert('Application failed. Please try again later.');
-  }
+const handleApply = (resourceId: string) => {
+  router.push(`/student/apply/${resourceId}`);
 };
 
 </script>

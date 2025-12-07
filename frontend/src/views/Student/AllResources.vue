@@ -11,14 +11,14 @@ const allResources = ref<Resource[]>([]);
 const activeTab = ref('All');
 const student = useStudentStore();
 
-// --- Modal 相關狀態 (新增) ---
-const showModal = ref(false);
-const selectedResource = ref<Resource | null>(null);
-const uploadFile = ref<File | null>(null);
-const isAgreed = ref(false);
-const isSubmitting = ref(false);
+// // --- Modal 相關狀態 (新增) ---
+// const showModal = ref(false);
+// const selectedResource = ref<Resource | null>(null);
+// const uploadFile = ref<File | null>(null);
+// const isAgreed = ref(false);
+// const isSubmitting = ref(false);
 
-// 篩選邏輯 (保持不變)
+// Filter
 const filteredResources = computed(() => {
   const list = activeTab.value === 'All'
     ? allResources.value
@@ -85,70 +85,74 @@ onMounted(async () => {
 
 const goBack = () => router.back();
 
-// --- Modal 邏輯 (新增) ---
-
-// 開啟 Modal
-const openApplicationModal = (resource: Resource) => {
-  selectedResource.value = resource;
-  showModal.value = true;
-  // 重置表單
-  uploadFile.value = null;
-  isAgreed.value = false;
+const handleApply = (resourceId: string) => {
+  router.push(`/student/apply/${resourceId}`);
 };
 
-// 關閉 Modal
-const closeModal = () => {
-  showModal.value = false;
-  selectedResource.value = null;
-};
+// // --- Modal 邏輯 (新增) ---
 
-// 處理檔案選擇
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    uploadFile.value = file;
-  }
-};
+// // 開啟 Modal
+// const openApplicationModal = (resource: Resource) => {
+//   selectedResource.value = resource;
+//   showModal.value = true;
+//   // 重置表單
+//   uploadFile.value = null;
+//   isAgreed.value = false;
+// };
 
-// 送出申請
-const submitApplication = async () => {
-  console.log("submitApplication called");
+// // 關閉 Modal
+// const closeModal = () => {
+//   showModal.value = false;
+//   selectedResource.value = null;
+// };
 
-  if (!selectedResource.value) return;
+// // 處理檔案選擇
+// const handleFileChange = (event: Event) => {
+//   const target = event.target as HTMLInputElement;
+//   const file = target.files?.[0];
+//   if (file) {
+//     uploadFile.value = file;
+//   }
+// };
 
-  if (!isAgreed.value) {
-    alert('Please agree to the terms to proceed.');
-    return;
-  }
+// // 送出申請
+// const submitApplication = async () => {
+//   console.log("submitApplication called");
 
-  isSubmitting.value = true;
+//   if (!selectedResource.value) return;
 
-  try {
-    const formData = new FormData();
-    formData.append('resource_id', selectedResource.value.resource_id);
+//   if (!isAgreed.value) {
+//     alert('Please agree to the terms to proceed.');
+//     return;
+//   }
 
-    // 檔案是「可選」的
-    if (uploadFile.value) {
-      formData.append('file', uploadFile.value);
-    }
+//   isSubmitting.value = true;
 
-    await apiClient.post('api/student/application/create', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+//   try {
+//     const formData = new FormData();
+//     formData.append('resource_id', selectedResource.value.resource_id);
 
-    alert('Application submitted successfully!');
-    closeModal();
-  } catch (error: any) {
-    console.error(error);
-    const msg = error?.response?.data?.message;
-    alert(msg || 'Failed to apply.');
-  } finally {
-    isSubmitting.value = false;
-  }
-};
+//     // 檔案是「可選」的
+//     if (uploadFile.value) {
+//       formData.append('file', uploadFile.value);
+//     }
+
+//     await apiClient.post('api/student/application/create', formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data',
+//       },
+//     });
+
+//     alert('Application submitted successfully!');
+//     closeModal();
+//   } catch (error: any) {
+//     console.error(error);
+//     const msg = error?.response?.data?.message;
+//     alert(msg || 'Failed to apply.');
+//   } finally {
+//     isSubmitting.value = false;
+//   }
+// };
 
 </script>
 
@@ -210,7 +214,7 @@ const submitApplication = async () => {
           <div class="card-footer">
              <button 
                class="btn-explore" 
-               @click="openApplicationModal(res)"
+               @click="handleApply(res.resource_id)"
              >
                Apply
              </button>

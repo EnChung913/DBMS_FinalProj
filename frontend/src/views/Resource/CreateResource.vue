@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
@@ -16,6 +16,16 @@ const formData = ref({
   description: ''
 });
 
+interface Condition {
+  department_id: string; // Empty string means 'All Departments'
+  avg_gpa?: number;
+  current_gpa?: number;
+  is_poor?: boolean;
+}
+const conditions = ref<Condition[]>([]);
+// 模擬系所選項 (實際應從後端取得)
+const departmentOptions = ref<any[]>([]);
+
 const isCompany = authStore.role === 'company';
 const pageTitle = isCompany ? 'Publish Company Resource' : 'Publish Department Resource';
 
@@ -30,28 +40,59 @@ const resourceTypes = isCompany
       { value: 'Internship', label: 'Internship' },
       { value: 'Others', label: 'Others' }
     ];
+  
+onMounted(async () => {
+  // TODO: [GET] /api/common/departments
+  departmentOptions.value = [
+    { id: 'uuid-1', name: 'Computer Science' },
+    { id: 'uuid-2', name: 'Electrical Engineering' },
+    { id: 'uuid-3', name: 'Business Administration' }
+  ];
+  
+  // 預設加一條「不限系所」的條件
+  addCondition();
+});
+
+const addCondition = () => {
+  conditions.value.push({
+    department_id: '',
+    avg_gpa: undefined,
+    current_gpa: undefined,
+    is_poor: false
+  });
+};
+
+const removeCondition = (index: number) => {
+  conditions.value.splice(index, 1);
+};
 
 const handleSubmit = async () => {
   if (isLoading.value) return;
   isLoading.value = true;
 
   try {
-    // ----------------------------------------------------------------
-    // [POST] /api/resource/create
-    // ----------------------------------------------------------------
-    await apiClient.post('/resource/create', formData.value);
+    // 1. 建立資源
+    const res = await apiClient.post('/resource/create', formData.value);
+    const resourceId = res.data.resource_id || 'mock-id'; // 確保後端回傳 ID
 
-    // Mock Data
-    // await new Promise(r => setTimeout(r, 800));
+    // 2. 建立條件 (逐筆新增)
+    // 雖然效率較差，但符合目前的 API 設計 (addCondition)
+    for (const cond of conditions.value) {
+      // 過濾空值
+      const payload: any = { ...cond };
+      if (!payload.department_id) delete payload.department_id; // 後端若接受 undefined 代表全校
+      
+      // TODO: [POST] /resource/:id/condition
+      await apiClient.post(`/resource/${resourceId}/condition`, payload);
+    }
 
-    alert('Upload successful!');
-    
+    alert('Upload sucess!');
     if (isCompany) router.push('/company/dashboard');
     else router.push('/department/dashboard');
 
   } catch (error: any) {
     console.error(error);
-    alert('Upload failed, please try again later.');
+    alert('Upload failed');
   } finally {
     isLoading.value = false;
   }
@@ -123,6 +164,54 @@ const goBack = () => router.back();
           ></textarea>
         </div>
 
+        <hr class="divider" />
+
+        <div class="form-section">
+          <div class="section-head-row">
+            <label>Eligibility Conditions</label>
+            <button type="button" class="btn-add-cond" @click="addCondition">+ New rules</button>
+          </div>
+          <p class="hint-text">You can set multiple sets of rules. Students can apply if they meet any set of rules.</p>
+
+          <div v-for="(cond, index) in conditions" :key="index" class="condition-box">
+            <div class="cond-header">
+              <span class="cond-index">Rule #{{ index + 1 }}</span>
+              <button type="button" class="btn-remove" @click="removeCondition(index)" v-if="conditions.length > 1">Remove</button>
+            </div>
+            
+            <div class="row">
+              <div class="form-group col">
+                <label>Department</label>
+                <select v-model="cond.department_id">
+                  <option value="">All Departments</option>
+                  <option v-for="dept in departmentOptions" :key="dept.id" :value="dept.id">
+                    {{ dept.name }}
+                  </option>
+                </select>
+              </div>
+              
+              <div class="form-group col">
+                <label>Low Income</label>
+                <div class="checkbox-wrapper">
+                  <input class="" type="checkbox" v-model="cond.is_poor" :id="`poor-${index}`" />
+                  <label :for="`poor-${index}`" class="inline-label">限清寒學生</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="form-group col">
+                <label>Min Avg GPA</label>
+                <input v-model.number="cond.avg_gpa" type="number" step="0.1" min="0" max="4.3" placeholder="Unrestricted" />
+              </div>
+              <div class="form-group col">
+                <label>Min Current GPA</label>
+                <input v-model.number="cond.current_gpa" type="number" step="0.1" min="0" max="4.3" placeholder="Unrestricted" />
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div class="form-actions">
           <button type="button" class="btn-cancel" @click="goBack">Cancel</button>
           <button type="submit" class="btn-primary-gradient" :disabled="isLoading">
@@ -146,7 +235,6 @@ const goBack = () => router.back();
   align-items: center;  
 }
 
-
 .outer-header {
   width: 100%;
   max-width: 700px; 
@@ -154,7 +242,6 @@ const goBack = () => router.back();
   display: flex;
   justify-content: flex-start;
 }
-
 
 .btn-back-outer {
   background: transparent;
@@ -174,12 +261,6 @@ const goBack = () => router.back();
   color: var(--primary-color);
   transform: translateX(-5px); 
 }
-
-.btn-back-outer .icon {
-  font-size: 1.3rem;
-  line-height: 1;
-}
-
 
 .form-card {
   width: 100%;
@@ -239,9 +320,12 @@ input:focus, select:focus, textarea:focus {
 textarea { resize: vertical; }
 
 .form-actions {
-  margin-top: 30px;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid #f5f5f5;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 15px;
 }
 
 .btn-primary-large {
@@ -269,10 +353,6 @@ textarea { resize: vertical; }
   transform: none;
   box-shadow: none;
 }
-.form-actions {
-  margin-top: 40px; padding-top: 30px; border-top: 1px solid #f5f5f5;
-  display: flex; justify-content: flex-end; gap: 15px;
-}
 
 .btn-cancel {
   background: transparent; border: 1px solid #ddd; color: #666;
@@ -287,4 +367,54 @@ textarea { resize: vertical; }
   box-shadow: 0 4px 15px rgba(125, 157, 156, 0.3);
 }
 .btn-primary-gradient:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(125, 157, 156, 0.4); }
+
+/* Section & Condition Styles */
+.divider { border: 0; border-top: 1px solid #eee; margin: 30px 0; }
+.section-title { font-size: 1.1rem; color: var(--text-color); margin: 0; font-weight: 700; border-left: 4px solid var(--primary-color); padding-left: 10px; }
+.section-head-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.hint-text { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
+
+.condition-box {
+  background: #F9FAFB; border: 1px solid #eee; border-radius: 12px; padding: 20px; margin-bottom: 15px;
+  transition: all 0.2s;
+}
+.condition-box:hover { border-color: var(--primary-color); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+
+.cond-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+.cond-index { font-weight: 700; color: var(--accent-color); font-size: 0.9rem; }
+.btn-remove { background: transparent; border: 1px solid #ffcdd2; color: #d32f2f; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+.btn-remove:hover { background: #ffebee; }
+
+.btn-add-cond { background: transparent; border: 1px dashed var(--primary-color); color: var(--primary-color); padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; }
+.btn-add-cond:hover { background: rgba(125, 157, 156, 0.1); }
+
+.checkbox-wrapper { display: flex; justify-content: flex-start; align-items: center; gap: 8px; height: 100%; }
+.inline-label { margin: 0; font-weight: normal; cursor: pointer; }.checkbox-wrapper {
+  display: flex;
+  align-items: center; /* 垂直置中 */
+  gap: 15px;
+  padding-left: 5px;
+  min-height: 48px; 
+}
+
+/* 確保 Checkbox 本身沒有多餘邊距 */
+.checkbox-wrapper input[type="checkbox"] {
+  margin: 0; 
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.inline-label {
+  margin: 0;
+  font-weight: normal;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-color);
+  user-select: none;
+  
+  /* (選用) 如果覺得字太鬆，可以微調行高 */
+  line-height: 1.2; 
+}
 </style>

@@ -53,6 +53,11 @@ const handleViewApplicants = (id: string) => {
   router.push(`/company/applications?job_id=${id}`); // 範例：帶參數去申請列表
 };
 
+const handleReview = (id: string) => {
+  router.push(`/company/resource/${id}/review`);
+};
+
+// 處理狀態變更
 const handleStatusChange = async (resource: any, newStatus: string) => {
   try {
     
@@ -99,7 +104,12 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         No resources found.
       </div>
 
-      <div v-for="res in filteredResources" :key="res.id" class="resource-item">
+      <div 
+        v-for="res in filteredResources" 
+        :key="res.id" 
+        class="resource-item clickable-card"
+        @click="handleReview(res.id)"
+      >
         
         <div class="info-section">
           <div class="info-header">
@@ -229,14 +239,16 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   grid-template-columns: 1fr auto auto; 
   align-items: center;
   gap: 40px;
-  position: relative;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative; overflow: visible;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer; /* 讓使用者知道可以點 */
 }
 
 .resource-item:hover {
   transform: translateX(5px);
   box-shadow: 0 8px 25px rgba(125, 157, 156, 0.1);
+  border-color: var(--primary-color); /* 懸浮時邊框變色 */
 }
 
 /* 左側裝飾線 */
