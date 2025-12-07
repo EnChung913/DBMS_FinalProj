@@ -8,7 +8,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import * as fs from 'fs';
-import { extname } from 'path';
+import { join, extname } from 'path';
 
 @ApiTags('Student Achievement')
 @Controller('student/achievement')
@@ -25,19 +25,24 @@ export class AchievementController {
     @Req() req,
     @Body() dto: CreateAchievementDto,
     @UploadedFile() file,
-  ) {
-    if (!file) {
-      throw new BadRequestException('File not uploaded');
+    ) {
+    const uploadsRoot = join(process.cwd(), 'uploads', 'achievements');
+
+    if (!fs.existsSync(uploadsRoot)) {
+      fs.mkdirSync(uploadsRoot, { recursive: true });
     }
 
-    // 自己決定路徑與命名
-    const filename = `${Date.now()}-${Math.random()}${extname(file.originalname)}`;
-    const filepath = `./uploads/achievements/${filename}`;
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+    const finalPath = join(uploadsRoot, filename);
 
-    // 同步寫入檔案
-    fs.writeFileSync(filepath, file.buffer);
+    fs.writeFileSync(finalPath, file.buffer);
 
-    return this.achievementService.createAchievement(req.user.sub, dto, filepath);
+    // 直接把 finalPath 傳進 service
+    return this.achievementService.createAchievement(
+      req.user.sub,
+      dto,
+      finalPath
+    );
   }
 
 }

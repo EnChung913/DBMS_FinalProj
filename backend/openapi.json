@@ -806,6 +806,34 @@
           "Common"
         ]
       }
+    },
+    "/api/common/health": {
+      "get": {
+        "operationId": "CommonController_healthCheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Common"
+        ]
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "operationId": "PrometheusController_index",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Prometheus"
+        ]
+      }
     }
   },
   "info": {

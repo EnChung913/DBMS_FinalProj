@@ -16,6 +16,7 @@ export class ResourceConditionController {
   constructor(
     private readonly conditionService: ResourceConditionService,
   ) {}
+  //TODO: upsert by id
 
   @Put(':resource_id/condition')
   async upsertCondition(

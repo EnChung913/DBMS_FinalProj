@@ -18,4 +18,9 @@ export class CommonController {
     const callerId = req.user.sub;
     return this.commonService.setAdmin(callerId, targetId);
   }
+
+  @Get('health')
+  healthCheck() {
+    return { status: 'ok' };
+  }
 }

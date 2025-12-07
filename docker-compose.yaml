@@ -1,4 +1,7 @@
 services:
+  # -----------------------------------------------------------
+  # PostgreSQL
+  # -----------------------------------------------------------
   db:
     image: postgres:16
     container_name: group7_psql
@@ -11,27 +14,35 @@ services:
       - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "127.0.0.1:6666:5432"
-    restart: "no"
-    
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+    labels:
+      - autoheal=true
 
+  # -----------------------------------------------------------
+  # Redis
+  # -----------------------------------------------------------
   redis:
     image: redis:7
     container_name: group7_redis
     ports:
       - "127.0.0.1:6667:6379"
-    restart: "no"
-    # [新增] 健康檢查
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli","-h","127.0.0.1","ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    labels:
+      - autoheal=true
 
+  # -----------------------------------------------------------
+  # Backend (NestJS)
+  # -----------------------------------------------------------
   backend:
     build:
       context: ./backend
@@ -46,19 +57,134 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:12345:3000"
-    restart: "no"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/common/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    labels:
+      - autoheal=true
+    volumes:
+      - group7_uploads:/usr/src/app/uploads
 
-
+  # -----------------------------------------------------------
+  # Frontend (Vue + Nginx)
+  # -----------------------------------------------------------
   frontend:
     build: ./frontend
     container_name: group7_frontend
     ports:
-      - "127.0.0.1:5173:80" # 假設 Dockerfile 是 build 完用 nginx 跑
-    depends_on:
-      - backend
+      - "127.0.0.1:5173:80"
     env_file:
       - ./frontend/.env.docker
-    restart: "no"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - autoheal=true
+
+  # -----------------------------------------------------------
+  # pgAdmin4
+  # -----------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: group7_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "127.0.0.1:5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - autoheal=true
+
+  # -----------------------------------------------------------
+  # Prometheus
+  # -----------------------------------------------------------
+  prometheus:
+    image: prom/prometheus
+    container_name: group7_prometheus
+    volumes:
+      - ./monitoring/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    ports:
+      - "127.0.0.1:9090:9090"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    labels:
+      - autoheal=true
+
+  # -----------------------------------------------------------
+  # Grafana
+  # -----------------------------------------------------------
+  grafana:
+    image: grafana/grafana
+    container_name: group7_grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+    labels:
+      - autoheal=true
+
+  # -----------------------------------------------------------
+  # Loki
+  # -----------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: group7_loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    labels:
+      - autoheal=true
+
+  # -----------------------------------------------------------
+  # Promtail
+  # -----------------------------------------------------------
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: group7_promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    restart: unless-stopped
+    depends_on:
+      loki:
+        condition: service_started
+    labels:
+      - autoheal=true
+
+  # -----------------------------------------------------------
+  # Autoheal
+  # -----------------------------------------------------------
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: group7_autoheal
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   group7_pgdata:
+  group7_uploads:
+  grafana_data:

@@ -16,6 +16,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { CommonModule } from './common/common.module';
 import { EventModule } from './modules/enent/event.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { EventModule } from './modules/enent/event.module';
     RedisModule,
     CommonModule,
     EventModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

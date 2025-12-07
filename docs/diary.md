@@ -282,3 +282,6 @@ Some details need to be improved later: the review ui should show the achievemen
 [2025-12-7 13:16]
 I add "last_modified" timestamp column to resource table to record the last modified time of a resource. If the resource is canceled for 1 month, the system would automatically delete this resource and all its related applications and conditions. This function would be implemented in the scheduled task module later.
 There should be a function that the database prunges the soft deleted items each year after it makes a snapshot backup.
+
+[2025-12-7 15:17]
+I tried to implement the docker version of my project, especially for tyhe file upload function. Besides, I found that the resource condition function has some bugs: user can't upsert the condition by its id. 
