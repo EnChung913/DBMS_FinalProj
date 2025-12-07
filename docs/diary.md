@@ -278,3 +278,7 @@ I've finished the apis for 2FA but Lyy thinks that we are running out of time, s
 If user cancel the application, the file uploaded would be deleted too. Great!
 I finish the verify achievement api for department. Department can review the achievements uploaded by students. Next step would be the review application function for company and department.
 Some details need to be improved later: the review ui should show the achievement title and description, the status of recognized should be green not gray.
+
+[2025-12-7 13:16]
+I add "last_modified" timestamp column to resource table to record the last modified time of a resource. If the resource is canceled for 1 month, the system would automatically delete this resource and all its related applications and conditions. This function would be implemented in the scheduled task module later.
+There should be a function that the database prunges the soft deleted items each year after it makes a snapshot backup.

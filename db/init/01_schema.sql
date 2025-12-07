@@ -129,6 +129,7 @@ CREATE TABLE resource (
     title VARCHAR(100) NOT NULL,
     deadline DATE,
     description TEXT NOT NULL,
+    last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) CHECK(status IN ('Canceled','Unavailable','Available', 'Full')) NOT NULL DEFAULT 'Unavailable'
 );
 

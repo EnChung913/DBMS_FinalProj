@@ -465,9 +465,10 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Resource created successfully."
           }
         },
+        "summary": "Create a new resource",
         "tags": [
           "Resource"
         ]
@@ -479,9 +480,10 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully retrieved user resources."
           }
         },
+        "summary": "Get resources belonging to the authenticated user",
         "tags": [
           "Resource"
         ]
@@ -493,9 +495,10 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully retrieved all resources."
           }
         },
+        "summary": "Get all resources visible to students",
         "tags": [
           "Resource"
         ]
@@ -516,9 +519,10 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully updated resource status."
           }
         },
+        "summary": "Update the status of a resource",
         "tags": [
           "Resource"
         ]
@@ -539,9 +543,44 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Successfully retrieved a resource by ID."
           }
         },
+        "summary": "Get a resource by its ID",
+        "tags": [
+          "Resource"
+        ]
+      }
+    },
+    "/api/resource/{resource_id}/modify": {
+      "post": {
+        "operationId": "ResourceController_modifyResource",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully modified resource."
+          }
+        },
+        "summary": "Modify a resource",
         "tags": [
           "Resource"
         ]

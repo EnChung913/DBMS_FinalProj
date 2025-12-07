@@ -10,28 +10,31 @@ const activeTab = ref('All');
 
 // 資源類型篩選
 const filteredResources = computed(() => {
-  if (activeTab.value === 'All') return myResources.value;
-  return myResources.value.filter((r: any) => r.type === activeTab.value);
+  let list = activeTab.value === 'All'
+    ? myResources.value
+    : myResources.value.filter((r: any) => r.type === activeTab.value);
+  // console.log(list);
+  return list.slice().sort((a: any, b: any) => {
+    // 1. Cancelled 一律排最後
+    const aCancelled = a.status === 'Canceled';
+    const bCancelled = b.status === 'Canceled';
+    if (aCancelled && !bCancelled) return 1;
+    if (!aCancelled && bCancelled) return -1;
+
+    // 2. 其他按照 deadline 排序
+    // 假設 deadline 是可比較的 Date 或 timestamp
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
 });
+
 
 onMounted(async () => {
   isLoading.value = true;
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/resource/my
-    // ----------------------------------------------------------------
-    // const res = await apiClient.get('/resource/my');
-    // myResources.value = res.data;
+    const res = await apiClient.get('api/resource/my');
+    myResources.value = res.data;
 
-    // --- Mock Data ---
-    await new Promise(r => setTimeout(r, 500));
-    myResources.value = [
-      { id: 'c1', title: 'Frontend Engineer Intern (Vue.js)', type: 'Internship', applicants: 15, quota: 3, status: 'Available', date: '2025-02-10' },
-      { id: 'c2', title: 'Backend Developer (Node.js)', type: 'Full-time', applicants: 8, quota: 1, status: 'Available', date: '2025-02-12' },
-      { id: 'c3', title: 'UI/UX Designer', type: 'Internship', applicants: 0, quota: 2, status: 'Draft', date: '2025-02-20' },
-      { id: 'c4', title: 'Product Manager', type: 'Full-time', applicants: 25, quota: 1, status: 'Closed', date: '2025-01-05' },
-      { id: 'c5', title: 'Marketing Intern', type: 'Internship', applicants: 10, quota: 2, status: 'Available', date: '2025-02-22' },
-    ];
+    await new Promise(r => setTimeout(r, 300));
 
   } catch (error) {
     console.error(error);
@@ -50,16 +53,13 @@ const handleViewApplicants = (id: string) => {
   router.push(`/company/applications?job_id=${id}`); // 範例：帶參數去申請列表
 };
 
-// 處理狀態變更
 const handleStatusChange = async (resource: any, newStatus: string) => {
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [PATCH] /api/resource/:id/status
-    // ----------------------------------------------------------------
-    // await apiClient.patch(`/resource/${resource.id}/status`, { status: newStatus });
     
-    console.log(`[Mock] Update status of ${resource.id} to ${newStatus}`);
-    resource.status = newStatus; // 前端即時更新
+    await apiClient.patch(`api/resource/${resource.resource_id}/status`, { status: newStatus });
+    
+    console.log(`[Mock] Update status of ${resource.resource_id} to ${newStatus}`);
+    resource.status = newStatus;
     
   } catch (e) {
     alert('Update failed');
@@ -73,12 +73,12 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
     <div class="page-header">
       <div class="title-row">
         <button class="btn-back" @click="goBack">⮐ Back</button>
-        <h1>Company Resource Management</h1>
+        <h1>Department Resource Management</h1>
       </div>
       
       <div class="filter-bar">
         <button 
-          v-for="tab in ['All', 'Internship', 'Full-time', 'Others']" 
+          v-for="tab in ['All', 'Scholarship', 'Lab', 'Internship', 'Others']" 
           :key="tab"
           :class="['filter-pill', { active: activeTab === tab }]"
           @click="activeTab = tab"
@@ -90,13 +90,13 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 
     <div v-if="isLoading" class="loading-area">
       <div class="spinner"></div>
-      <p>Loading jobs...</p>
+      <p>Loading resources...</p>
     </div>
     
     <div v-else class="resource-list">
-      
+
       <div v-if="filteredResources.length === 0" class="empty-state">
-        No jobs found.
+        No resources found.
       </div>
 
       <div v-for="res in filteredResources" :key="res.id" class="resource-item">
@@ -105,10 +105,17 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
           <div class="info-header">
             <span :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"></span>
             <h3 class="res-title">{{ res.title }}</h3>
-            <span class="type-badge">{{ res.type }}</span>
+            <span class="type-badge">{{ res.resource_type }}</span>
+
             <div class="info-meta">
-              <span class="meta-date">Posted: {{ res.date }}</span>
+              <span
+                class="meta-date"
+                :style="{ color: new Date(res.deadline) < new Date() ? 'red' : 'inherit' }"
+              >
+                Deadline: {{ res.deadline }}
+              </span>
             </div>
+
           </div>
         </div>
 
@@ -125,24 +132,26 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         </div>
 
         <div class="action-section">
-           <div class="btn-group">
-             <button class="btn-action outline" @click="handleEdit(res.id)">Edit</button>
-           </div>
-           
-           <div class="status-changer">
-             <select 
-               :value="res.status" 
-               @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
-               class="select-status"
-               :class="{
-                 'st-avail': res.status === 'Available',
-                 'st-unavail': res.status === 'Unavailable'
-               }"
-             >
-               <option value="Available">Available</option>
-               <option value="Unavailable">Unavailable</option>
-             </select>
-           </div>
+
+          <button class="btn-action outline" @click="handleEdit(res.resource_id)">Edit</button>
+          
+          <div class="status-changer">
+            <select 
+              :value="res.status" 
+              @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
+              class="select-status"
+              :class="{
+                'st-avail': res.status === 'Available',
+                'st-unavail': res.status === 'Unavailable',
+                'st-canceled': res.status === 'Canceled'
+              }"
+            >
+              <option value="Available">Available</option>
+              <option value="Unavailable">Unavailable</option>
+              <option value="Canceled">Canceled</option>
+            </select>
+          </div>
+
         </div>
 
       </div>
@@ -150,6 +159,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 
   </div>
 </template>
+
 
 <style scoped>
 @import '@/assets/main.css';
@@ -308,6 +318,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 /* 根據狀態改變選單顏色 */
 .select-status.st-avail { border-color: #4CAF50; color: #659568; }
 .select-status.st-unavail { border-color: #ccc; color: #848382; }
+.select-status.st-canceled { border-color: #f44336; color: #d17c76; }
 
 .select-status:hover {
   filter: brightness(0.95);

@@ -44,24 +44,12 @@ const resourceTypes = isCompany
 // 初始化：取得現有資料
 onMounted(async () => {
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/resource/:id
-    // ----------------------------------------------------------------
-    // const res = await apiClient.get(`/resource/${resourceId}`);
-    // formData.value = res.data;
+    const res = await apiClient.get(`api/resource/${resourceId}`);
+    formData.value = res.data;
     
-    // --- Mock Data ---
-    console.log(`[Mock] Fetching resource ID: ${resourceId}`);
+    console.log(`Fetching resource ID: ${resourceId}`);
     await new Promise(r => setTimeout(r, 800));
     
-    formData.value = {
-      title: isCompany ? 'Frontend Engineer Intern' : '好棒棒獎學金',
-      resource_type: isCompany ? 'Internship' : 'Scholarship',
-      quota: 3,
-      deadline: '2025-06-30',
-      description: '這是一個模擬的回填描述內容...\n\n我們正在尋找熱情的夥伴加入我們！'
-    };
-    // -----------------
 
   } catch (error) {
     console.error(error);
@@ -78,19 +66,13 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [PATCH] /api/resource/:id
-    // ----------------------------------------------------------------
-    // await apiClient.patch(`/resource/${resourceId}`, formData.value);
+    await apiClient.post(`api/resource/${resourceId}/modify`, formData.value);
 
-    // Mock
-    console.log(`[Mock] Updating ID ${resourceId}`, formData.value);
-    await new Promise(r => setTimeout(r, 1000));
-
-    alert('Update successful!');
+    console.log(`Updating ID ${resourceId}`, formData.value);
+    await new Promise(r => setTimeout(r, 300));
+    alert('Resource updated successfully!');
     if (isCompany) router.push('/company/dashboard');
     else router.push('/department/dashboard');
-
   } catch (error: any) {
     console.error(error);
     alert('Update failed. Please check the fields and try again.');
