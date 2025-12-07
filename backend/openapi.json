@@ -586,9 +586,42 @@
         ]
       }
     },
+    "/api/resource/{condition_id}/edit": {
+      "put": {
+        "operationId": "ResourceConditionController_editCondition",
+        "parameters": [
+          {
+            "name": "condition_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertResourceConditionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ResourceCondition"
+        ]
+      }
+    },
     "/api/resource/{resource_id}/condition": {
       "put": {
-        "operationId": "ResourceConditionController_upsertCondition",
+        "operationId": "ResourceConditionController_createCondition",
         "parameters": [
           {
             "name": "resource_id",
@@ -776,9 +809,10 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of departments."
           }
         },
+        "summary": "Get all departments",
         "tags": [
           "Common"
         ]
@@ -798,10 +832,11 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "User promoted to admin."
           }
         },
+        "summary": "Promote a user to admin",
         "tags": [
           "Common"
         ]
@@ -813,9 +848,10 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Service is healthy."
           }
         },
+        "summary": "Health check endpoint",
         "tags": [
           "Common"
         ]

@@ -119,21 +119,34 @@ export class ResourceService {
    */
   async getMyResources(user: any) {
     if (user.role === 'department') {
-      return this.resourceRepo.find({
-        where: { department_supplier_id: user.sub },
-        order: { deadline: 'ASC' },
-      });
+      const sql = `
+        SELECT r.*, COUNT(a.user_id) AS applied
+        FROM resource r
+        LEFT JOIN application a
+        ON r.resource_id = a.resource_id
+        WHERE r.department_supplier_id = $1
+        GROUP BY r.resource_id
+        ORDER BY r.deadline ASC
+      `;
+      return this.resourceRepo.query(sql, [user.sub]);
     }
 
     if (user.role === 'company') {
-      return this.resourceRepo.find({
-        where: { company_supplier_id: user.sub },
-        order: { deadline: 'ASC' },
-      });
+      const sql = `
+        SELECT r.*, COUNT(a.user_id) AS applied
+        FROM resource r
+        LEFT JOIN application a
+        ON r.resource_id = a.resource_id
+        WHERE r.company_supplier_id = $1
+        GROUP BY r.resource_id
+        ORDER BY r.deadline ASC
+      `;
+      return this.resourceRepo.query(sql, [user.sub]);
     }
 
     throw new BadRequestException('此角色無法查詢自己發布的資源');
   }
+
 
   /**
    * 查詢單一資源（含 eligibility）

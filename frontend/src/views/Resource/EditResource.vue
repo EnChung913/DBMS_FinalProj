@@ -4,18 +4,36 @@ import { useRoute, useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
 
+// 定義介面以確保型別安全
+interface ResourceForm {
+  title: string;
+  resource_type: string;
+  quota: number;
+  deadline: string;
+  description: string;
+}
+
+interface Condition {
+  condition_id?: string;
+  department_id: string;
+  avg_gpa?: number;
+  current_gpa?: number;
+  is_poor?: boolean;
+}
+
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
 const isLoading = ref(false);
 const isFetching = ref(true);
-
-// 取得 URL 參數中的 ID
 const resourceId = route.params.id as string;
 
-// 表單資料
-const formData = ref({
+const pageTitle = 'Edit Resource';
+const pageSubtitle = 'Modify the details and eligibility conditions of the resource here.';
+
+// 表單初始值
+const formData = ref<ResourceForm>({
   title: '',
   resource_type: '',
   quota: 1,
@@ -23,55 +41,43 @@ const formData = ref({
   description: ''
 });
 
-interface Condition {
-  department_id: string; // Empty string means 'All Departments'
-  avg_gpa?: number;
-  current_gpa?: number;
-  is_poor?: boolean;
-}
 const conditions = ref<Condition[]>([]);
-// 模擬系所選項 (實際應從後端取得)
 const departmentOptions = ref<any[]>([]);
+const removeList = ref<string[]>([]); // 使用 ref 以便管理
 
-// 判斷角色，顯示對應的標題與選項
 const isCompany = authStore.role === 'company';
-const pageTitle = isCompany ? 'Edit Company Resource' : 'Edit Department Resource';
-const pageSubtitle = 'Update Detail Information';
 
-const resourceTypes = isCompany 
-  ? [
-      { value: 'Internship', label: 'Internship' },
-      { value: 'Full-time', label: 'Full-time' },
-      { value: 'Others', label: 'Others' }
-    ]
-  : [
-      { value: 'Scholarship', label: 'Scholarship' },
-      { value: 'Lab', label: 'Lab' },
-      { value: 'Internship', label: 'Internship' },
-      { value: 'Others', label: 'Others' }
-    ];
+// 選項設定
+const resourceTypes = [
+  { value: 'Scholarship', label: 'Scholarship' },
+  { value: 'Internship', label: 'Internship' },
+  { value: 'Lab', label: 'Lab' },
+  { value: 'Competition', label: 'Competition' },
+  { value: 'Others', label: 'Others' }
+];
 
-// 初始化：取得現有資料
 onMounted(async () => {
   try {
+    // 1. 取得系所選項
+    const deptRes = await apiClient.get('api/common/departments');
+    departmentOptions.value = deptRes.data;
+
+    // 2. 取得資源詳情
     const res = await apiClient.get(`api/resource/${resourceId}`);
     formData.value = res.data;
-    
-    console.log(`Fetching resource ID: ${resourceId}`);
-    await new Promise(r => setTimeout(r, 800));
-    
-    formData.value = {
-      title: isCompany ? 'Frontend Engineer Intern' : '好棒棒獎學金',
-      resource_type: isCompany ? 'Internship' : 'Scholarship',
-      quota: 3,
-      deadline: '2025-06-30',
-      description: '這是一個模擬的回填描述內容...\n\n我們正在尋找熱情的夥伴加入我們！'
-    };
-    addCondition();
+
+    // 3. 取得條件
+    // 注意：請確認後端是否有這個 GET 路由，若無會報錯
+    const condRes = await apiClient.get(`api/resource/${resourceId}/condition`);
+    conditions.value = condRes.data;
+
+    if (conditions.value.length === 0) {
+      addCondition();
+    }
 
   } catch (error) {
-    console.error(error);
-    alert('Cannot fetch resource data. Returning to previous page.');
+    console.error('Fetch error:', error);
+    alert('Cannot fetch resource data.');
     router.back();
   } finally {
     isFetching.value = false;
@@ -88,42 +94,100 @@ const addCondition = () => {
 };
 
 const removeCondition = (index: number) => {
+  const cond = conditions.value[index];
+  if (!confirm(`Are you sure to remove Rule #${index + 1}?`)) return;
+  if (!cond){
+    alert('Condition not found.');
+    return;
+  }
+  // 如果該條件已有 ID (存在於資料庫)，則加入待刪除清單
+  if (cond.condition_id) {
+    removeList.value.push(cond.condition_id);
+  }
+  
   conditions.value.splice(index, 1);
 };
 
 const handleSubmit = async () => {
   if (isLoading.value) return;
+  
+  // 簡易前端驗證
+  if (!formData.value.title || !formData.value.deadline) {
+    alert('Please fill in Title and Deadline.');
+    return;
+  }
+
   isLoading.value = true;
 
   try {
-    // 1. 建立資源
-    const res = await apiClient.post('/resource/create', formData.value);
-    const resourceId = res.data.resource_id || 'mock-id'; // 確保後端回傳 ID
+    // ==========================================
+    // 步驟 1: 刪除被移除的條件
+    // ==========================================
+    // 假設後端路由: DELETE api/resource/condition/:condition_id
+    // 你需要確認後端是否有對應 Controller
+    await Promise.all(
+      removeList.value.map(id => 
+        apiClient.delete(`api/resource/condition/${id}`)
+      )
+    );
 
-    // 2. 建立條件 (逐筆新增)
-    // 雖然效率較差，但符合目前的 API 設計 (addCondition)
+    // ==========================================
+    // 步驟 2: 更新 Resource 本體 (修正重點)
+    // ==========================================
+    //  @Post(':resource_id/modify')
+    const resourcePayload = {
+      ...formData.value,
+      quota: Number(formData.value.quota) // 確保轉為數字
+    };
+
+    await apiClient.post(`api/resource/${resourceId}/modify`, resourcePayload);
+
+    // ==========================================
+    // 步驟 3: 更新或新增條件
+    // ==========================================
     for (const cond of conditions.value) {
-      // 過濾空值
+      // 複製並清理 payload
       const payload: any = { ...cond };
-      if (!payload.department_id) delete payload.department_id; // 後端若接受 undefined 代表全校
       
-      // TODO: [POST] /resource/:id/condition
-      await apiClient.post(`/resource/${resourceId}/condition`, payload);
+      // 移除空字串的 department_id (視後端驗證需求而定)
+      if (!payload.department_id) delete payload.department_id;
+      
+      // 確保數值型別正確
+      if (payload.avg_gpa) payload.avg_gpa = Number(payload.avg_gpa);
+      if (payload.current_gpa) payload.current_gpa = Number(payload.current_gpa);
+
+      if (cond.condition_id) {
+        // --- 編輯既有條件 ---
+        // 假設後端路由: PUT api/resource/condition/:condition_id
+        await apiClient.put(`api/resource/condition/${cond.condition_id}`, payload);
+      } else {
+        // --- 新增新條件 ---
+        // 假設後端路由: POST api/resource/:resource_id/condition
+        await apiClient.post(`api/resource/${resourceId}/condition`, payload);
+      }
     }
 
-    alert('Upload sucess!');
+    alert('Update success');
+    
+    // 導航回列表
     if (isCompany) router.push('/company/dashboard');
     else router.push('/department/dashboard');
+
   } catch (error: any) {
-    console.error(error);
-    alert('Upload failed')
+    console.error('Submit Error:', error);
+    
+    // 抓取後端回傳的具體錯誤訊息
+    const message = error.response?.data?.message;
+    const errorDetail = Array.isArray(message) ? message.join(', ') : message;
+    
+    alert(`Update failed: ${errorDetail || 'Unknown error'}`);
+  } finally {
     isLoading.value = false;
   }
 };
 
 const goBack = () => router.back();
 </script>
-
 <template>
   <div class="page-container">
     
@@ -226,11 +290,11 @@ const goBack = () => router.back();
             <div class="row">
               <div class="form-group col">
                 <label>Min Avg GPA</label>
-                <input v-model.number="cond.avg_gpa" type="number" step="0.1" min="0" max="4.3" placeholder="Unrestricted" />
+                <input v-model.number="cond.avg_gpa" type="number" step="0.01" min="0" max="4.3" placeholder="Unrestricted" />
               </div>
               <div class="form-group col">
                 <label>Min Current GPA</label>
-                <input v-model.number="cond.current_gpa" type="number" step="0.1" min="0" max="4.3" placeholder="Unrestricted" />
+                <input v-model.number="cond.current_gpa" type="number" step="0.01" min="0" max="4.3" placeholder="Unrestricted" />
               </div>
             </div>
           </div>

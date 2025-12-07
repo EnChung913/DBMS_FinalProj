@@ -4,10 +4,10 @@ import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
 
 // 定義資料介面
-interface Job {
-  id: string;
+interface resource {
+  resource_id: string;
   title: string;
-  type: string;       // e.g. Intern, Full-time
+  resource_type: string;       // e.g. Intern, Full-time
   quota: number;
   applied: number;
   status: 'Open' | 'Closed' | 'Draft';
@@ -17,13 +17,13 @@ interface Job {
 interface Applicant {
   user_id: string;
   name: string;
-  job: string;
+  resource: string;
   gpa: number;
   date: string;
   status: 'submitted' | 'reviewed' | 'interview';
 }
 
-const jobs = ref<Job[]>([]);
+const resources = ref<resource[]>([]);
 const applicants = ref<Applicant[]>([]);
 const showAnimation = ref(false);
 
@@ -35,32 +35,18 @@ onMounted(async () => {
     // TODO: 連接後端 API (Company Dashboard)
     // ----------------------------------------------------------------
     
-    // 1. [GET] /api/company/jobs
-    // jobs.value = (await apiClient.get('/company/jobs')).data;
-
+    // 1. [GET] /api/company/resources
+    resources.value = (await apiClient.get('api/resource/my')).data;
+    console.log(resources.value);
     // 2. [GET] /api/company/applications
     // applicants.value = (await apiClient.get('/company/applications')).data;
 
-    // --- MOCK DATA ---
-    jobs.value = [
-      { 
-        id: 'c1', title: 'Frontend Engineer Intern (Vue.js)', type: 'Internship',
-        quota: 3, applied: 15, status: 'Open', publish_date: '2025-02-10'
-      },
-      { 
-        id: 'c2', title: 'Backend Developer (Node.js)', type: 'Full-time',
-        quota: 1, applied: 8, status: 'Open', publish_date: '2025-02-12'
-      },
-      { 
-        id: 'c3', title: 'UI/UX Designer', type: 'Internship',
-        quota: 2, applied: 0, status: 'Draft', publish_date: '2025-02-20'
-      }
-    ];
+
 
     applicants.value = [
-      { user_id: 'u1', name: 'Alex Chen', job: 'Frontend Engineer Intern', gpa: 3.9, date: '2025-02-22', status: 'submitted' },
-      { user_id: 'u2', name: 'Betty Wu', job: 'Frontend Engineer Intern', gpa: 4.1, date: '2025-02-21', status: 'reviewed' },
-      { user_id: 'u3', name: 'Charlie Lin', job: 'Backend Developer', gpa: 3.5, date: '2025-02-20', status: 'submitted' }
+      { user_id: 'u1', name: 'Alex Chen', resource: 'Frontend Engineer Intern', gpa: 3.9, date: '2025-02-22', status: 'submitted' },
+      { user_id: 'u2', name: 'Betty Wu', resource: 'Frontend Engineer Intern', gpa: 4.1, date: '2025-02-21', status: 'reviewed' },
+      { user_id: 'u3', name: 'Charlie Lin', resource: 'Backend Developer', gpa: 3.5, date: '2025-02-20', status: 'submitted' }
     ];
 
   } catch (error) { console.error(error); }
@@ -109,7 +95,7 @@ const getStatusClass = (status: string) => {
                   <span class="name">{{ app.name }}</span>
                   <span class="gpa-badge">GPA {{ app.gpa }}</span>
                 </div>
-                <span class="job-target">Recruit: {{ app.job }}</span>
+                <span class="resource-target">Recruit: {{ app.resource }}</span>
                 <span class="apply-date">{{ app.date }}</span>
               </div>
 
@@ -122,43 +108,43 @@ const getStatusClass = (status: string) => {
       <section class="right-panel">
         <div class="section-header-row">
           <h3>Resource Overview</h3>
-          <span class="badge-count">{{ jobs.length }} Active</span>
+          <span class="badge-count">{{ resources.length }} Active</span>
           <router-link to="/company/resources" class="btn-view-all">
             <span class="btn-text">View All</span>
             <span class="arrow-icon">➭➭➭</span>
           </router-link>
         </div>
 
-        <div class="jobs-container">
-          <div v-for="job in jobs" :key="job.id" class="job-card">
+        <div class="resources-container">
+          <div v-for="resource in resources" :key="resource.resource_id" class="resource-card">
             
             <div class="card-header">
-              <div class="job-meta">
-                <span :class="['status-dot', getStatusClass(job.status)]"></span>
-                <span class="job-type">{{ job.type }}</span>
+              <div class="resource-meta">
+                <span :class="['status-dot', getStatusClass(resource.status)]"></span>
+                <span class="resource-type">{{ resource.resource_type }}</span>
               </div>
               <button class="btn-icon-more">⋮</button>
             </div>
 
-            <h3 class="job-title">{{ job.title }}</h3>
+            <h3 class="resource-title">{{ resource.title }}</h3>
             
-            <div class="job-stats-row">
+            <div class="resource-stats-row">
               <div class="stat-box">
                 <span class="label">Quota</span>
-                <span class="value">{{ job.quota }}</span>
+                <span class="value">{{ resource.quota }}</span>
               </div>
               <div class="divider"></div>
               <div class="stat-box">
                 <span class="label">Applicants</span>
-                <span class="value highlight">{{ job.applied }}</span>
+                <span class="value highlight">{{ resource.applied }}</span>
               </div>
             </div>
 
             <div class="card-footer">
-              <span class="date">Published on: {{ job.publish_date }}</span>
+              <span class="date">Published on: {{ resource.publish_date }}</span>
               <button 
                 class="btn-outline-sm" 
-                @click="$router.push(`/resource/edit/${job.id}`)"
+                @click="$router.push(`/resource/edit/${resource.resource_id}`)"
               >
                 Edit
               </button>
@@ -271,15 +257,15 @@ const getStatusClass = (status: string) => {
   font-weight: 600;
 }
 
-/* --- Job Cards Container --- */
-.jobs-container {
+/* --- resource Cards Container --- */
+.resources-container {
   display: grid;
   /* 自動適應寬度，最小 300px */
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.job-card {
+.resource-card {
   background: #fff;
   border-radius: 20px;
   padding: 20px;
@@ -290,7 +276,7 @@ const getStatusClass = (status: string) => {
   flex-direction: column;
 }
 
-.job-card:hover {
+.resource-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px rgba(125, 157, 156, 0.15);
 }
@@ -307,8 +293,8 @@ const getStatusClass = (status: string) => {
   margin-bottom: 15px;
 }
 .section-header-row h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
-.job-meta { display: flex; align-items: center; gap: 8px; }
-.job-type { font-size: 0.75rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 4px; }
+.resource-meta { display: flex; align-items: center; gap: 8px; }
+.resource-type { font-size: 0.75rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 4px; }
 
 .status-dot { width: 8px; height: 8px; border-radius: 50%; }
 .status-green { background: #4CAF50; box-shadow: 0 0 0 2px rgba(76,175,80,0.2); }
@@ -319,7 +305,7 @@ const getStatusClass = (status: string) => {
   background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: #aaa;
 }
 
-.job-title {
+.resource-title {
   margin: 0 0 20px 0;
   font-size: 1.1rem;
   color: var(--text-color);
@@ -328,7 +314,7 @@ const getStatusClass = (status: string) => {
   overflow: hidden;
 }
 
-.job-stats-row {
+.resource-stats-row {
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -459,7 +445,7 @@ const getStatusClass = (status: string) => {
   padding: 2px 6px; border-radius: 4px; font-weight: 600;
 }
 
-.job-target { font-size: 0.8rem; color: #666; margin-bottom: 2px; }
+.resource-target { font-size: 0.8rem; color: #666; margin-bottom: 2px; }
 .apply-date { font-size: 0.75rem; color: #bbb; }
 
 .btn-review {

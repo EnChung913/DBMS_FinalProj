@@ -23,34 +23,25 @@ interface Condition {
   is_poor?: boolean;
 }
 const conditions = ref<Condition[]>([]);
-// 模擬系所選項 (實際應從後端取得)
+
 const departmentOptions = ref<any[]>([]);
 
 const isCompany = authStore.role === 'company';
-const pageTitle = isCompany ? 'Publish Company Resource' : 'Publish Department Resource';
+const pageTitle = 'Publish New Resource';
 
-const resourceTypes = isCompany 
-  ? [
-      { value: 'Internship', label: 'Internship' },
-      { value: 'Others', label: 'Others' }
-    ]
-  : [
-      { value: 'Scholarship', label: 'Scholarship' },
-      { value: 'Lab', label: 'Lab' },
-      { value: 'Internship', label: 'Internship' },
-      { value: 'Others', label: 'Others' }
-    ];
-  
-onMounted(async () => {
-  // TODO: [GET] /api/common/departments
-  departmentOptions.value = [
-    { id: 'uuid-1', name: 'Computer Science' },
-    { id: 'uuid-2', name: 'Electrical Engineering' },
-    { id: 'uuid-3', name: 'Business Administration' }
+//'Scholarship','Internship','Lab','Competition','Others'
+const resourceTypes = 
+  [
+    { value: 'Scholarship', label: 'Scholarship' },
+    { value: 'Internship', label: 'Internship' },
+    { value: 'Lab', label: 'Lab' },
+    { value: 'Competition', label: 'Competition' },
+    { value: 'Others', label: 'Others' }
   ];
   
-  // 預設加一條「不限系所」的條件
-  addCondition();
+onMounted(async () => {
+  departmentOptions.value = (await apiClient.get('api/common/departments')).data;
+  addCondition(); // no condition at beginning
 });
 
 const addCondition = () => {
@@ -82,8 +73,7 @@ const handleSubmit = async () => {
       const payload: any = { ...cond };
       if (!payload.department_id) delete payload.department_id; // 後端若接受 undefined 代表全校
       
-      // TODO: [POST] /resource/:id/condition
-      await apiClient.post(`/resource/${resourceId}/condition`, payload);
+      await apiClient.put(`api/resource/${resourceId}/condition`, payload);
     }
 
     alert('Upload sucess!');
@@ -202,11 +192,11 @@ const goBack = () => router.back();
             <div class="row">
               <div class="form-group col">
                 <label>Min Avg GPA</label>
-                <input v-model.number="cond.avg_gpa" type="number" step="0.1" min="0" max="4.3" placeholder="Unrestricted" />
+                <input v-model.number="cond.avg_gpa" type="number" step="0.01" min="0" max="4.3" placeholder="Unrestricted" />
               </div>
               <div class="form-group col">
                 <label>Min Current GPA</label>
-                <input v-model.number="cond.current_gpa" type="number" step="0.1" min="0" max="4.3" placeholder="Unrestricted" />
+                <input v-model.number="cond.current_gpa" type="number" step="0.01" min="0" max="4.3" placeholder="Unrestricted" />
               </div>
             </div>
           </div>

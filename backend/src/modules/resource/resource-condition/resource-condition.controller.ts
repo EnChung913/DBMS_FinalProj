@@ -6,9 +6,6 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
-// 這一行是必要的！
-// 建議用 "resource" 讓路徑變成：
-// PUT /resource/:resource_id/condition
 @Controller('resource')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('department', 'company')
@@ -17,14 +14,27 @@ export class ResourceConditionController {
     private readonly conditionService: ResourceConditionService,
   ) {}
   //TODO: upsert by id
+  @Put(':condition_id/edit')
+  async editCondition(
+    @Param('condition_id') conditionId: string,
+    @Body() dto: UpsertResourceConditionDto,
+    @Req() req,
+  ) {
+    return this.conditionService.updateConditionByConditionId(
+      conditionId,
+      dto,
+      req.user,
+    );
+  }
 
+  
   @Put(':resource_id/condition')
-  async upsertCondition(
+  async createCondition(
     @Param('resource_id') resourceId: string,
     @Body() dto: UpsertResourceConditionDto,
-    @Req() req: any,
+    @Req() req,
   ) {
-    return this.conditionService.upsertCondition(
+    return this.conditionService.createConditionByResourceId(
       resourceId,
       dto,
       req.user,

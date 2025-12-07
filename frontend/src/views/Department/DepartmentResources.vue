@@ -98,9 +98,9 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 
       <div 
         v-for="res in filteredResources" 
-        :key="res.id" 
+        :key="res.resource_id" 
         class="resource-item clickable-card"
-        @click="handleReview(res.id)"
+        @click="handleReview(res.resource_id)"
       >
         
         <div class="info-section">
