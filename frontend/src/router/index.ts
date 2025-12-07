@@ -18,6 +18,7 @@ import AdminDashboard from '../views/Admin/AdminDashboard.vue';
 import ApplyResource from '../views/Student/ApplyResource.vue';
 import DepartmentResourceReview from '../views/Department/DepartmentResourceReview.vue';
 import CompanyResourceReview from '../views/Company/CompanyResourceReview.vue';
+import AchievementDetail from '../views/Department/AchievementDetail.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -75,6 +76,12 @@ const router = createRouter({
       name: 'DepartmentResourceReview',
       component: DepartmentResourceReview,
       meta: { requiresAuth: true, role: 'department', requiresSetup: true }
+    },
+    {
+      path: '/department/achievement/:id', 
+      name: 'AchievementDetail',
+      component: AchievementDetail,
+      meta: { requiresAuth: true, role: 'department' }
     },
     {
       path: '/company/dashboard',

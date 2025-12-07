@@ -113,13 +113,19 @@ const verifyAchievement = async (id: number, decision: boolean) => {
                   <td>
                     <div class="achievement-detail">
                       <span class="title">{{ item.title }}</span>
-                      <a :href="item.proof_link" target="_blank" class="link-proof"> Check certificate </a>
+                      <a 
+                        href="#" 
+                        class="link-proof" 
+                        @click.prevent="$router.push(`/department/achievement/${item.id}`)"
+                      >
+                        Check Details
+                      </a>
                     </div>
                   </td>
                   <td>
                     <div class="action-buttons">
-                      <button class="btn-icon btn-approve" @click="verifyAchievement(item.id, true)" title="通過">✓</button>
-                      <button class="btn-icon btn-reject" @click="verifyAchievement(item.id, false)" title="駁回">✕</button>
+                      <button class="btn-icon btn-approve" @click="verifyAchievement(item.id, true)" title="Approve">✓</button>
+                      <button class="btn-icon btn-reject" @click="verifyAchievement(item.id, false)" title="Reject">✕</button>
                     </div>
                   </td>
                 </tr>
