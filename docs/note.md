@@ -125,9 +125,10 @@ You can check the whole change log in diary.md for more details.
 
 - remove all docker and start from scratch
 ``` bash
+docker compose build --no-cache
 docker compose down
 docker volume rm dbms_finalproj_group7_pgdata
-docker compose up -d db redis
+docker compose up -d
 ```
 
 - restore database from backup.sql
