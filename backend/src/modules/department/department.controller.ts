@@ -8,6 +8,7 @@ import type { Response } from 'express';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
 import { ForbiddenException } from '@nestjs/common/exceptions/forbidden.exception';
 import { DepartmentService } from './department.service';
+import * as path from 'path'
 
 
 @ApiTags('Department')
@@ -90,19 +91,18 @@ ORDER BY a.creation_date DESC;
 	@ApiOperation({ summary: 'Download achievement attachment file' })
 	@ApiResponse({ status: 200, description: 'Achievement attachment file downloaded successfully.' })
 	@Get('achievements/:id/download')
+
 	async downloadAttachment(@Param('id') id: string, @Res() res: Response) {
-		const filePath = await this.service.getAchievementFilePath(id);
-		if (!filePath) throw new NotFoundException('File not found');
+		const filePath = await this.service.getAchievementFilePath(id)
+		if (!filePath) throw new NotFoundException('File not found')
 
-		const fileName = filePath.split('/').pop();
+		const absPath = path.resolve(filePath)
+		const fileName = path.basename(absPath)
 
-		res.setHeader(
-			'Content-Disposition',
-			`attachment; filename="${fileName}"`
-		);
-
-		return res.sendFile(filePath, { root: process.cwd() });
+		res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+		res.sendFile(absPath)
 	}
+
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('department')
 	@Patch('achievements/:id/review')

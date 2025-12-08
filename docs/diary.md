@@ -306,3 +306,6 @@ I finished the review application function for company and department. Now they 
 Continue to implement the apis for frontend.
 I created a 2fa page. Now student and company can enable 2FA in their dashboard. I've finish the forgot password function with 2FA. Next step I want to deploy the account application of company or department.
 
+[2025-12-8 20:05]
+The containers successfully run on docker. But there are some issues with Loki, it need to be fixed later.
+I still need to implement the user application function. Besides, the view of department review application havn't been done. But this can refer to the company review application view.
