@@ -250,6 +250,21 @@
         ]
       }
     },
+    "/api/student/application/count": {
+      "get": {
+        "operationId": "ApplicationController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Applications retrieved successfully."
+          }
+        },
+        "summary": "Get student applications",
+        "tags": [
+          "Application"
+        ]
+      }
+    },
     "/api/student/application/my": {
       "get": {
         "operationId": "ApplicationController_getApplications",
