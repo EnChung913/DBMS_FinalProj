@@ -14,9 +14,6 @@ export const useAuthStore = defineStore('auth', () => {
   // profile 完成判斷
   const isSetupDone = computed(() => needProfile.value === false);
 
-  /* ===========================================================
-     加入：更新 localStorage 的函式
-     =========================================================== */
   function syncStorage() {
     localStorage.setItem(
       'auth',
@@ -27,12 +24,16 @@ export const useAuthStore = defineStore('auth', () => {
     );
   }
 
-  /* ===========================================================
-     覆寫你原本的 setUser / setNeedProfile，使其自動同步
-     =========================================================== */
   function setUser(u: User) {
     user.value = u;
     syncStorage();
+  }
+
+  function set2FAEnabled(enabled: boolean) {
+    if (user.value) {
+      user.value.is_2fa_enabled = enabled;
+      syncStorage();
+    }
   }
 
   function setNeedProfile(v: boolean | null) {
@@ -77,6 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
     setNeedProfile,
     clearUser,
 
+    set2FAEnabled,
     loadFromStorage,
   };
 });

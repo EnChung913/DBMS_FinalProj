@@ -16,23 +16,12 @@ onMounted(async () => {
     // ----------------------------------------------------------------
     // TO DO: [GET] /api/department/achievement/:id
     // ----------------------------------------------------------------
-    // const res = await apiClient.get(`/department/achievement/${achievementId}`);
-    // achievement.value = res.data;
-
+    const res = await apiClient.get(`api/department/achievements/${achievementId}`);
+    achievement.value = res.data;
+    console.log(achievement.value);
     // --- Mock Data ---
-    await new Promise(r => setTimeout(r, 600));
-    achievement.value = {
-      id: achievementId,
-      student_name: '王小明',
-      student_id: 'B09901001',
-      title: '2024 ICPC 國際程式設計競賽 - 金牌',
-      category: 'Competition',
-      description: '與隊友共同解決了 10 道演算法難題，獲得亞洲區第一名。此競賽考驗資料結構與演算法能力...',
-      start_date: '2024-09-01',
-      end_date: '2024-09-03',
-      proof_link: 'https://drive.google.com/file/d/xxxx', // 假設是連結或檔案路徑
-      status: 'unrecognized'
-    };
+    await new Promise(r => setTimeout(r, 300));
+    
   } catch (error) {
     console.error(error);
     alert('Failed to load achievement details.');
@@ -44,19 +33,15 @@ onMounted(async () => {
 
 const handleVerify = async (decision: boolean) => {
   if (!confirm(`Are you sure to ${decision ? 'APPROVE' : 'REJECT'} this achievement?`)) return;
-  
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [POST] /api/department/achievement/:id/verify
-    // Body: { decision }
-    // ----------------------------------------------------------------
-    // await apiClient.post(`/department/achievement/${achievementId}/verify`, { decision });
-    
-    console.log(`[Mock] Verify ${achievementId}: ${decision}`);
-    alert(`Achievement ${decision ? 'Approved' : 'Rejected'}!`);
-    router.push('/department/dashboard');
-  } catch (e) {
-    alert('Operation failed');
+    await apiClient.patch(`/api/department/achievements/${achievementId}/review`, {
+      approve: decision
+    });
+    alert(`Achievement has been ${decision ? 'APPROVED' : 'REJECTED'}.`);
+    router.back();
+  } catch (error) {
+    console.error(error);
+    alert('Verification failed.');
   }
 };
 

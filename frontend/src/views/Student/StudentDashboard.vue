@@ -5,6 +5,7 @@ import apiClient from '@/api/axios';
 import type { Resource, GPA, Achievement } from '@/types';
 import { useStudentStore } from '@/stores/student';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 
@@ -16,12 +17,21 @@ const studentInfo = ref({ name: '', id: '', dept: '', grade: 0 });
 const gpaRecords = ref<GPA[]>([]);
 const achievements = ref<Achievement[]>([]);
 const recommendedResources = ref<Resource[]>([]);
+const authStore = useAuthStore();
+
+const appCount = ref(0);
 
 onMounted(async () => {
   setTimeout(() => (showAnimation.value = true), 100);
   const studentStore = useStudentStore();
-  console.log('studentStore initialized:', studentStore);
+  const resAppCount = await apiClient.get('/api/student/application/count');
+  appCount.value = resAppCount.data;
 
+  console.log('studentStore initialized:', studentStore);
+  
+  const tfa_status = await apiClient.get('/api/auth/2fa/status');
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
+  
   try {
     // Profile
     if (!studentStore.hasProfile) {
@@ -57,10 +67,8 @@ onMounted(async () => {
     const resAchiev = await apiClient.get('/api/student/achievement');
     achievements.value = resAchiev.data;
 
-    // ---------------------------------------------------------
-    // 4. 推薦資源（API 尚未完成 → 保留 mock）
-    // ---------------------------------------------------------
-    recommendedResources.value = [
+    // 推薦資源：優先使用後端推播，失敗時使用 mock
+    const mockRecommended: Resource[] = [
       {
         resource_id: 'r1',
         title: 'Software Engineer Intern',
@@ -84,6 +92,30 @@ onMounted(async () => {
         match_score: 88,
       },
     ];
+
+    try {
+      const resPush = await apiClient.get('/api/push/resource');
+      const data = Array.isArray(resPush.data) ? resPush.data : [];
+
+      if (data.length > 0) {
+        recommendedResources.value = data.map((item: any) => {
+          const resource = item.resource ?? item;
+          const rawScore = Number(item?.score ?? resource?.match_score ?? 0);
+          const normalizedScore = Math.round(rawScore > 1 ? rawScore : rawScore * 100);
+
+          return {
+            ...resource,
+            match_score: normalizedScore,
+            supplier_name: resource?.supplier_name ?? 'Unknown supplier',
+          } as Resource;
+        });
+      } else {
+        recommendedResources.value = mockRecommended;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch recommended resources, using mock instead:', err);
+      recommendedResources.value = mockRecommended;
+    }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
   }
@@ -103,6 +135,11 @@ const handleApply = (resourceId: string) => {
   router.push(`/student/apply/${resourceId}`);
 };
 
+const handle2FA = () => {
+  console.log('Navigating to 2FA verification...');
+  router.push('/2fa'); 
+};
+
 </script>
 
 
@@ -113,6 +150,15 @@ const handleApply = (resourceId: string) => {
         <div class="user-welcome">
           <span class="sub-greeting">{{ studentInfo.dept }} | {{ studentInfo.id }}</span>
           <h1>{{ studentInfo.name }}</h1>
+            <button 
+              v-if="!authStore.user?.is_2fa_enabled" 
+              class="btn-2fa" 
+              @click="handle2FA" 
+              title="啟用/驗證雙重認證"
+            >
+              <span class="icon">⚠️</span> 
+              <span>Enable 2FA</span>
+            </button>
         </div>
         <div class="hero-stats">
           <div class="stat-box">
@@ -121,7 +167,7 @@ const handleApply = (resourceId: string) => {
           </div>
           <router-link to="/student/applications" class="stat-box clickable">
             <span class="label">My Applications</span>
-            <span class="value">4</span> 
+            <span class="value">{{ appCount }}</span> 
           </router-link>
         </div>
       </div>
@@ -622,5 +668,37 @@ const handleApply = (resourceId: string) => {
 }
 .stat-box.clickable .value {
   color: var(--primary-color); /* 保持顏色一致 */
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.btn-2fa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(7, 0, 0, 0.2); /* 半透明背景 */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.btn-2fa:hover {
+  background-color: rgba(74, 222, 128, 0.2); /* 懸停時變為微綠色 */
+  border-color: #4ade80;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-2fa .icon {
+  font-size: 1.1rem;
 }
 </style>
