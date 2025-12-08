@@ -17,6 +17,6 @@ import { ResourceReviewService } from './resource-review/resource-review.service
     ResourceConditionModule,
     TypeOrmModule.forFeature([Resource, ResourceCondition]),
     TypeOrmModule.forFeature([StudentProfile]),
-  ]
+  ],
 })
 export class ResourceModule {}

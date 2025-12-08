@@ -9,10 +9,9 @@ import rateLimit from 'express-rate-limit';
 import * as fs from 'fs';
 import * as express from 'express';
 
-
 async function bootstrap() {
   const rawOrigins = process.env.CORS_ORIGINS ?? '*';
-  const allowedOrigins = rawOrigins.split(',').map(origin => origin.trim());
+  const allowedOrigins = rawOrigins.split(',').map((origin) => origin.trim());
 
   console.log('NODE_ENV =', process.env.NODE_ENV);
   const app = await NestFactory.create(AppModule);
@@ -31,16 +30,16 @@ async function bootstrap() {
         console.error(errors);
         return new BadRequestException('Validation failed');
       },
-    })
+    }),
   );
   app.use(cookieParser());
 
   // global rate limiter
   const globalLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 min * 60 sec * 1000 ms
-    max: 1000,                // max requests per windowMs
-    standardHeaders: true,    // Return RateLimit-* headers
-    legacyHeaders: false,     // Disable X-RateLimit-* headers
+    max: 1000, // max requests per windowMs
+    standardHeaders: true, // Return RateLimit-* headers
+    legacyHeaders: false, // Disable X-RateLimit-* headers
     message: {
       statusCode: 429,
       error: 'Too Many Requests',
@@ -61,12 +60,11 @@ async function bootstrap() {
   });
   app.use(globalLimiter);
 
-
   const port = process.env.PORT ?? 3000;
   const host =
     process.env.NODE_ENV === 'local'
       ? '127.0.0.1' // local, localhost only
-      : '0.0.0.0';  // docker 
+      : '0.0.0.0'; // docker
 
   // Swagger API Docs
   const documentConfig = new DocumentBuilder()
@@ -92,8 +90,8 @@ async function bootstrap() {
     console.log('SIGINT received. Closing app...');
     await app.close();
     process.exit(0);
-  }); 
-  
+  });
+
   await app.listen(port, host);
 
   console.log(`Application is running on: ${await app.getUrl()}`);

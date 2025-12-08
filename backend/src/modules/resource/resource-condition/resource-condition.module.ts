@@ -7,7 +7,9 @@ import { ResourceConditionController } from './resource-condition.controller';
 import { Resource } from '../../../entities/resource.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ResourceCondition, StudentProfile, Resource])],
+  imports: [
+    TypeOrmModule.forFeature([ResourceCondition, StudentProfile, Resource]),
+  ],
   controllers: [ResourceConditionController],
   providers: [ResourceConditionService],
   exports: [ResourceConditionService],

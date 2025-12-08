@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { SearchStudentDto } from './dto/search-student.dto';
@@ -7,8 +6,8 @@ import { RefreshService } from './refreshData.service';
 @Injectable()
 export class CompanyService {
   constructor(
-  private readonly dataSource: DataSource,
-  private readonly refreshService: RefreshService,
+    private readonly dataSource: DataSource,
+    private readonly refreshService: RefreshService,
   ) {}
 
   async searchStudents(dto: SearchStudentDto) {
@@ -36,12 +35,11 @@ export class CompanyService {
         dto.grade ?? null,
         dto.min_current_gpa ?? null,
         dto.min_avg_gpa ?? null,
-        dto.courses_id ?? null,           
-        dto.achievements ?? null,      
+        dto.courses_id ?? null,
+        dto.achievements ?? null,
         dto.limit ?? 50,
         dto.offset ?? 0,
-      ]
+      ],
     );
   }
-
 }

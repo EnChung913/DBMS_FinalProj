@@ -19,7 +19,7 @@ export class CommonController {
 
   @ApiOperation({ summary: 'Promote a user to admin' })
   @ApiResponse({ status: 200, description: 'User promoted to admin.' })
-  @UseGuards(JwtAuthGuard)  // RolesGuard 不一定需要，因為 service 已處理
+  @UseGuards(JwtAuthGuard) // RolesGuard 不一定需要，因為 service 已處理
   @Post('set-admin/:userId')
   async setAdmin(@Req() req: any, @Param('userId') targetId: string) {
     const callerId = req.user.sub;

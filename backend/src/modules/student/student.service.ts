@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
@@ -26,10 +30,11 @@ export class StudentService {
     private readonly dataSource: DataSource,
   ) {}
 
-  
   async getInfo(userId: string) {
     const user = await this.userRepo.findOne({ where: { user_id: userId } });
-    const profile = await this.profileRepo.findOne({ where: { user_id: userId } });
+    const profile = await this.profileRepo.findOne({
+      where: { user_id: userId },
+    });
 
     return { user, profile };
   }
@@ -100,6 +105,4 @@ RETURNING *;
 
     return { success: true };
   }
-
-
 }

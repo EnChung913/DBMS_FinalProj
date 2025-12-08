@@ -13,8 +13,6 @@ import { StudentProfile } from '../../entities/student-profile.entity';
 import { DepartmentProfile } from '../../entities/department-profile.entity';
 import { CompanyProfile } from '../../entities/company-profile.entity';
 
-
-
 @Module({
   imports: [
     PassportModule,

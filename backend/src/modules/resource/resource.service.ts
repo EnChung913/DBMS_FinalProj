@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 
@@ -9,7 +13,6 @@ import { User } from '../../entities/user.entity';
 
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { ResourceConditionService } from './resource-condition/resource-condition.service';
-
 
 @Injectable()
 export class ResourceService {
@@ -37,10 +40,8 @@ export class ResourceService {
       const resource = this.resourceRepo.create({
         resource_type: dto.resource_type,
         quota: dto.quota,
-        department_supplier_id:
-          user.role === 'department' ? user.sub : null,
-        company_supplier_id:
-          user.role === 'company' ? user.sub : null,
+        department_supplier_id: user.role === 'department' ? user.sub : null,
+        company_supplier_id: user.role === 'company' ? user.sub : null,
         title: dto.title,
         deadline: dto.deadline ?? null,
         description: dto.description,
@@ -78,13 +79,17 @@ export class ResourceService {
 
       if (user.role === 'department') {
         if (resource.department_supplier_id !== user.sub) {
-          throw new BadRequestException('You do not have permission to modify this resource');
+          throw new BadRequestException(
+            'You do not have permission to modify this resource',
+          );
         }
       }
 
       if (user.role === 'company') {
         if (resource.company_supplier_id !== user.sub) {
-          throw new BadRequestException('You do not have permission to modify this resource');
+          throw new BadRequestException(
+            'You do not have permission to modify this resource',
+          );
         }
       }
 
@@ -110,7 +115,6 @@ export class ResourceService {
     }
   }
 
-  
   /**
    * 查詢使用者自己建立的資源
    */
@@ -144,7 +148,6 @@ export class ResourceService {
     throw new BadRequestException('此角色無法查詢自己發布的資源');
   }
 
-
   /**
    * 查詢單一資源（含 eligibility）
    */
@@ -158,14 +161,17 @@ export class ResourceService {
     }
 
     const conditions = await this.rcService.getConditionsByResource(resourceId);
-    const supplier_name = await this.dataSource.query(`
+    const supplier_name = await this.dataSource.query(
+      `
       SELECT 
         COALESCE(ds.real_name, cs.real_name) AS supplier_name
       FROM resource r
       LEFT JOIN "user" ds ON ds.user_id = r.department_supplier_id
       LEFT JOIN "user" cs ON cs.user_id = r.company_supplier_id
       WHERE r.resource_id = $1
-    `, [resourceId]);
+    `,
+      [resourceId],
+    );
 
     resource['supplier_name'] = supplier_name[0]?.supplier_name || null;
 
@@ -189,13 +195,17 @@ export class ResourceService {
     // 1. 權限檢查
     if (user.role === 'department') {
       if (resource.department_supplier_id !== user.sub) {
-        throw new BadRequestException('You do not have permission to modify this resource');
+        throw new BadRequestException(
+          'You do not have permission to modify this resource',
+        );
       }
     }
 
     if (user.role === 'company') {
       if (resource.company_supplier_id !== user.sub) {
-        throw new BadRequestException('You do not have permission to modify this resource');
+        throw new BadRequestException(
+          'You do not have permission to modify this resource',
+        );
       }
     }
 

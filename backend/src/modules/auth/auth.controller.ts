@@ -1,4 +1,14 @@
-import { Controller, UseGuards, Post, Get, Body, Res, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  UseGuards,
+  Post,
+  Get,
+  Body,
+  Res,
+  Req,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -6,13 +16,15 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { CheckEmailDto, Verify2FaResetDto, ResetPasswordDto } from './dto/forgot-password.dto';
+import {
+  CheckEmailDto,
+  Verify2FaResetDto,
+  ResetPasswordDto,
+} from './dto/forgot-password.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   // For testing if the access token is valid
   @Post('test')
@@ -23,22 +35,17 @@ export class AuthController {
     return this.authService.verifyAccessToken(accessToken);
   }
 
-
   @Post('register')
   @HttpCode(201)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
-  @ApiResponse({ status: 400, description: 'Email or username already exists.' })
-  async register(
-    @Body() dto: RegisterDto,
-    @Res() res: Response
-  ) {
-    const {
-      user,
-      accessToken,
-      refreshToken,
-      needProfile,
-    } = await this.authService.register(dto);
+  @ApiResponse({
+    status: 400,
+    description: 'Email or username already exists.',
+  })
+  async register(@Body() dto: RegisterDto, @Res() res: Response) {
+    const { user, accessToken, refreshToken, needProfile } =
+      await this.authService.register(dto);
 
     const isProd = process.env.NODE_ENV === 'production';
 
@@ -64,22 +71,17 @@ export class AuthController {
     });
   }
 
-
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'User logged in successfully.' })
-  @ApiResponse({ status: 400, description: 'Invalid credentials or account locked.' })
-  async login(
-    @Body() dto: LoginDto,
-    @Res() res: Response
-  ) {
-    const {
-      accessToken,
-      refreshToken,
-      user,
-      needProfile,
-    } = await this.authService.login(dto);
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid credentials or account locked.',
+  })
+  async login(@Body() dto: LoginDto, @Res() res: Response) {
+    const { accessToken, refreshToken, user, needProfile } =
+      await this.authService.login(dto);
 
     const isProd = process.env.NODE_ENV === 'production';
 
@@ -108,12 +110,15 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(200)
   @ApiOperation({ summary: 'Refresh access token' })
-  @ApiResponse({ status: 200, description: 'Access token refreshed successfully.' })
-  @ApiResponse({ status: 401, description: 'No refresh token provided or invalid refresh token.' })
-  async refresh(
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
+  @ApiResponse({
+    status: 200,
+    description: 'Access token refreshed successfully.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No refresh token provided or invalid refresh token.',
+  })
+  async refresh(@Req() req: Request, @Res() res: Response) {
     const refreshToken = req.cookies?.['refresh_token'];
     if (!refreshToken) {
       return res.status(401).json({
@@ -138,7 +143,10 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current user info' })
-  @ApiResponse({ status: 200, description: 'Current user info retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user info retrieved successfully.',
+  })
   me(@Req() req) {
     return req.user;
   }
@@ -175,7 +183,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('2fa/status')
   @ApiOperation({ summary: 'Get 2FA status for the current user' })
-  @ApiResponse({ status: 200, description: '2FA status retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: '2FA status retrieved successfully.',
+  })
   async get2FAStatus(@Req() req: any) {
     return this.authService.get2FAStatus(req.user.sub);
   }
@@ -184,7 +195,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('2fa/generate')
   @ApiOperation({ summary: 'Generate 2FA secret and QR code' })
-  @ApiResponse({ status: 200, description: '2FA secret and QR code generated successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: '2FA secret and QR code generated successfully.',
+  })
   async generate2FA(@Req() req: any) {
     return this.authService.generate2FASecret(req.user.sub);
   }
@@ -207,12 +221,15 @@ export class AuthController {
     return this.authService.unlockAccountBy2FA(req.user.sub, dto.code);
   }
 
-// Step 1: 檢查 Email 是否存在且已啟用 2FA
+  // Step 1: 檢查 Email 是否存在且已啟用 2FA
   @Post('forgot-password/check')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Step 1: Check if user exists and has 2FA enabled' })
   @ApiResponse({ status: 200, description: 'User allows 2FA reset.' })
-  @ApiResponse({ status: 404, description: 'User not found or 2FA not enabled.' })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found or 2FA not enabled.',
+  })
   async checkUserForReset(@Body() dto: CheckEmailDto) {
     return this.authService.validateUserFor2FAReset(dto.email);
   }

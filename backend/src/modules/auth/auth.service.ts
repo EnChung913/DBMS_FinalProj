@@ -49,7 +49,6 @@ export class AuthService {
     }
   }
 
-
   /* ===========================================================
      Refresh Token Hash
      ===========================================================*/
@@ -109,7 +108,7 @@ export class AuthService {
       await this.redis.set(lockKey, 'locked', 'EX', 3600); // 1 hour lock
 
       throw new UnauthorizedException(
-        'Too many failed attempts. Account locked for 1 hour. Use 2FA to unlock in 1 hour.'
+        'Too many failed attempts. Account locked for 1 hour. Use 2FA to unlock in 1 hour.',
       );
     }
     // fail 1~4
@@ -174,7 +173,7 @@ export class AuthService {
 
     const hashedPw = await bcrypt.hash(password, 10);
 
-    const user = await this.dataSource.transaction(async manager => {
+    const user = await this.dataSource.transaction(async (manager) => {
       const entity = manager.create(User, {
         username,
         email,
@@ -233,7 +232,9 @@ export class AuthService {
 
     const { password: _, ...safeUser } = user;
     const profileFilled = await this.checkProfileFilled(user);
-    console.log(`User ${user.user_id} logged in successfully at ${new Date().toISOString()}`);
+    console.log(
+      `User ${user.user_id} logged in successfully at ${new Date().toISOString()}`,
+    );
     console.log('Profile filled status:', profileFilled);
     return {
       user: safeUser,
@@ -247,14 +248,13 @@ export class AuthService {
      ===========================================================*/
   async refresh(refreshToken: string) {
     const hashedRT = this.hashRefreshToken(refreshToken);
-    
+
     // 3. 驗 refresh token
     let rtPayload: any;
     try {
       rtPayload = await this.jwtService.verifyAsync(refreshToken, {
         secret: process.env.JWT_SECRET,
       });
-
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -283,7 +283,8 @@ export class AuthService {
     await this.redis.del(`refresh:${hashedRT}`);
 
     // 8. 產生新 tokens（並在 generateTokens 內記得寫入新的 RT -> userId 到 Redis）
-    const { accessToken, refreshToken: newRT } = await this.generateTokens(user);
+    const { accessToken, refreshToken: newRT } =
+      await this.generateTokens(user);
 
     const profileFilled = await this.checkProfileFilled(user);
 
@@ -319,7 +320,7 @@ export class AuthService {
 
     // store at redis 10 minutes
     const key = `2fa:pending:${userId}`;
-    await this.redis.set(key, secret.base32, 'EX', 600);  
+    await this.redis.set(key, secret.base32, 'EX', 600);
 
     const qrDataURL = await qrcode.toDataURL(secret.otpauth_url);
 
@@ -371,7 +372,6 @@ export class AuthService {
     return { enabled: true };
   }
 
-
   // 4. 用 2FA 解鎖 Redis 鎖定
   async unlockAccountBy2FA(userId: string, code: string) {
     const user = await this.userRepo.findOne({ where: { user_id: userId } });
@@ -391,7 +391,7 @@ export class AuthService {
     return { unlocked: true };
   }
 
-/**
+  /**
    * Step 1: 驗證用戶是否有資格進行 2FA 重設
    */
   async validateUserFor2FAReset(email: string): Promise<{ message: string }> {
@@ -409,7 +409,10 @@ export class AuthService {
   /**
    * Step 2: 驗證 2FA 代碼並簽發短效期 Token
    */
-  async verify2FAAndGetResetToken(email: string, code: string): Promise<{ token: string }> {
+  async verify2FAAndGetResetToken(
+    email: string,
+    code: string,
+  ): Promise<{ token: string }> {
     const user = await this.userRepo.findOne({ where: { email } });
 
     if (!user || !user.otp_secret) {
@@ -428,14 +431,14 @@ export class AuthService {
 
     // 簽發一個專門用於重設密碼的 Token (非登入 Token)
     // 設定較短的效期 (e.g., 5-10 分鐘)
-    const payload = { 
-      sub: user.user_id, 
-      type: 'password_reset' // 重要：標記用途，防止拿去做登入或其他壞事
+    const payload = {
+      sub: user.user_id,
+      type: 'password_reset', // 重要：標記用途，防止拿去做登入或其他壞事
     };
 
-    const token = this.jwtService.sign(payload, { 
+    const token = this.jwtService.sign(payload, {
       expiresIn: '5m', // 只給 5 分鐘操作時間
-      secret: process.env.JWT_SECRET // 確保使用正確的密鑰
+      secret: process.env.JWT_SECRET, // 確保使用正確的密鑰
     });
 
     return { token };
@@ -444,12 +447,17 @@ export class AuthService {
   /**
    * Step 3: 驗證 Token 並更新密碼
    */
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
     let payload: any;
-    
+
     try {
       // 驗證 Token 合法性與效期
-      payload = this.jwtService.verify(token, { secret: process.env.JWT_SECRET });
+      payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+      });
     } catch (e) {
       throw new UnauthorizedException('Reset token is invalid or expired.');
     }
@@ -492,5 +500,4 @@ export class AuthService {
     console.log(`Refresh token session ${hashedRT} deleted.`);
     return { success: true };
   }
-
 }

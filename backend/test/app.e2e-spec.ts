@@ -11,14 +11,14 @@ describe('AppController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-    .overrideProvider('REDIS_CLIENT')
-    .useValue({
-      // mock functions you need
-      get: () => null,
-      set: () => null,
-      // publish, subscribe, etc
-    })
-    .compile();
+      .overrideProvider('REDIS_CLIENT')
+      .useValue({
+        // mock functions you need
+        get: () => null,
+        set: () => null,
+        // publish, subscribe, etc
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

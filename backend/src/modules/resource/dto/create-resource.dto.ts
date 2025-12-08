@@ -1,7 +1,14 @@
-import { IsString, IsInt, IsOptional, IsDateString, IsIn, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsDateString,
+  IsIn,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateResourceDto {
-  @IsIn(['Scholarship','Internship','Lab','Others'])
+  @IsIn(['Scholarship', 'Internship', 'Lab', 'Others'])
   resource_type: string;
 
   @IsInt()
@@ -24,5 +31,4 @@ export class CreateResourceDto {
 
   @IsString()
   description: string;
-
 }

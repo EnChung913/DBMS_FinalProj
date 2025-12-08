@@ -13,7 +13,13 @@ import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, StudentProfile, StudentGpa, Achievement, DataSource]),
+    TypeOrmModule.forFeature([
+      User,
+      StudentProfile,
+      StudentGpa,
+      Achievement,
+      DataSource,
+    ]),
     ProfileModule,
     ApplicationModule,
     AchievementModule,

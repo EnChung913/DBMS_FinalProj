@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Req, Delete, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+  Delete,
+  Patch,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -9,15 +19,13 @@ import { ApiTags, ApiResponse, ApiOperation } from '@nestjs/swagger';
 @Controller('resource')
 @ApiTags('Resource')
 export class ResourceController {
-  constructor(
-    private readonly resourceService: ResourceService,
-  ) {}
+  constructor(private readonly resourceService: ResourceService) {}
 
   /**
    * 建立資源
    * POST /resource/create
    */
-  
+
   @ApiResponse({ status: 201, description: 'Resource created successfully.' })
   @ApiOperation({ summary: 'Create a new resource' })
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,13 +35,17 @@ export class ResourceController {
     return this.resourceService.createResource(req.user, dto);
   }
 
-
   /**
    * 取得屬於自己的資源
    * GET /resource/my
    */
-  @ApiResponse({ status: 200, description: 'Successfully retrieved user resources.' })
-  @ApiOperation({ summary: 'Get resources belonging to the authenticated user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved user resources.',
+  })
+  @ApiOperation({
+    summary: 'Get resources belonging to the authenticated user',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('company', 'department')
   @Get('my')
@@ -45,7 +57,10 @@ export class ResourceController {
    * 所有資源（學生可看到）
    * GET /resource/list
    */
-  @ApiResponse({ status: 200, description: 'Successfully retrieved all resources.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved all resources.',
+  })
   @ApiOperation({ summary: 'Get all resources visible to students' })
   @UseGuards(JwtAuthGuard)
   @Get('list')
@@ -55,7 +70,10 @@ export class ResourceController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('company', 'department')
-  @ApiResponse({ status: 200, description: 'Successfully updated resource status.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully updated resource status.',
+  })
   @ApiOperation({ summary: 'Update the status of a resource' })
   @Patch(':resource_id/status')
   async updateStatus(
@@ -66,13 +84,15 @@ export class ResourceController {
     return this.resourceService.updateStatus(resourceId, newStatus, req.user);
   }
 
-
   /**
    * 取得單一資源
    * GET /resource/:id
    */
   @UseGuards(JwtAuthGuard)
-  @ApiResponse({ status: 200, description: 'Successfully retrieved a resource by ID.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved a resource by ID.',
+  })
   @ApiOperation({ summary: 'Get a resource by its ID' })
   @Get(':id')
   async getResourceById(@Param('id') resourceId: string) {

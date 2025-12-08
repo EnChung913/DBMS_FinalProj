@@ -1,4 +1,11 @@
-import { IsString, Length, IsNotEmpty, IsInt, Min, IsOptional } from 'class-validator';
+import {
+  IsString,
+  Length,
+  IsNotEmpty,
+  IsInt,
+  Min,
+  IsOptional,
+} from 'class-validator';
 
 export class UpsertStudentProfileDto {
   @IsString()

@@ -24,9 +24,8 @@ import { SchedulerModule } from './common/schedulers/scheduler.module';
   imports: [
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
-      envFilePath: process.env.NODE_ENV === 'docker'
-        ? '.env.docker'
-        : '.env.local',
+      envFilePath:
+        process.env.NODE_ENV === 'docker' ? '.env.docker' : '.env.local',
       isGlobal: true,
     }),
 

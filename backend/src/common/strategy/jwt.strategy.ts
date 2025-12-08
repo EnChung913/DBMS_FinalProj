@@ -20,7 +20,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
           // 若你想支援 Postman 等外部測試，也可以保留 header
           const authHeader = req.headers['authorization'];
-          if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          if (
+            typeof authHeader === 'string' &&
+            authHeader.startsWith('Bearer ')
+          ) {
             return authHeader.slice(7);
           }
 
@@ -34,10 +37,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    console.log("Validating JWT payload:", payload);
+    console.log('Validating JWT payload:', payload);
 
     return {
-      sub: payload.sub,   // user_id
+      sub: payload.sub, // user_id
       role: payload.role, // user.role
     };
   }

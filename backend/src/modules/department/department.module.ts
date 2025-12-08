@@ -4,10 +4,9 @@ import { DepartmentService } from './department.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Achievement } from '../../entities/achievement.entity';
 
-
 @Module({
   imports: [TypeOrmModule.forFeature([Achievement])],
   controllers: [DepartmentController],
-  providers: [DepartmentService]
+  providers: [DepartmentService],
 })
 export class DepartmentModule {}

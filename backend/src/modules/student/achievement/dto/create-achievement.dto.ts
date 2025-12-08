@@ -1,10 +1,18 @@
-import { IsOptional, IsString, IsNotEmpty, IsDateString, IsEnum, Length, IsIn } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsEnum,
+  Length,
+  IsIn,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateAchievementDto {
   @IsString()
   @IsNotEmpty()
-  @IsIn(['Competition','Research','Intern','Project','Service','Others'])
+  @IsIn(['Competition', 'Research', 'Intern', 'Project', 'Service', 'Others'])
   category: string;
 
   @IsString()
@@ -19,11 +27,11 @@ export class CreateAchievementDto {
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   start_date?: string | null;
 
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   end_date?: string | null;
 }

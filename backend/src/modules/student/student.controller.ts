@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ProfileService } from './profile/profile.service';
 import { UpsertStudentProfileDto } from './dto/upsert-student-profile.dto';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -12,18 +22,15 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 @Roles('student')
 export class StudentController {
   constructor(
-    private readonly profileService: ProfileService, 
-    private readonly studentService: StudentService
+    private readonly profileService: ProfileService,
+    private readonly studentService: StudentService,
   ) {}
-  
+
   @Put('profile')
   @ApiOperation({ summary: 'Upsert student profile' })
   @ApiResponse({ status: 200, description: 'Profile upserted successfully.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async upsertProfile(
-    @Body() dto: UpsertStudentProfileDto,
-    @Req() req: any,
-  ) {
+  async upsertProfile(@Body() dto: UpsertStudentProfileDto, @Req() req: any) {
     const userId = req.user.sub;
     console.log('Upsert profile for userId:', userId);
     return this.profileService.upsertProfile(userId, dto);
@@ -50,7 +57,10 @@ export class StudentController {
   }
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get student achievements for dashboard' })
-  @ApiResponse({ status: 200, description: 'Achievements retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Achievements retrieved successfully.',
+  })
   @Roles('student')
   @Get('achievement')
   getAchievement(@Req() req: any) {
@@ -79,7 +89,4 @@ export class StudentController {
   //   const userId = req.user.sub;
   //   return this.studentService.cancelApplication(userId, resourceId);
   // }
-
-
-
 }

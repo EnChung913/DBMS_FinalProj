@@ -22,5 +22,4 @@ export class RegisterDto {
 
   @IsIn(['student', 'department', 'company'])
   role: string;
-
 }

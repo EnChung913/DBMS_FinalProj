@@ -6,5 +6,5 @@ export class CreateApplicationDto {
 
   @IsOptional()
   @IsString()
-  note?: string;  // 可選補充描述
+  note?: string; // 可選補充描述
 }

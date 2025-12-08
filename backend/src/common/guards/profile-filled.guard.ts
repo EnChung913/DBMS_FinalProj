@@ -1,13 +1,8 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { CompanyProfile } from '../../entities/company-profile.entity';
 import { DepartmentProfile } from '../../entities/department-profile.entity';
-
 
 @Injectable()
 export class ProfileFilledGuard implements CanActivate {
@@ -15,7 +10,7 @@ export class ProfileFilledGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { user } = context.switchToHttp().getRequest();
-    console.log("Checking profile for user:", user);
+    console.log('Checking profile for user:', user);
     const mapping = {
       student: StudentProfile,
       company: CompanyProfile,
@@ -23,7 +18,8 @@ export class ProfileFilledGuard implements CanActivate {
     };
 
     const repo = mapping[user.role];
-    const count = await this.dataSource.getRepository(repo)
+    const count = await this.dataSource
+      .getRepository(repo)
       .count({ where: { user_id: user.sub } });
 
     return count > 0;

@@ -1,4 +1,11 @@
-import { Controller, Post, Param, Req, Headers, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Param,
+  Req,
+  Headers,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { EventService } from './event.service';
@@ -9,9 +16,7 @@ import { EventService } from './event.service';
 @ApiTags('Event')
 @Controller('event')
 export class EventController {
-  constructor(
-    private readonly eventService: EventService,
-  ) {}
+  constructor(private readonly eventService: EventService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post('resource/:id/click')
@@ -35,10 +40,7 @@ export class EventController {
   @Post('student/:id/view')
   @ApiOperation({ summary: 'Record a company viewing a student profile' })
   @ApiResponse({ status: 200, description: 'View recorded successfully.' })
-  async viewStudent(
-    @Param('id') sid: string,
-    @Req() req: any,
-  ) {
+  async viewStudent(@Param('id') sid: string, @Req() req: any) {
     const companyId = req.user?.sub;
     await this.eventService.trackStudentView(companyId, sid);
     return { success: true };

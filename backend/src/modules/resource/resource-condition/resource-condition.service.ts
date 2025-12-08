@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ResourceCondition } from '../../../entities/resource-condition.entity';
@@ -22,12 +26,16 @@ export class ResourceConditionService {
     dto: UpsertResourceConditionDto,
     user: any,
   ): Promise<ResourceCondition> {
-
-    const resource = await this.resourceRepo.findOne({ where: { resource_id } });
+    const resource = await this.resourceRepo.findOne({
+      where: { resource_id },
+    });
     if (!resource) throw new NotFoundException('Resource not found');
 
     // ==== 權限檢查 ====
-    if (user.role === 'department' && resource.department_supplier_id !== user.sub) {
+    if (
+      user.role === 'department' &&
+      resource.department_supplier_id !== user.sub
+    ) {
       throw new BadRequestException('No permission');
     }
     if (user.role === 'company' && resource.company_supplier_id !== user.sub) {
@@ -46,13 +54,11 @@ export class ResourceConditionService {
     return await this.rcRepo.save(condition);
   }
 
-
   async updateConditionByConditionId(
     condition_id: string,
     dto: UpsertResourceConditionDto,
     user: any,
   ): Promise<ResourceCondition> {
-
     const condition = await this.rcRepo.findOne({
       where: { condition_id },
     });
@@ -67,7 +73,10 @@ export class ResourceConditionService {
     if (!resource) throw new NotFoundException('Resource not found');
 
     // ==== 權限檢查 ====
-    if (user.role === 'department' && resource.department_supplier_id !== user.sub) {
+    if (
+      user.role === 'department' &&
+      resource.department_supplier_id !== user.sub
+    ) {
       throw new BadRequestException('No permission');
     }
     if (user.role === 'company' && resource.company_supplier_id !== user.sub) {
@@ -84,7 +93,9 @@ export class ResourceConditionService {
   }
 
   // 取得某 resource 的所有條件
-  async getConditionsByResource(resource_id: string): Promise<ResourceCondition[]> {
+  async getConditionsByResource(
+    resource_id: string,
+  ): Promise<ResourceCondition[]> {
     return this.rcRepo.find({
       where: { resource_id },
       order: { department_id: 'ASC' },

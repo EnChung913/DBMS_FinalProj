@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StudentProfile } from '../../../entities/student-profile.entity';
@@ -22,8 +26,7 @@ export class ProfileService {
       relations: ['user'],
     });
     // console.log('Fetched profile data for userId', userId, ':', data);
-    if (data)
-      data.user.password = "*********";
+    if (data) data.user.password = '*********';
     return data;
   }
 

@@ -1,5 +1,12 @@
-
-import { Controller, Put, Param, Body, UseGuards, Req, Get } from '@nestjs/common';
+import {
+  Controller,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+  Get,
+} from '@nestjs/common';
 import { ResourceReviewService } from './resource-review.service';
 import { ReviewApplicationsDto } from './dto/review-applications.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -8,7 +15,6 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { ApiTags, ApiResponse, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('Resource Review')
-
 @Controller('resource')
 export class ResourceReviewController {
   constructor(private readonly resourceReviewService: ResourceReviewService) {}
@@ -24,11 +30,18 @@ export class ResourceReviewController {
     @Req() req,
   ) {
     const reviewer = req.user;
-    return this.resourceReviewService.reviewApplications(resourceId, dto, reviewer);
+    return this.resourceReviewService.reviewApplications(
+      resourceId,
+      dto,
+      reviewer,
+    );
   }
 
-	@ApiOperation({ summary: 'Get pending applications for a resource' })
-  @ApiResponse({ status: 200, description: 'Pending applications retrieved successfully' })
+  @ApiOperation({ summary: 'Get pending applications for a resource' })
+  @ApiResponse({
+    status: 200,
+    description: 'Pending applications retrieved successfully',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('department', 'company')
   @Get(':resourceId/applications')
@@ -37,6 +50,9 @@ export class ResourceReviewController {
     @Req() req,
   ) {
     const reviewer = req.user;
-    return this.resourceReviewService.getPendingApplications(resourceId, reviewer);
+    return this.resourceReviewService.getPendingApplications(
+      resourceId,
+      reviewer,
+    );
   }
 }

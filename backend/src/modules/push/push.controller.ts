@@ -14,7 +14,10 @@ export class PushController {
   @UseGuards(JwtAuthGuard)
   @Get('resource')
   @ApiOperation({ summary: 'Push Resources to Student' })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved recommended resources list' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved recommended resources list',
+  })
   async pushResources(@Req() req: any) {
     const uid = req.user.sub;
     return this.pushService.pushResourcesForStudent(uid);
@@ -26,7 +29,10 @@ export class PushController {
   @UseGuards(JwtAuthGuard)
   @Get('student')
   @ApiOperation({ summary: 'Push Students to Company' })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved recommended students list' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved recommended students list',
+  })
   async pushStudents(@Req() req: any) {
     const cid = req.user.sub;
     return this.pushService.pushStudentsForCompany(cid);

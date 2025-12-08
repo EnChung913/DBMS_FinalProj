@@ -1,4 +1,13 @@
-import { Controller, Post, Req, Body, BadRequestException, UploadedFile, UseInterceptors, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Req,
+  Body,
+  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
+  UseGuards,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { achievementMulterOptions } from './storage.config';
 import { AchievementService } from './achievement.service';
@@ -16,8 +25,11 @@ export class AchievementController {
   constructor(private readonly achievementService: AchievementService) {}
 
   @ApiOperation({ summary: 'Create a new achievement' })
-  @ApiResponse({ status: 201, description: 'Achievement created successfully.' })
-  @UseGuards(JwtAuthGuard, RolesGuard) 
+  @ApiResponse({
+    status: 201,
+    description: 'Achievement created successfully.',
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('student')
   @Post('create')
   @UseInterceptors(FileInterceptor('file', achievementMulterOptions))
@@ -25,7 +37,7 @@ export class AchievementController {
     @Req() req,
     @Body() dto: CreateAchievementDto,
     @UploadedFile() file,
-    ) {
+  ) {
     const uploadsRoot = join(process.cwd(), 'uploads', 'achievements');
 
     if (!fs.existsSync(uploadsRoot)) {
@@ -41,8 +53,7 @@ export class AchievementController {
     return this.achievementService.createAchievement(
       req.user.sub,
       dto,
-      finalPath
+      finalPath,
     );
   }
-
 }

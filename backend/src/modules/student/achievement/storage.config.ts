@@ -1,7 +1,7 @@
 import multer from 'multer';
 
 export const achievementMulterOptions = {
-  storage: multer.memoryStorage(),   // memory
+  storage: multer.memoryStorage(), // memory
 
   limits: {
     fileSize: 20 * 1024 * 1024,

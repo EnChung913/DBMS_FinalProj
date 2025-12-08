@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, Length, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Length,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CheckEmailDto {
@@ -21,7 +27,9 @@ export class Verify2FaResetDto {
 }
 
 export class ResetPasswordDto {
-  @ApiProperty({ description: 'The temporary JWT token received from verify-2fa step' })
+  @ApiProperty({
+    description: 'The temporary JWT token received from verify-2fa step',
+  })
   @IsString()
   @IsNotEmpty()
   token: string;

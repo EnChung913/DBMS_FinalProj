@@ -6,7 +6,6 @@ import { DailySchedulerService } from './daily-scheduler.service';
 export class SchedulerController {
   constructor(private readonly maintenanceService: DailySchedulerService) {}
 
-
   @Post('update-applications')
   async updateExpired() {
     await this.maintenanceService.updateExpiredApplications();

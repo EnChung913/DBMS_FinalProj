@@ -1,4 +1,13 @@
-import { Controller, Get, Patch, Req, Res, Body , Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Req,
+  Res,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiOperation } from '@nestjs/swagger';
 import { DataSource } from 'typeorm';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,27 +17,29 @@ import type { Response } from 'express';
 import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
 import { ForbiddenException } from '@nestjs/common/exceptions/forbidden.exception';
 import { DepartmentService } from './department.service';
-import * as path from 'path'
-
+import * as path from 'path';
 
 @ApiTags('Department')
 @Controller('department')
 export class DepartmentController {
-	constructor(
-		private readonly dataSource: DataSource,
-		private readonly service: DepartmentService,
-	) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly service: DepartmentService,
+  ) {}
 
-	@UseGuards(JwtAuthGuard, RolesGuard)
-	@Roles('department')
-	@ApiOperation({ summary: 'Get pending achievements for department' })
-	@ApiResponse({ status: 202, description: 'Get pending achievements for department' })
-	@Get('achievements/list')
-	async getPendingAchievements(@Req() req) {
-		const userId = req.user.sub;
-		const baseUrl = process.env.API_BASE_URL;
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('department')
+  @ApiOperation({ summary: 'Get pending achievements for department' })
+  @ApiResponse({
+    status: 202,
+    description: 'Get pending achievements for department',
+  })
+  @Get('achievements/list')
+  async getPendingAchievements(@Req() req) {
+    const userId = req.user.sub;
+    const baseUrl = process.env.API_BASE_URL;
 
-		const sql = `
+    const sql = `
 SELECT
     a.achievement_id as id,
     a.title AS achievement_title,
@@ -48,18 +59,22 @@ WHERE sp.department_id = (
 AND a.status = 'unrecognized'
 ORDER BY a.creation_date DESC;
 `;
-		return await this.dataSource.query(sql, [userId]);
-	}
+    return await this.dataSource.query(sql, [userId]);
+  }
 
-	@UseGuards(JwtAuthGuard, RolesGuard)
-	@Roles('department')
-	@ApiOperation({ summary: 'Get achievement details' })
-	@ApiResponse({ status: 200, description: 'Achievement details retrieved successfully.' })
-	@Get('achievements/:id')
-	async getAchievementDetails(@Param('id') id: string) {
-		const baseUrl = process.env.API_BASE_URL;
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('department')
+  @ApiOperation({ summary: 'Get achievement details' })
+  @ApiResponse({
+    status: 200,
+    description: 'Achievement details retrieved successfully.',
+  })
+  @Get('achievements/:id')
+  async getAchievementDetails(@Param('id') id: string) {
+    const baseUrl = process.env.API_BASE_URL;
 
-		const achievementDetail = await this.dataSource.query(`
+    const achievementDetail = await this.dataSource.query(
+      `
 	SELECT 
 		a.*, 
 		s.real_name AS student_name,
@@ -68,57 +83,70 @@ ORDER BY a.creation_date DESC;
 	JOIN student_profile sp ON sp.user_id = a.user_id
 	JOIN "user" s ON s.user_id = a.user_id
 	WHERE achievement_id = $1
-		`, [id]);
+		`,
+      [id],
+    );
 
-		if (achievementDetail.length === 0) throw new NotFoundException('Achievement not found');
-		return achievementDetail[0];
-	}
+    if (achievementDetail.length === 0)
+      throw new NotFoundException('Achievement not found');
+    return achievementDetail[0];
+  }
 
-	@UseGuards(JwtAuthGuard, RolesGuard)
-	@Roles('department')
-	@ApiOperation({ summary: 'Get achievement attachment file' })
-	@ApiResponse({ status: 200, description: 'Achievement attachment file retrieved successfully.' })
-	@Get('achievements/:id/file')
-	async getAttachment(@Param('id') id: string, @Res() res: Response) {
-		const filePath = await this.service.getAchievementFilePath(id);
-		if (!filePath) throw new NotFoundException('File not found');
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('department')
+  @ApiOperation({ summary: 'Get achievement attachment file' })
+  @ApiResponse({
+    status: 200,
+    description: 'Achievement attachment file retrieved successfully.',
+  })
+  @Get('achievements/:id/file')
+  async getAttachment(@Param('id') id: string, @Res() res: Response) {
+    const filePath = await this.service.getAchievementFilePath(id);
+    if (!filePath) throw new NotFoundException('File not found');
 
-		return res.sendFile(filePath, { root: process.cwd() });
-	}
+    return res.sendFile(filePath, { root: process.cwd() });
+  }
 
-	@UseGuards(JwtAuthGuard, RolesGuard)
-	@Roles('department')
-	@ApiOperation({ summary: 'Download achievement attachment file' })
-	@ApiResponse({ status: 200, description: 'Achievement attachment file downloaded successfully.' })
-	@Get('achievements/:id/download')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('department')
+  @ApiOperation({ summary: 'Download achievement attachment file' })
+  @ApiResponse({
+    status: 200,
+    description: 'Achievement attachment file downloaded successfully.',
+  })
+  @Get('achievements/:id/download')
+  async downloadAttachment(@Param('id') id: string, @Res() res: Response) {
+    const filePath = await this.service.getAchievementFilePath(id);
+    if (!filePath) throw new NotFoundException('File not found');
 
-	async downloadAttachment(@Param('id') id: string, @Res() res: Response) {
-		const filePath = await this.service.getAchievementFilePath(id)
-		if (!filePath) throw new NotFoundException('File not found')
+    const absPath = path.resolve(filePath);
+    const fileName = path.basename(absPath);
 
-		const absPath = path.resolve(filePath)
-		const fileName = path.basename(absPath)
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.sendFile(absPath);
+  }
 
-		res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
-		res.sendFile(absPath)
-	}
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('department')
+  @Patch('achievements/:id/review')
+  async reviewAchievement(
+    @Req() req,
+    @Param('id') id: string,
+    @Body('approve') approve: boolean,
+  ) {
+    const userId = req.user.sub;
+    const reviewerId = userId;
 
-	@UseGuards(JwtAuthGuard, RolesGuard)
-	@Roles('department')
-	@Patch('achievements/:id/review')
-	async reviewAchievement(
-		@Req() req,
-		@Param('id') id: string,
-		@Body('approve') approve: boolean
-	) {
-		const userId = req.user.sub;
-		const reviewerId = userId;
+    // 確認成就是否屬於該系
+    const ok = await this.service.checkAchievementBelongsToDepartment(
+      id,
+      reviewerId,
+    );
+    if (!ok)
+      throw new ForbiddenException(
+        'This achievement does not belong to your department.',
+      );
 
-		// 確認成就是否屬於該系
-		const ok = await this.service.checkAchievementBelongsToDepartment(id, reviewerId);
-		if (!ok) throw new ForbiddenException('This achievement does not belong to your department.');
-
-		return this.service.reviewAchievement(id, approve);
-	}
-
+    return this.service.reviewAchievement(id, approve);
+  }
 }

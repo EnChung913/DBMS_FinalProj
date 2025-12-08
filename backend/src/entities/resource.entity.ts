@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 import { ResourceCondition } from './resource-condition.entity';
 import { User } from './user.entity';
 import { JoinColumn } from 'typeorm/decorator/relations/JoinColumn';
@@ -44,8 +50,8 @@ export class Resource {
   is_deleted: boolean;
 
   @OneToMany(() => ResourceCondition, (rc) => rc.resource, {
-    cascade: true,  // 自動新增/更新條件
-    eager: true,    // 查 resource 時自動帶出 conditions
+    cascade: true, // 自動新增/更新條件
+    eager: true, // 查 resource 時自動帶出 conditions
   })
   conditions: ResourceCondition[];
 }
