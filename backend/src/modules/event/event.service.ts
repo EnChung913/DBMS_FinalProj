@@ -23,6 +23,7 @@ export class EventService {
     p.zincrby(`user:${uid}:resource:clicks`, 1, rid);
 
     // 2) 資源 -> 使用者 (item-based CF)
+    // score 用 timestamp，之後用 zrevrange 看最近的 viewer 也合理
     p.zadd(`resource:${rid}:viewed_by`, now, uid);
 
     // 3) 使用者偏好 (content-based CF)
@@ -47,10 +48,10 @@ export class EventService {
     const p = this.redis.pipeline();
 
     // 公司 -> 學生
-    p.zincrby(`company:${companyId}:view_students`, 1, studentId);
+    p.zincrby(`company:${companyId}:student:clicks`, 1, studentId);
 
     // 學生 -> 公司
-    p.zadd(`student:${studentId}:viewed_by`, now, companyId);
+    p.zadd(`student:${studentId}:viewed_by_company`, now, companyId);
 
     // 全局熱門學生
     p.zincrby(`student:global:views`, 1, studentId);

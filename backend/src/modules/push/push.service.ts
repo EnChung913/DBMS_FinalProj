@@ -30,6 +30,25 @@ export class PushService {
   // ==========================================================
   // 1. 推薦資源給學生
   // ==========================================================
+  private isEligibleForResource(
+    resource: Resource,
+    profile: StudentProfile,
+    gpaStats: { avg: number; current: number } | null
+  ): boolean {
+    const conditions = resource.conditions || [];
+
+    // 沒有條件 => 視為所有人都可以申請
+    if (!conditions.length) return true;
+
+    // 只要有一條 condition 通過，就算符合
+    for (const cond of conditions) {
+      if (this.evaluateCondition(cond, profile, gpaStats)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async pushResourcesForStudent(uid: string): Promise<{ resource: Resource; score: number }[]> {
     // 1. 取得學生基本資料
     const profile = await this.studentRepo.findOne({ where: { user_id: uid } });
@@ -66,7 +85,7 @@ export class PushService {
     }
 
     results.sort((a, b) => b.score - a.score);
-    return results.slice(0, 20);
+    return results.slice(0, 5);
   }
 
   // ==========================================================
@@ -129,7 +148,7 @@ export class PushService {
     });
 
     results.sort((a, b) => b.score - a.score);
-    return results.slice(0, 10);
+    return results.slice(0, 5);
   }
 
   // ==========================================================

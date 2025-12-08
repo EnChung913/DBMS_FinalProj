@@ -1,19 +1,19 @@
-import { Controller, Post, Param, Req, Headers } from '@nestjs/common';
-import Redis from 'ioredis';
-import { Inject } from '@nestjs/common';
+import { Controller, Post, Param, Req, Headers, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { EventService } from './event.service';
+// 若有角色控管，可一起加：
+// import { RolesGuard } from '../../common/guards/roles.guard';
+// import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Event')
 @Controller('event')
 export class EventController {
   constructor(
-    @Inject('REDIS_CLIENT')
-    private readonly redis: Redis,
+    private readonly eventService: EventService,
   ) {}
 
-	@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('resource/:id/click')
   @ApiOperation({ summary: 'Record a click on a resource by a user' })
   @ApiResponse({ status: 200, description: 'Click recorded successfully.' })
@@ -23,56 +23,24 @@ export class EventController {
     @Headers('x-resource-type') resourceType?: string,
   ) {
     const uid = req.user?.sub;
-		console.log('Resource click by user:', uid, 'on resource:', rid, 'of type:', resourceType);
-    if (!uid) return { success: false }; // 不阻塞未登入用戶
-
-    const now = Date.now();
-
-    const p = this.redis.pipeline();
-
-    // 1) 使用者 → 資源
-    p.zincrby(`user:${uid}:resource:clicks`, 1, rid);
-
-    // 2) 資源 → 使用者（item-based CF）
-    p.zadd(`resource:${rid}:viewed_by`, now, uid);
-
-    // 3) 使用者偏好（content-based CF）
-    if (resourceType) {
-      p.zincrby(`user:${uid}:type:clicks`, 1, resourceType);
-    }
-
-    // 4) 全局熱門資源（global CF）
-    p.zincrby(`resource:global:clicks`, 1, rid);
-
-    await p.exec();
-
+    // 有 JwtAuthGuard，這裡 uid 一定存在，除非 token 無效、已被攔掉
+    await this.eventService.trackResourceClick(uid, rid, resourceType);
     return { success: true };
   }
 
-	@Post('student/:id/view')
-	@ApiOperation({ summary: 'Record a company viewing a student profile' })
-	@ApiResponse({ status: 200, description: 'View recorded successfully.' })
-	async viewStudent(
-		@Param('id') sid: string,
-		@Req() req: any,
-	) {
-		const viewerId = req.user?.sub; // 公司 ID
-		if (!viewerId) return { success: false };
-
-		const now = Date.now();
-		const p = this.redis.pipeline();
-
-		// 公司 → 學生
-		p.zincrby(`company:${viewerId}:view_students`, 1, sid);
-
-		// 學生 → 公司
-		p.zadd(`student:${sid}:viewed_by`, now, viewerId);
-
-		// 全局熱門學生（可用於 Dashboard）
-		p.zincrby(`student:global:views`, 1, sid);
-
-		await p.exec();
-		return { success: true };
-	}
-
+  @UseGuards(JwtAuthGuard)
+  // 有角色系統的話建議加上：
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles('company')
+  @Post('student/:id/view')
+  @ApiOperation({ summary: 'Record a company viewing a student profile' })
+  @ApiResponse({ status: 200, description: 'View recorded successfully.' })
+  async viewStudent(
+    @Param('id') sid: string,
+    @Req() req: any,
+  ) {
+    const companyId = req.user?.sub;
+    await this.eventService.trackStudentView(companyId, sid);
+    return { success: true };
+  }
 }

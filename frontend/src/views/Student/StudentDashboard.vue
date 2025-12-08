@@ -5,6 +5,7 @@ import apiClient from '@/api/axios';
 import type { Resource, GPA, Achievement } from '@/types';
 import { useStudentStore } from '@/stores/student';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 
@@ -16,8 +17,8 @@ const studentInfo = ref({ name: '', id: '', dept: '', grade: 0 });
 const gpaRecords = ref<GPA[]>([]);
 const achievements = ref<Achievement[]>([]);
 const recommendedResources = ref<Resource[]>([]);
+const authStore = useAuthStore();
 
-// TODO: bug
 const appCount = ref(0);
 
 onMounted(async () => {
@@ -27,7 +28,10 @@ onMounted(async () => {
   appCount.value = resAppCount.data;
 
   console.log('studentStore initialized:', studentStore);
-
+  
+  const tfa_status = await apiClient.get('/api/auth/2fa/status');
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
+  
   try {
     // Profile
     if (!studentStore.hasProfile) {
@@ -132,10 +136,8 @@ const handleApply = (resourceId: string) => {
 };
 
 const handle2FA = () => {
-  // 這裡假設你有一個路由是 '/student/2fa' 或者是開啟一個 Modal
   console.log('Navigating to 2FA verification...');
-  router.push('/student/2fa'); 
-  // 或者如果是彈窗： show2FAModal.value = true;
+  router.push('/2fa'); 
 };
 
 </script>
@@ -148,10 +150,15 @@ const handle2FA = () => {
         <div class="user-welcome">
           <span class="sub-greeting">{{ studentInfo.dept }} | {{ studentInfo.id }}</span>
           <h1>{{ studentInfo.name }}</h1>
-          <button class="btn-2fa" @click="handle2FA" title="啟用/驗證雙重認證">
-              <span class="icon">🛡️</span> 
-              <span>2FA Verify</span>
-          </button>
+            <button 
+              v-if="!authStore.user?.is_2fa_enabled" 
+              class="btn-2fa" 
+              @click="handle2FA" 
+              title="啟用/驗證雙重認證"
+            >
+              <span class="icon">⚠️</span> 
+              <span>Enable 2FA</span>
+            </button>
         </div>
         <div class="hero-stats">
           <div class="stat-box">

@@ -158,6 +158,16 @@ export class ResourceService {
     }
 
     const conditions = await this.rcService.getConditionsByResource(resourceId);
+    const supplier_name = await this.dataSource.query(`
+      SELECT 
+        COALESCE(ds.real_name, cs.real_name) AS supplier_name
+      FROM resource r
+      LEFT JOIN "user" ds ON ds.user_id = r.department_supplier_id
+      LEFT JOIN "user" cs ON cs.user_id = r.company_supplier_id
+      WHERE r.resource_id = $1
+    `, [resourceId]);
+
+    resource['supplier_name'] = supplier_name[0]?.supplier_name || null;
 
     return {
       ...resource,

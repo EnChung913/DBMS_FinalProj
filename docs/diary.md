@@ -301,3 +301,8 @@ for daily maintenance
 2. update application status, if the deadline is passed, the status would be changee from 'submitted' to 'pending', and students can't cancel the application anymore.
 
 I finished the review application function for company and department. Now they can review the applications submitted by students. Next step would be the scheduled tasks module.
+
+[2025-12-8 16:15]
+Continue to implement the apis for frontend.
+I created a 2fa page. Now student and company can enable 2FA in their dashboard. I've finish the forgot password function with 2FA. Next step I want to deploy the account application of company or department.
+

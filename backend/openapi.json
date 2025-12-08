@@ -137,6 +137,21 @@
         ]
       }
     },
+    "/api/auth/2fa/status": {
+      "get": {
+        "operationId": "AuthController_get2FAStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "2FA status retrieved successfully."
+          }
+        },
+        "summary": "Get 2FA status for the current user",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
     "/api/auth/2fa/generate": {
       "post": {
         "operationId": "AuthController_generate2FA",
@@ -177,6 +192,84 @@
           }
         },
         "summary": "Unlock account using 2FA",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/forgot-password/check": {
+      "post": {
+        "operationId": "AuthController_checkUserForReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User allows 2FA reset."
+          },
+          "404": {
+            "description": "User not found or 2FA not enabled."
+          }
+        },
+        "summary": "Step 1: Check if user exists and has 2FA enabled",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/forgot-password/verify-2fa": {
+      "post": {
+        "operationId": "AuthController_verify2FAForReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Verify2FaResetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns a temporary reset token."
+          }
+        },
+        "summary": "Step 2: Verify TOTP and issue reset token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/forgot-password/reset": {
+      "post": {
+        "operationId": "AuthController_resetPasswordWithToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully."
+          }
+        },
+        "summary": "Step 3: Reset password using the token",
         "tags": [
           "Authentication"
         ]
@@ -1000,6 +1093,53 @@
       "LoginDto": {
         "type": "object",
         "properties": {}
+      },
+      "CheckEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "student@ntu.edu.tw"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "Verify2FaResetDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "student@ntu.edu.tw"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "6-digit TOTP code"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The temporary JWT token received from verify-2fa step"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "NewStrongPassword123!"
+          }
+        },
+        "required": [
+          "token",
+          "newPassword"
+        ]
       },
       "UpsertStudentProfileDto": {
         "type": "object",
