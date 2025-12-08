@@ -1,82 +1,82 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import apiClient from '@/api/axios';
-import type { AppStatus } from '@/types';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '@/api/axios'
+import type { AppStatus } from '@/types'
 
-const router = useRouter();
-const isLoading = ref(false);
+const router = useRouter()
+const isLoading = ref(false)
 
 // 定義申請紀錄的介面
 interface MyApplication {
-  application_id: string;
-  resource_id: string;
-  resource_title: string;
-  supplier_name: string;
-  apply_date: string;
-  status: AppStatus;
+  application_id: string
+  resource_id: string
+  resource_title: string
+  supplier_name: string
+  apply_date: string
+  status: AppStatus
 }
 
-const applications = ref<MyApplication[]>([]);
+const applications = ref<MyApplication[]>([])
 
 onMounted(async () => {
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const res = await apiClient.get('/api/student/application/my');
+    const res = await apiClient.get('/api/student/application/my')
     applications.value = res.data.map((app: any) => ({
-          ...app,
-          application_id: `${app.user_id}-${app.resource_id}` 
-        })) as MyApplication[];
-    console.log(applications.value);
-    await new Promise(r => setTimeout(r, 300));
+      ...app,
+      application_id: `${app.user_id}-${app.resource_id}`,
+    })) as MyApplication[]
+    console.log(applications.value)
+    await new Promise((r) => setTimeout(r, 300))
   } catch (error) {
-    console.error(error);
+    console.error(error)
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
 const getStatusLabel = (status: string) => {
   const map: Record<string, string> = {
     submitted: 'Submitted',
     under_review: 'Under Review',
     approved: 'Approved',
-    rejected: 'Rejected'
-  };
-  return map[status] || status;
-};
+    rejected: 'Rejected',
+  }
+  return map[status] || status
+}
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case 'approved': return 'status-green';
-    case 'rejected': return 'status-red';
-    case 'under_review': return 'status-blue';
-    default: return 'status-gray'; // submitted
+    case 'approved':
+      return 'status-green'
+    case 'rejected':
+      return 'status-red'
+    case 'under_review':
+      return 'status-blue'
+    default:
+      return 'status-gray' // submitted
   }
-};
+}
 
 const handleCancel = async (resourceId: string) => {
-  if (!confirm('Are you sure you want to cancel this application?')) return;
-  console.log('Cancelling application:', resourceId);
+  if (!confirm('Are you sure you want to cancel this application?')) return
+  console.log('Cancelling application:', resourceId)
   try {
-    await apiClient.delete(`/api/student/application/${resourceId}`);
+    await apiClient.delete(`/api/student/application/${resourceId}`)
 
-    applications.value = applications.value.filter(
-      a => a.resource_id !== resourceId
-    );
+    applications.value = applications.value.filter((a) => a.resource_id !== resourceId)
   } catch (err) {
-    console.error(err);
-    alert('Failed to cancel application.');
+    console.error(err)
+    alert('Failed to cancel application.')
   }
-};
+}
 
-
-const goBack = () => router.back();
+const goBack = () => router.back()
 </script>
 
 <template>
   <div class="gallery-container">
-    
     <div class="gallery-header">
       <div class="title-row">
         <button class="btn-back" @click="goBack">⮐ Back</button>
@@ -96,9 +96,7 @@ const goBack = () => router.back();
       </div>
 
       <div v-for="app in applications" :key="app.application_id" class="gallery-card">
-        
         <div class="card-body">
-          
           <div class="card-top-row">
             <span :class="['status-badge', getStatusClass(app.status)]">
               {{ getStatusLabel(app.status) }}
@@ -107,28 +105,27 @@ const goBack = () => router.back();
           </div>
 
           <h3 class="card-title">{{ app.resource_title }}</h3>
-          
+
           <div class="card-meta">
             <span class="supplier">🏢 {{ app.supplier_name }}</span>
           </div>
-          
+
           <div class="card-footer">
-             <button 
-               v-if="app.status === 'submitted'" 
-               class="btn-cancel" 
-               @click="handleCancel(app.resource_id)"
-             >
-               Cancel Application
-             </button>
-             
-             <button v-else class="btn-disabled" disabled>
-               {{ app.status === 'approved' ? 'Success 🎉' : 'Closed' }}
-             </button>
+            <button
+              v-if="app.status === 'submitted'"
+              class="btn-cancel"
+              @click="handleCancel(app.resource_id)"
+            >
+              Cancel Application
+            </button>
+
+            <button v-else class="btn-disabled" disabled>
+              {{ app.status === 'approved' ? 'Success 🎉' : 'Closed' }}
+            </button>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -167,7 +164,10 @@ const goBack = () => router.back();
   cursor: pointer;
   transition: transform 0.2s;
 }
-.btn-back:hover { transform: translateX(-5px); color: var(--primary-color); }
+.btn-back:hover {
+  transform: translateX(-5px);
+  color: var(--primary-color);
+}
 
 h1 {
   font-size: 2.2rem;
@@ -179,30 +179,34 @@ h1 {
 /* --- Gallery Grid (強制三欄) --- */
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); 
+  grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   row-gap: 80px;
   padding-bottom: 60px;
 }
 
 @media (max-width: 1024px) {
-  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
-  .gallery-grid { grid-template-columns: 1fr; }
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- Gallery Card (一致風格) --- */
 .gallery-card {
   background: #fff;
   border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03); 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid rgba(0,0,0,0.02);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   padding: 25px;
   position: relative;
   overflow: hidden;
@@ -222,7 +226,7 @@ h1 {
   left: 0;
   width: 100%;
   height: 5px;
-  background: linear-gradient(90deg, #9FB1BC, #7D9D9C);
+  background: linear-gradient(90deg, #9fb1bc, #7d9d9c);
   opacity: 0.8;
 }
 
@@ -249,10 +253,22 @@ h1 {
 }
 
 /* 狀態顏色 */
-.status-gray { background: #F0F2F5; color: #7D8CA3; }
-.status-blue { background: #E3F2FD; color: #42A5F5; }
-.status-green { background: #E8F5E9; color: #66BB6A; }
-.status-red { background: #FFEBEE; color: #EF5350; }
+.status-gray {
+  background: #f0f2f5;
+  color: #7d8ca3;
+}
+.status-blue {
+  background: #e3f2fd;
+  color: #42a5f5;
+}
+.status-green {
+  background: #e8f5e9;
+  color: #66bb6a;
+}
+.status-red {
+  background: #ffebee;
+  color: #ef5350;
+}
 
 .date-badge {
   font-size: 0.8rem;
@@ -283,37 +299,62 @@ h1 {
   width: 100%;
   padding: 12px;
   background: transparent;
-  border: 1px solid #FFCDD2;
-  color: #EF5350;
+  border: 1px solid #ffcdd2;
+  color: #ef5350;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 .btn-cancel:hover {
-  background: #FFEBEE;
+  background: #ffebee;
 }
 
 .btn-disabled {
   width: 100%;
   padding: 12px;
-  background: #F5F5F5;
+  background: #f5f5f5;
   border: none;
-  color: #BBB;
+  color: #bbb;
   border-radius: 8px;
   font-weight: 600;
   cursor: default;
 }
 
 /* Loading & Empty */
-.loading-area { text-align: center; padding: 60px; color: var(--secondary-color); }
-.spinner {
-  width: 40px; height: 40px;
-  border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color);
-  border-radius: 50%; margin: 0 auto 15px; animation: spin 1s linear infinite;
+.loading-area {
+  text-align: center;
+  padding: 60px;
+  color: var(--secondary-color);
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 
-.empty-state { text-align: center; color: #aaa; padding: 50px; grid-column: 1 / -1; }
-.link-explore { color: var(--primary-color); font-weight: 600; text-decoration: none; margin-left: 5px; }
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 50px;
+  grid-column: 1 / -1;
+}
+.link-explore {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 5px;
+}
 </style>

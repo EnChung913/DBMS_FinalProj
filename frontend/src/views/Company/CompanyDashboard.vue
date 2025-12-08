@@ -1,110 +1,128 @@
 <!-- src/views/company/Dashboard.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import apiClient from '@/api/axios';
-import { useAuthStore } from '@/stores/auth';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue'
+import apiClient from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
+const router = useRouter()
 
 // 定義資料介面
 interface resource {
-  resource_id: string;
-  title: string;
-  resource_type: string;       // e.g. Intern, Full-time
-  quota: number;
-  applied: number;
-  status: 'Open' | 'Closed' | 'Draft';
-  publish_date: string;
+  resource_id: string
+  title: string
+  resource_type: string // e.g. Intern, Full-time
+  quota: number
+  applied: number
+  status: 'Open' | 'Closed' | 'Draft'
+  publish_date: string
 }
 
 interface Applicant {
-  user_id: string;
-  name: string;
-  resource: string;
-  gpa: number;
-  date: string;
-  status: 'submitted' | 'reviewed' | 'interview';
+  user_id: string
+  name: string
+  resource: string
+  gpa: number
+  date: string
+  status: 'submitted' | 'reviewed' | 'interview'
 }
 
-const resources = ref<resource[]>([]);
-const applicants = ref<Applicant[]>([]);
-const showAnimation = ref(false);
-const authStore = useAuthStore();
-const name = authStore.user?.real_name || 'Company';
-
+const resources = ref<resource[]>([])
+const applicants = ref<Applicant[]>([])
+const showAnimation = ref(false)
+const authStore = useAuthStore()
+const name = authStore.user?.real_name || 'Company'
 
 onMounted(async () => {
-  setTimeout(() => showAnimation.value = true, 100);
-  const tfa_status = await apiClient.get('/api/auth/2fa/status');
-  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
+  setTimeout(() => (showAnimation.value = true), 100)
+  const tfa_status = await apiClient.get('/api/auth/2fa/status')
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled)
 
   try {
     // ----------------------------------------------------------------
     // TODO: 連接後端 API (Company Dashboard)
     // ----------------------------------------------------------------
-    
+
     // 1. [GET] /api/company/resources
-    resources.value = (await apiClient.get('api/resource/my')).data;
-    console.log(resources.value);
+    resources.value = (await apiClient.get('api/resource/my')).data
+    console.log(resources.value)
     // 2. [GET] /api/company/applications
     // applicants.value = (await apiClient.get('/company/applications')).data;
 
-
-
     applicants.value = [
-      { user_id: 'u1', name: 'Alex Chen', resource: 'Frontend Engineer Intern', gpa: 3.9, date: '2025-02-22', status: 'submitted' },
-      { user_id: 'u2', name: 'Betty Wu', resource: 'Frontend Engineer Intern', gpa: 4.1, date: '2025-02-21', status: 'reviewed' },
-      { user_id: 'u3', name: 'Charlie Lin', resource: 'Backend Developer', gpa: 3.5, date: '2025-02-20', status: 'submitted' }
-    ];
-
-  } catch (error) { console.error(error); }
-});
+      {
+        user_id: 'u1',
+        name: 'Alex Chen',
+        resource: 'Frontend Engineer Intern',
+        gpa: 3.9,
+        date: '2025-02-22',
+        status: 'submitted',
+      },
+      {
+        user_id: 'u2',
+        name: 'Betty Wu',
+        resource: 'Frontend Engineer Intern',
+        gpa: 4.1,
+        date: '2025-02-21',
+        status: 'reviewed',
+      },
+      {
+        user_id: 'u3',
+        name: 'Charlie Lin',
+        resource: 'Backend Developer',
+        gpa: 3.5,
+        date: '2025-02-20',
+        status: 'submitted',
+      },
+    ]
+  } catch (error) {
+    console.error(error)
+  }
+})
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case 'Open': return 'status-green';
-    case 'Closed': return 'status-gray';
-    default: return 'status-yellow'; // Draft
+    case 'Open':
+      return 'status-green'
+    case 'Closed':
+      return 'status-gray'
+    default:
+      return 'status-yellow' // Draft
   }
-};
+}
 
 const handle2FA = () => {
-  console.log('Navigating to 2FA verification...');
-  router.push('/2fa'); 
-};
-
-
+  console.log('Navigating to 2FA verification...')
+  router.push('/2fa')
+}
 </script>
 
 <template>
   <div class="dashboard-wrapper">
-    
     <header class="hero-header">
       <div class="hero-content">
         <div class="header-text">
           <span class="sub-greeting">Company dashboard</span>
           <h1>{{ name }}</h1>
-          <button 
-            v-if="!authStore.user?.is_2fa_enabled" 
-            class="btn-2fa" 
-            @click="handle2FA" 
+          <button
+            v-if="!authStore.user?.is_2fa_enabled"
+            class="btn-2fa"
+            @click="handle2FA"
             title="啟用/驗證雙重認證"
           >
-            <span class="icon">⚠️</span> 
+            <span class="icon">⚠️</span>
             <span>Enable 2FA</span>
           </button>
         </div>
         <div class="header-actions">
-           <button class="btn-primary-large" @click="$router.push('/resource/create')">
-             <span class="icon">+</span> Publish Resource
-           </button>
+          <button class="btn-primary-large" @click="$router.push('/resource/create')">
+            <span class="icon">+</span> Publish Resource
+          </button>
         </div>
       </div>
     </header>
 
     <div class="main-grid">
-
       <aside class="left-panel">
         <div class="dashboard-card full-height">
           <div class="card-head">
@@ -114,7 +132,7 @@ const handle2FA = () => {
           <ul class="applicant-list">
             <li v-for="app in applicants" :key="app.user_id" class="applicant-item">
               <div class="avatar">{{ app.name.charAt(0) }}</div>
-              
+
               <div class="applicant-info">
                 <div class="info-top">
                   <span class="name">{{ app.name }}</span>
@@ -129,7 +147,7 @@ const handle2FA = () => {
           </ul>
         </div>
       </aside>
-      
+
       <section class="right-panel">
         <div class="section-header-row">
           <h3>Resource Overview</h3>
@@ -142,7 +160,6 @@ const handle2FA = () => {
 
         <div class="resources-container">
           <div v-for="resource in resources" :key="resource.resource_id" class="resource-card">
-            
             <div class="card-header">
               <div class="resource-meta">
                 <span :class="['status-dot', getStatusClass(resource.status)]"></span>
@@ -152,7 +169,7 @@ const handle2FA = () => {
             </div>
 
             <h3 class="resource-title">{{ resource.title }}</h3>
-            
+
             <div class="resource-stats-row">
               <div class="stat-box">
                 <span class="label">Quota</span>
@@ -167,8 +184,8 @@ const handle2FA = () => {
 
             <div class="card-footer">
               <span class="date">Published on: {{ resource.publish_date }}</span>
-              <button 
-                class="btn-outline-sm" 
+              <button
+                class="btn-outline-sm"
                 @click="$router.push(`/resource/edit/${resource.resource_id}`)"
               >
                 Edit
@@ -177,7 +194,6 @@ const handle2FA = () => {
           </div>
         </div>
       </section>
-
     </div>
   </div>
 </template>
@@ -196,17 +212,23 @@ const handle2FA = () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Hero Header --- */
 .hero-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #F7F5F2 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f7f5f2 0%, #ffffff 100%);
   padding: 30px 40px;
   border-radius: 24px;
-  border: 1px solid rgba(255,255,255,0.6);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 10px 30px rgba(125, 157, 156, 0.05); /* 極淡的莫蘭迪陰影 */
 }
 
@@ -256,12 +278,14 @@ const handle2FA = () => {
 /* --- Main Grid --- */
 .main-grid {
   display: grid;
-  grid-template-columns: 4fr 3fr; 
+  grid-template-columns: 4fr 3fr;
   gap: 30px;
 }
 
 @media (max-width: 1024px) {
-  .main-grid { grid-template-columns: 1fr; }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- Section Title --- */
@@ -272,9 +296,13 @@ const handle2FA = () => {
   gap: 10px;
   margin-bottom: 20px;
 }
-.section-title h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
+.section-title h3 {
+  margin: 0;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+}
 .badge-count {
-  background: #EBEBE8;
+  background: #ebebe8;
   color: var(--secondary-color);
   padding: 2px 10px;
   border-radius: 10px;
@@ -294,8 +322,8 @@ const handle2FA = () => {
   background: #fff;
   border-radius: 20px;
   padding: 20px;
-  border: 1px solid rgba(0,0,0,0.02);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   transition: transform 0.2s;
   display: flex;
   flex-direction: column;
@@ -317,17 +345,46 @@ const handle2FA = () => {
   align-items: center;
   margin-bottom: 15px;
 }
-.section-header-row h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
-.resource-meta { display: flex; align-items: center; gap: 8px; }
-.resource-type { font-size: 0.75rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 4px; }
+.section-header-row h3 {
+  margin: 0;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+}
+.resource-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.resource-type {
+  font-size: 0.75rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
 
-.status-dot { width: 8px; height: 8px; border-radius: 50%; }
-.status-green { background: #4CAF50; box-shadow: 0 0 0 2px rgba(76,175,80,0.2); }
-.status-gray { background: #ccc; }
-.status-yellow { background: #FFC107; }
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.status-green {
+  background: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+.status-gray {
+  background: #ccc;
+}
+.status-yellow {
+  background: #ffc107;
+}
 
 .btn-icon-more {
-  background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: #aaa;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #aaa;
 }
 
 .resource-title {
@@ -343,17 +400,35 @@ const handle2FA = () => {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background: #F9FAFB;
+  background: #f9fafb;
   padding: 15px;
   border-radius: 12px;
   margin-bottom: 15px;
 }
 
-.stat-box { display: flex; flex-direction: column; align-items: center; }
-.stat-box .label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; }
-.stat-box .value { font-size: 1.25rem; font-weight: 700; color: var(--text-color); }
-.stat-box .highlight { color: var(--primary-color); }
-.divider { width: 1px; height: 30px; background: #e0e0e0; }
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stat-box .label {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+.stat-box .value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.stat-box .highlight {
+  color: var(--primary-color);
+}
+.divider {
+  width: 1px;
+  height: 30px;
+  background: #e0e0e0;
+}
 
 .card-footer {
   margin-top: auto;
@@ -373,15 +448,17 @@ const handle2FA = () => {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-outline-sm:hover { background: var(--primary-color); color: white; }
-
+.btn-outline-sm:hover {
+  background: var(--primary-color);
+  color: white;
+}
 
 /* --- Applicant Sidebar --- */
 .dashboard-card {
   background: #fff;
   border-radius: 20px;
   padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   height: 100%;
 }
 
@@ -393,7 +470,11 @@ const handle2FA = () => {
   padding-bottom: 15px;
   border-bottom: 1px solid #f5f5f5;
 }
-.card-head h3 { margin: 0; font-size: 1.2rem; color: var(--text-color); }
+.card-head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-color);
+}
 
 .btn-view-all {
   margin-left: auto;
@@ -413,20 +494,20 @@ const handle2FA = () => {
 }
 .btn-view-all:hover {
   background: rgba(125, 157, 156, 0.1);
-  transform: translateX(3px); 
+  transform: translateX(3px);
 }
 
 .arrow-icon {
-  font-size: 1.5rem;      
-  line-height: 0.8;       
-  display: flex;          
+  font-size: 1.5rem;
+  line-height: 0.8;
+  display: flex;
   align-items: center;
-  margin-top: -2px;      
+  margin-top: -2px;
 }
 
 .btn-text {
   display: inline-block;
-  padding-top: 2px; 
+  padding-top: 2px;
 }
 
 .applicant-list {
@@ -441,7 +522,9 @@ const handle2FA = () => {
   padding: 15px 0;
   border-bottom: 1px solid #f9f9f9;
 }
-.applicant-item:last-child { border-bottom: none; }
+.applicant-item:last-child {
+  border-bottom: none;
+}
 
 .avatar {
   width: 42px;
@@ -463,15 +546,35 @@ const handle2FA = () => {
   flex-direction: column;
 }
 
-.info-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.name { font-weight: 600; font-size: 0.95rem; color: var(--text-color); }
-.gpa-badge { 
-  font-size: 0.7rem; background: #FFF3E0; color: #FF9800; 
-  padding: 2px 6px; border-radius: 4px; font-weight: 600;
+.info-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+.gpa-badge {
+  font-size: 0.7rem;
+  background: #fff3e0;
+  color: #ff9800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
 }
 
-.resource-target { font-size: 0.8rem; color: #666; margin-bottom: 2px; }
-.apply-date { font-size: 0.75rem; color: #bbb; }
+.resource-target {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 2px;
+}
+.apply-date {
+  font-size: 0.75rem;
+  color: #bbb;
+}
 
 .btn-review {
   background: transparent;

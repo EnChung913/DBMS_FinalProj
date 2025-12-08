@@ -1,11 +1,11 @@
 :root {
-  --bg-color: #F7F5F2;
-  --primary-color: #7D9D9C;
-  --secondary-color: #9FB1BC; /* 莫蘭迪藍灰 */
-  --input-bg: #EBEBE8;
-  --text-color: #4A4A4A;
-  --accent-color: #576F72;
-  --error-color: #D98C8C; /* 莫蘭迪紅 */
+  --bg-color: #f7f5f2;
+  --primary-color: #7d9d9c;
+  --secondary-color: #9fb1bc; /* 莫蘭迪藍灰 */
+  --input-bg: #ebebe8;
+  --text-color: #4a4a4a;
+  --accent-color: #576f72;
+  --error-color: #d98c8c; /* 莫蘭迪紅 */
 }
 
 body {
@@ -21,7 +21,7 @@ body {
 
 /* 登入/註冊頁面的容器 */
 .container {
-  background: #FFFFFF;
+  background: #ffffff;
   padding: 2.5rem;
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(87, 111, 114, 0.1);
@@ -49,7 +49,8 @@ label {
   color: var(--accent-color);
 }
 
-input, select {
+input,
+select {
   width: 100%;
   padding: 12px;
   border: none;
@@ -57,11 +58,12 @@ input, select {
   border-radius: 8px;
   color: var(--text-color);
   font-size: 1rem;
-  box-sizing: border-box; 
+  box-sizing: border-box;
   transition: box-shadow 0.3s ease;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--primary-color);
 }
@@ -115,7 +117,7 @@ input:focus, select:focus {
   background: #fff;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
 }
 

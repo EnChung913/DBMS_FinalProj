@@ -309,3 +309,9 @@ I created a 2fa page. Now student and company can enable 2FA in their dashboard.
 [2025-12-8 20:05]
 The containers successfully run on docker. But there are some issues with Loki, it need to be fixed later.
 I still need to implement the user application function. Besides, the view of department review application havn't been done. But this can refer to the company review application view.
+
+[2025-12-8 22:27]
+I'm trying to connect the apis for department review application. Finish! Besides, the containers are running well on docker now. 
+I've finished the scheduler module and optimized the push recommendation function.
+Next step would be the user application function and place event apis to functions.
+I found some test tools for nestjs and vuejs, I'll try to write some test cases later.

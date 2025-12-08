@@ -8,54 +8,54 @@ export class EventService {
     private readonly redis: Redis,
   ) {}
 
-  /**
-   * 追蹤學生對資源的點擊
-   */
-  async trackResourceClick(
-    uid: string,
-    rid: string,
-    resourceType?: string,
-  ) {
-    const now = Date.now();
-    const p = this.redis.pipeline();
+  async trackResourceClick(uid: string, rid: string, resourceType?: string) {
+    // 加上 try-catch 避免 crash，雖然 controller 層可能處理了，但在 service 處理更保險
+    try {
+      const now = Date.now();
+      const p = this.redis.pipeline();
 
-    // 1) 使用者 -> 資源 (user-based CF)
-    p.zincrby(`user:${uid}:resource:clicks`, 1, rid);
+      // 1. User History (強度)
+      p.zincrby(`user:${uid}:resource:clicks`, 1, rid);
 
-    // 2) 資源 -> 使用者 (item-based CF)
-    // score 用 timestamp，之後用 zrevrange 看最近的 viewer 也合理
-    p.zadd(`resource:${rid}:viewed_by`, now, uid);
+      // 2. Resource Viewers (供相似度計算 - item-based)
+      // 使用 timestamp 當 score，方便知道"最近"誰看過
+      p.zadd(`resource:${rid}:viewed_by`, now, uid);
+      // 可選：設定該 Key 90 天後過期 (若資源本身也有生命週期)
+      p.expire(`resource:${rid}:viewed_by`, 60 * 60 * 24 * 90);
 
-    // 3) 使用者偏好 (content-based CF)
-    if (resourceType) {
-      p.zincrby(`user:${uid}:type:clicks`, 1, resourceType);
+      // 3. User Preference (類別偏好)
+      if (resourceType) {
+        // 這裡建議轉小寫或統一名稱，避免 'Internship' 和 'internship' 被當成兩個
+        p.zincrby(`user:${uid}:type:clicks`, 1, resourceType.toLowerCase());
+      }
+
+      // 4. Global Popularity
+      p.zincrby(`resource:global:clicks`, 1, rid);
+
+      await p.exec();
+    } catch (error) {
+      // 埋點失敗通常只記 Log，不拋出錯誤中斷業務
+      console.error('Redis trackResourceClick error:', error);
     }
-
-    // 4) 全局熱門資源
-    p.zincrby(`resource:global:clicks`, 1, rid);
-
-    await p.exec();
   }
 
-  /**
-   * 追蹤企業查看學生（for 公司推薦）
-   */
-  async trackStudentView(
-    companyId: string,
-    studentId: string,
-  ) {
-    const now = Date.now();
-    const p = this.redis.pipeline();
+  async trackStudentView(companyId: string, studentId: string) {
+    try {
+      const now = Date.now();
+      const p = this.redis.pipeline();
 
-    // 公司 -> 學生
-    p.zincrby(`company:${companyId}:student:clicks`, 1, studentId);
+      // 1. Company History
+      p.zincrby(`company:${companyId}:student:clicks`, 1, studentId);
 
-    // 學生 -> 公司
-    p.zadd(`student:${studentId}:viewed_by_company`, now, companyId);
+      // 2. Student Viewers (供相似度計算 - user-based)
+      p.zadd(`student:${studentId}:viewed_by_company`, now, companyId);
 
-    // 全局熱門學生
-    p.zincrby(`student:global:views`, 1, studentId);
+      // 3. Global Popularity (這會影響 Popularity Score)
+      p.zincrby(`student:global:views`, 1, studentId);
 
-    await p.exec();
+      await p.exec();
+    } catch (error) {
+      console.error('Redis trackStudentView error:', error);
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,9 +18,11 @@ import { RedisModule } from './modules/redis/redis.module';
 import { CommonModule } from './common/common.module';
 import { EventModule } from './modules/event/event.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { SchedulerModule } from './common/schedulers/scheduler.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       envFilePath: process.env.NODE_ENV === 'docker'
         ? '.env.docker'
@@ -47,6 +50,7 @@ import { MetricsModule } from './metrics/metrics.module';
     CommonModule,
     EventModule,
     MetricsModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

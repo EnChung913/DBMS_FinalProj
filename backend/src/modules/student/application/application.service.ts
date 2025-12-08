@@ -59,7 +59,6 @@ ORDER BY a.apply_date DESC;
 		}
 
 		const filePath = rows[0].file_path;
-
 		// Step 2. 刪除申請紀錄
 		const deleteSql = `
 			DELETE FROM application

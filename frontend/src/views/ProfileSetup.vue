@@ -1,98 +1,105 @@
-//TODO: year change to roc era, force transfer student id to uppercase, there's an issue if user havn't fill in profile and try to access dashboard
+//TODO: year change to roc era, force transfer student id to uppercase, there's an issue if user
+havn't fill in profile and try to access dashboard
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import apiClient from '@/api/axios';
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import apiClient from '@/api/axios'
 
-const route = useRoute();
-const router = useRouter();
-const authStore = useAuthStore();
-const userRole = ref((route.query.role as string) || 'student');
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const userRole = ref((route.query.role as string) || 'student')
 
 // 下拉選單資料
-const departments = ref<{id: string, name: string}[]>([]);
+const departments = ref<{ id: string; name: string }[]>([])
 
 onMounted(async () => {
   if (userRole.value === 'student') {
     try {
       const res = await apiClient.get('/api/common/departments', {
-        withCredentials: true
-      });
-      departments.value = res.data;
+        withCredentials: true,
+      })
+      departments.value = res.data
     } catch (err) {
-      console.error('[GET /common/departments] error:', err);
+      console.error('[GET /common/departments] error:', err)
     }
   }
-});
+})
 
 const profileData = ref({
-  student_id: '', department_id: '', entry_year: new Date().getFullYear() - 1911, grade: 1,
-  department_name: '', company_name: '', industry: ''
-});
+  student_id: '',
+  department_id: '',
+  entry_year: new Date().getFullYear() - 1911,
+  grade: 1,
+  department_name: '',
+  company_name: '',
+  industry: '',
+})
 
-watch(() => profileData.value.student_id, (newVal) => {
-  if (newVal) {
-    profileData.value.student_id = newVal.toUpperCase();
-  }
-});
+watch(
+  () => profileData.value.student_id,
+  (newVal) => {
+    if (newVal) {
+      profileData.value.student_id = newVal.toUpperCase()
+    }
+  },
+)
 
 const titleMap: Record<string, string> = {
   student: 'Student Profile',
   department: 'Department Profile',
-  company: 'Company Profile'
-};
-const pageTitle = computed(() => titleMap[userRole.value] || 'Profile Setup');
+  company: 'Company Profile',
+}
+const pageTitle = computed(() => titleMap[userRole.value] || 'Profile Setup')
 
 const handleSubmit = async () => {
   try {
-    let payload = {};
-    let endpoint = '';
+    let payload = {}
+    let endpoint = ''
 
     if (userRole.value === 'student') {
-      endpoint = '/api/student/profile';
-      payload = { 
+      endpoint = '/api/student/profile'
+      payload = {
         student_id: profileData.value.student_id,
         department_id: profileData.value.department_id,
         entry: profileData.value.entry_year,
-        grade: profileData.value.grade
-      };
+        grade: profileData.value.grade,
+      }
     } else if (userRole.value === 'department') {
-      endpoint = '/api/department/profile';
-      payload = { department_name: profileData.value.department_name };
+      endpoint = '/api/department/profile'
+      payload = { department_name: profileData.value.department_name }
     } else {
-      endpoint = '/api/company/profile';
-      payload = { 
-        company_name: profileData.value.company_name, 
-        industry: profileData.value.industry 
-      };
+      endpoint = '/api/company/profile'
+      payload = {
+        company_name: profileData.value.company_name,
+        industry: profileData.value.industry,
+      }
     }
 
     // ----------------------------------------------------------------
     // 正式送出 PUT {endpoint}
     // ----------------------------------------------------------------
-    await apiClient.put(endpoint, payload, { withCredentials: true });
+    await apiClient.put(endpoint, payload, { withCredentials: true })
 
-    authStore.setNeedProfile(false);
-    alert('Profile setup complete!');
+    authStore.setNeedProfile(false)
+    alert('Profile setup complete!')
 
-    if (userRole.value === 'student') router.push('/student/dashboard');
-    else if (userRole.value === 'department') router.push('/department/dashboard');
-    else router.push('/company/dashboard');
-
+    if (userRole.value === 'student') router.push('/student/dashboard')
+    else if (userRole.value === 'department') router.push('/department/dashboard')
+    else router.push('/company/dashboard')
   } catch (error) {
-    console.error(error);
-    alert('Failed to update profile');
+    console.error(error)
+    alert('Failed to update profile')
   }
-};
+}
 </script>
 
 <template>
   <div class="container">
     <h2>{{ pageTitle }}</h2>
     <form @submit.prevent="handleSubmit">
-      
       <template v-if="userRole === 'student'">
         <div class="form-group">
           <label>Student ID</label>
@@ -101,12 +108,14 @@ const handleSubmit = async () => {
         <div class="form-group">
           <label>Department</label>
           <select v-model="profileData.department_id" required>
-            <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+            <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+              {{ dept.name }}
+            </option>
           </select>
         </div>
         <div class="form-group">
           <label>Entry Year / Grade</label>
-          <div style="display:flex; gap:10px;">
+          <div style="display: flex; gap: 10px">
             <input v-model="profileData.entry_year" type="number" placeholder="Year" />
             <input v-model="profileData.grade" type="number" placeholder="Grade" />
           </div>

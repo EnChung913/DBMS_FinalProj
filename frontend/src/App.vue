@@ -1,34 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { RouterView, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import apiClient from '@/api/axios';
+import { computed } from 'vue'
+import { RouterView, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import apiClient from '@/api/axios'
 
-const router = useRouter();
-const authStore = useAuthStore();
-
+const router = useRouter()
+const authStore = useAuthStore()
 
 // 計算 Dashboard 連結
 const dashboardLink = computed(() => {
-  if (authStore.role === 'department') return '/department/dashboard';
-  if (authStore.role === 'company') return '/company/dashboard';
-  return '/student/dashboard';
-});
+  if (authStore.role === 'department') return '/department/dashboard'
+  if (authStore.role === 'company') return '/company/dashboard'
+  return '/student/dashboard'
+})
 
 async function handleLogout() {
-  const router = useRouter();
-  const authStore = useAuthStore();
+  const router = useRouter()
+  const authStore = useAuthStore()
 
   try {
-    await apiClient.post(
-      '/api/auth/logout',
-      { },
-      { withCredentials: true }
-    );
+    await apiClient.post('/api/auth/logout', {}, { withCredentials: true })
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Logout error:', error)
   } finally {
-    authStore.clearUser();
+    authStore.clearUser()
     location.replace('/login')
   }
 }
@@ -37,12 +32,15 @@ async function handleLogout() {
 <template>
   <div class="app-wrapper">
     <header class="main-header">
-      <div class="header-content" style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+      <div
+        class="header-content"
+        style="width: 100%; display: flex; justify-content: space-between; align-items: center"
+      >
         <div class="logo">
           <span class="logo-icon">❖</span>
           <span class="logo-text">UniConnect - University / Unity / Universe Connect</span>
         </div>
-                
+
         <nav class="nav-links">
           <template v-if="!authStore.isLoggedIn">
             <router-link to="/login">Log in</router-link>
@@ -53,12 +51,7 @@ async function handleLogout() {
             <router-link :to="dashboardLink">Dashboard</router-link>
 
             <!-- 如果是 admin 才顯示 -->
-            <router-link
-              v-if="authStore.user?.is_admin"
-              to="/admin/dashboard"
-            >
-              Admin
-            </router-link>
+            <router-link v-if="authStore.user?.is_admin" to="/admin/dashboard"> Admin </router-link>
 
             <a href="#" @click.prevent="handleLogout">Log out</a>
           </template>
@@ -72,10 +65,10 @@ async function handleLogout() {
 
     <footer class="main-footer">
       <p>
-        <span style="opacity: 0.7;">&copy; 2025</span> 
-        <span style="margin: 0 8px;">|</span> 
-        <span style="font-weight: 500;">大學生學習表現與資源媒合平台</span> 
-        <span style="margin: 0 8px;">|</span> 
+        <span style="opacity: 0.7">&copy; 2025</span>
+        <span style="margin: 0 8px">|</span>
+        <span style="font-weight: 500">大學生學習表現與資源媒合平台</span>
+        <span style="margin: 0 8px">|</span>
         Designed for Students
       </p>
     </footer>
@@ -101,19 +94,19 @@ async function handleLogout() {
   background-color: rgba(255, 255, 255, 0.75); /* 稍微調低透明度 */
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 20px rgba(87, 111, 114, 0.1); /* 使用您的莫蘭迪深色陰影 */
-  
+
   /* --- 核心：置中定位 --- */
   position: fixed;
   top: 20px; /* 距離頂部留一點空隙 */
   left: 50%; /* 從左邊推一半 */
   transform: translateX(-50%); /* 往回拉一半，達成完美置中 */
-  
+
   /* --- 尺寸與外觀 --- */
   width: 95%; /* 手機版寬度 */
   max-width: 1000px; /* 電腦版最大寬度，不要太寬才好看 */
   border-radius: 50px; /* 大圓角，變成膠囊狀 */
   padding: 0.8rem 5rem; /* 調整內距 */
-  
+
   /* --- 內部排版 --- */
   display: flex;
   justify-content: space-between;
@@ -178,21 +171,21 @@ async function handleLogout() {
   margin-top: auto; /* 確保它永遠在頁面最底端 */
   width: 100%;
   padding: 2.5rem 0; /* 增加垂直留白，讓畫面不擁擠 */
-  
+
   /* --- 視覺質感 --- */
   background-color: transparent; /* 不使用純色背景，讓整體通透 */
   /* 使用主色調 (Dusty Blue) 的 20% 透明度當作頂部線條 */
-  border-top: 1px solid rgba(125, 157, 156, 0.2); 
-  
+  border-top: 1px solid rgba(125, 157, 156, 0.2);
+
   /* --- 文字排版 --- */
   text-align: center;
   color: var(--accent-color); /* 使用次要文字色 */
   font-size: 0.85rem; /* 字體稍小，顯得精緻 */
   letter-spacing: 1.5px; /* [關鍵] 增加字距，瞬間提升高級感 */
   font-weight: 400;
-  
+
   /* --- 讓文字不可選取，增加類似 App 的質感 --- */
-  user-select: none; 
+  user-select: none;
 }
 
 /* 頁面切換動畫 (Fade) */

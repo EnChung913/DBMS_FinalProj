@@ -1,110 +1,156 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import apiClient from '@/api/axios';
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import apiClient from '@/api/axios'
 
-const route = useRoute();
-const router = useRouter();
-const resourceId = route.params.id as string;
+const route = useRoute()
+const router = useRouter()
+const resourceId = route.params.id as string
 
-// 資料狀態
-const resourceInfo = ref<any>({});
-const applicants = ref<any[]>([]);
-const selectedIds = ref<Set<string>>(new Set());
-const isLoading = ref(false);
-const activeTab = ref('All'); // All, Pending, Approved, Rejected
+const resourceInfo = ref<any>({})
+const applicants = ref<any[]>([])
+const selectedIds = ref<Set<string>>(new Set())
+const isLoading = ref(false)
+const activeTab = ref('All')
+
+// --- [新功能] 判斷是否可進行審核 ---
+const isReviewAllowed = computed(() => {
+  if (!resourceInfo.value.deadline) return false
+
+  const now = new Date()
+  const deadline = new Date(resourceInfo.value.deadline)
+
+  // 設定 Deadline 為當天的最後一刻 (23:59:59)，確保當天仍可申請，隔天才可審核
+  // 如果你的 Deadline 邏輯是「當天過了就不能申請」，這行可依需求調整
+  deadline.setHours(23, 59, 59, 999)
+
+  return now > deadline
+})
 
 // 篩選邏輯
 const filteredApplicants = computed(() => {
-  if (activeTab.value === 'All') return applicants.value;
-  return applicants.value.filter(a => a.status === activeTab.value.toLowerCase());
-});
+  if (activeTab.value === 'All') return applicants.value
+  return applicants.value.filter((a) => a.status === activeTab.value.toLowerCase())
+})
 
-// 全選邏輯 (只選當前 Tab 下的項目)
 const isAllSelected = computed(() => {
-  const list = filteredApplicants.value;
-  return list.length > 0 && list.every(a => selectedIds.value.has(a.id));
-});
+  const list = filteredApplicants.value
+  return list.length > 0 && list.every((a) => selectedIds.value.has(a.id))
+})
 
+// --- 修改：加入權限判斷 ---
 const toggleAll = (e: Event) => {
-  const checked = (e.target as HTMLInputElement).checked;
-  if (checked) {
-    filteredApplicants.value.forEach(a => selectedIds.value.add(a.id));
-  } else {
-    filteredApplicants.value.forEach(a => selectedIds.value.delete(a.id));
-  }
-};
+  if (!isReviewAllowed.value) return // 若期限未到，禁止全選
 
+  const checked = (e.target as HTMLInputElement).checked
+  if (checked) {
+    filteredApplicants.value.forEach((a) => selectedIds.value.add(a.id))
+  } else {
+    filteredApplicants.value.forEach((a) => selectedIds.value.delete(a.id))
+  }
+}
+
+// --- 修改：加入權限判斷 ---
 const toggleSelect = (id: string) => {
-  if (selectedIds.value.has(id)) selectedIds.value.delete(id);
-  else selectedIds.value.add(id);
-};
+  if (!isReviewAllowed.value) return // 若期限未到，禁止單選
+
+  if (selectedIds.value.has(id)) selectedIds.value.delete(id)
+  else selectedIds.value.add(id)
+}
 
 onMounted(async () => {
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [GET] /api/department/resource/:id/applicants
-    // ----------------------------------------------------------------
-    // const res = await apiClient.get(`/department/resource/${resourceId}/applicants`);
-    // resourceInfo.value = res.data.resource;
-    // applicants.value = res.data.applicants;
+    const res = await apiClient.get(`/api/resource/${resourceId}`)
+    if (res.data) {
+      resourceInfo.value = res.data
+    } else {
+      resourceInfo.value = { type: '', title: '', deadline: '', quota: 0 }
+    }
 
-    // --- Mock Data ---
-    await new Promise(r => setTimeout(r, 600));
+    const app = await apiClient.get(`/api/resource/${resourceId}/applications`)
 
-    resourceInfo.value = {
-      title: '113學年度清寒優秀獎學金',
-      type: 'Scholarship',
-      quota: 3,
-      total_applicants: 12,
-      deadline: '2025-05-30'
-    };
+    applicants.value = app.data.applications.map((a: any) => {
+      // 1. 在這裡先處理好狀態字串
+      let displayStatus = a.status
+      if (a.status === 'under_review' || a.status === 'pending') {
+        displayStatus = 'pending' // 轉成前端 Tab 想要的小寫含空白格式
+      }
 
-    applicants.value = [
-      { id: 'a1', student_name: '王小明', student_id: 'B09901001', gpa: 3.9, status: 'pending', date: '2025-02-20', dept: '資工系' },
-      { id: 'a2', student_name: '陳小美', student_id: 'B09901023', gpa: 4.15, status: 'pending', date: '2025-02-21', dept: '資工系' },
-      { id: 'a3', student_name: '林大華', student_id: 'B09901055', gpa: 3.2, status: 'rejected', date: '2025-02-18', dept: '電機系' },
-      { id: 'a4', student_name: '張偉', student_id: 'B09901066', gpa: 4.2, status: 'approved', date: '2025-02-15', dept: '資管系' },
-      { id: 'a5', student_name: '李四', student_id: 'B09901077', gpa: 3.8, status: 'pending', date: '2025-02-22', dept: '資工系' },
-    ];
-  } catch (error) { console.error(error); } finally { isLoading.value = false; }
-});
+      // 2. 回傳整理好的物件
+      return {
+        id: a.user_id || a.student_id,
+        student_name: a.student_name,
+        student_id: a.student_id,
+        department: a.department,
+        current_gpa: a.current_gpa,
+        avg_gpa: a.avg_gpa,
+
+        status: displayStatus, // <--- 這裡直接用處理好的變數
+
+        date: a.applied_date,
+      }
+    })
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load applicants')
+  } finally {
+    isLoading.value = false
+  }
+})
 
 const processSelection = async (decision: 'approved' | 'rejected') => {
-  if (selectedIds.value.size === 0) return;
-  if (!confirm(`Determine which to select ${selectedIds.value.size} students marked as ${decision.toUpperCase()} ?`)) return;
+  // --- 修改：雙重保險 ---
+  if (!isReviewAllowed.value) {
+    alert('Cannot review before the deadline.')
+    return
+  }
+  if (selectedIds.value.size === 0) return
+
+  const count = selectedIds.value.size
+  if (!confirm(`Confirm to mark ${count} applicants as ${decision.toUpperCase()}?`)) return
 
   try {
-    // TO DO: [POST] /api/department/application/batch-review
-    console.log(`[Mock] Batch ${decision}:`, [...selectedIds.value]);
-    
-    // 更新前端狀態
-    applicants.value.forEach(a => {
-      if (selectedIds.value.has(a.id)) a.status = decision;
-    });
-    selectedIds.value.clear();
-    alert('Review completed!');
-  } catch (e) { alert('Operation failed'); }
-};
+    await apiClient.put(`api/resource/${resourceId}/applications/review`, {
+      student_ids: [...selectedIds.value],
+      decision,
+    })
 
-const goBack = () => router.back();
+    applicants.value = applicants.value.map((a) => {
+      if (selectedIds.value.has(a.id)) {
+        return { ...a, status: decision }
+      }
+      return a
+    })
+
+    selectedIds.value.clear()
+    alert('Processed successfully!')
+    // window.location.reload(); // 建議非必要不 reload，因為上面已經手動更新 UI 了
+  } catch (e) {
+    console.error(e)
+    alert('Failed to process')
+  }
+}
+
+const goBack = () => router.back()
 
 const getStatusClass = (status: string) => {
-  switch(status) {
-    case 'approved': return 'status-green';
-    case 'rejected': return 'status-red';
-    default: return 'status-blue'; // pending
+  switch (status) {
+    case 'approved':
+      return 'status-green'
+    case 'rejected':
+      return 'status-red'
+    default:
+      return 'status-blue'
   }
-};
+}
 </script>
 
 <template>
   <div class="page-container">
-    
     <div class="header-section">
       <button class="btn-back" @click="goBack">⮐ Back</button>
-      
+
       <div class="resource-summary-card">
         <div class="summary-left">
           <span class="type-tag">{{ resourceInfo.type }}</span>
@@ -125,15 +171,17 @@ const getStatusClass = (status: string) => {
     </div>
 
     <div class="tabs-row">
-      <button 
-        v-for="tab in ['All', 'Pending', 'Approved', 'Rejected']" 
+      <button
+        v-for="tab in ['All', 'Pending', 'Approved', 'Rejected']"
         :key="tab"
         :class="['tab-btn', { active: activeTab === tab }]"
         @click="activeTab = tab"
       >
         {{ tab }}
-        <span class="count-badge">{{ 
-          tab === 'All' ? applicants.length : applicants.filter(a => a.status === tab.toLowerCase()).length 
+        <span class="count-badge">{{
+          tab === 'All'
+            ? applicants.length
+            : applicants.filter((a) => a.status === tab.toLowerCase()).length
         }}</span>
       </button>
     </div>
@@ -145,7 +193,12 @@ const getStatusClass = (status: string) => {
         <thead>
           <tr>
             <th width="50">
-              <input type="checkbox" :checked="isAllSelected" @change="toggleAll" class="custom-checkbox header-cb" />
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                @change="toggleAll"
+                class="custom-checkbox header-cb"
+              />
             </th>
             <th>Student name(ID)</th>
             <th>Department</th>
@@ -158,18 +211,18 @@ const getStatusClass = (status: string) => {
           <tr v-if="filteredApplicants.length === 0">
             <td colspan="7" class="empty-row">No eligible applicants</td>
           </tr>
-          <tr 
-            v-for="app in filteredApplicants" 
-            :key="app.id" 
+          <tr
+            v-for="app in filteredApplicants"
+            :key="app.id"
             :class="{ 'selected-row': selectedIds.has(app.id) }"
             @click="toggleSelect(app.id)"
           >
             <td @click.stop>
-              <input 
-                type="checkbox" 
-                :checked="selectedIds.has(app.id)" 
+              <input
+                type="checkbox"
+                :checked="selectedIds.has(app.id)"
                 @change="toggleSelect(app.id)"
-                class="custom-checkbox" 
+                class="custom-checkbox"
               />
             </td>
             <td>
@@ -199,7 +252,9 @@ const getStatusClass = (status: string) => {
     <transition name="slide-up">
       <div v-if="selectedIds.size > 0" class="floating-bar">
         <div class="bar-content">
-          <span class="selection-info">Selected <strong>{{ selectedIds.size }}</strong> applicants</span>
+          <span class="selection-info"
+            >Selected <strong>{{ selectedIds.size }}</strong> applicants</span
+          >
           <div class="bar-actions">
             <button class="btn-bar reject" @click="processSelection('rejected')">
               <span class="icon">✕</span> Reject
@@ -211,7 +266,6 @@ const getStatusClass = (status: string) => {
         </div>
       </div>
     </transition>
-
   </div>
 </template>
 
@@ -228,126 +282,319 @@ const getStatusClass = (status: string) => {
 }
 
 /* --- Header & Resource Summary --- */
-.header-section { margin-bottom: 30px; }
+.header-section {
+  margin-bottom: 30px;
+}
 
 .btn-back {
-  background: transparent; border: none; color: var(--secondary-color);
-  font-size: 1rem; cursor: pointer; margin-bottom: 15px; font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-weight: 500;
   transition: color 0.2s;
 }
-.btn-back:hover { color: var(--primary-color); }
+.btn-back:hover {
+  color: var(--primary-color);
+}
 
 .resource-summary-card {
   background: linear-gradient(135deg, #fff 0%, #fcfcfc 100%);
   border-radius: 20px;
   padding: 30px 75px;
-  display: flex; justify-content: space-between; align-items: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   gap: 70px;
 }
 
-.summary-left { display: flex; flex-direction: column; gap: 10px; }
-.type-tag { 
-  background: rgba(125, 157, 156, 0.1); color: var(--primary-color); 
-  padding: 4px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; align-self: flex-start;
+.summary-left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.res-title { margin: 0; font-size: 1.8rem; color: var(--text-color); }
-.deadline-text { color: #888; font-size: 0.9rem; }
+.type-tag {
+  background: rgba(125, 157, 156, 0.1);
+  color: var(--primary-color);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  align-self: flex-start;
+}
+.res-title {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text-color);
+}
+.deadline-text {
+  color: #888;
+  font-size: 0.9rem;
+}
 
-.summary-right { display: flex; gap: 30px; }
-.stat-bubble { text-align: center; }
-.stat-bubble .val { display: block; font-size: 1.8rem; font-weight: 700; color: var(--text-color); line-height: 1; }
-.stat-bubble .lbl { font-size: 0.8rem; color: #aaa; text-transform: uppercase; margin-top: 5px; }
-.stat-bubble.highlight .val { color: var(--primary-color); }
+.summary-right {
+  display: flex;
+  gap: 30px;
+}
+.stat-bubble {
+  text-align: center;
+}
+.stat-bubble .val {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-color);
+  line-height: 1;
+}
+.stat-bubble .lbl {
+  font-size: 0.8rem;
+  color: #aaa;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+.stat-bubble.highlight .val {
+  color: var(--primary-color);
+}
 
 /* --- Tabs --- */
-.tabs-row { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 1px; }
-.tab-btn {
-  background: transparent; border: none; padding: 10px 20px;
-  font-size: 1rem; color: #888; cursor: pointer; position: relative;
-  border-bottom: 2px solid transparent; transition: all 0.2s;
-  display: flex; align-items: center; gap: 8px;
+.tabs-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1px;
 }
-.tab-btn:hover { color: var(--primary-color); }
-.tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: 600; }
-.count-badge { background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; color: #666; }
-.tab-btn.active .count-badge { background: var(--primary-color); color: white; }
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: #888;
+  cursor: pointer;
+  position: relative;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tab-btn:hover {
+  color: var(--primary-color);
+}
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+.count-badge {
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: #666;
+}
+.tab-btn.active .count-badge {
+  background: var(--primary-color);
+  color: white;
+}
 
 /* --- Table Card --- */
 .table-card {
-  background: #fff; border-radius: 16px; 
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   overflow: hidden;
 }
 
-.review-table { width: 100%; border-collapse: collapse; }
-.review-table th { 
-  text-align: left; padding: 18px 24px; background: #F9FAFB; 
-  color: var(--secondary-color); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px;
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.review-table th {
+  text-align: left;
+  padding: 18px 24px;
+  background: #f9fafb;
+  color: var(--secondary-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   border-bottom: 1px solid #eee;
 }
-.review-table td { 
-  padding: 18px 24px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; 
-  color: var(--text-color); cursor: pointer;
+.review-table td {
+  padding: 18px 24px;
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: middle;
+  color: var(--text-color);
+  cursor: pointer;
 }
-.review-table tr:last-child td { border-bottom: none; }
-.review-table tr:hover { background-color: #fafafa; }
-.review-table tr.selected-row { background-color: rgba(125, 157, 156, 0.05); }
+.review-table tr:last-child td {
+  border-bottom: none;
+}
+.review-table tr:hover {
+  background-color: #fafafa;
+}
+.review-table tr.selected-row {
+  background-color: rgba(125, 157, 156, 0.05);
+}
 
-.empty-row { text-align: center; padding: 40px; color: #aaa; }
+.empty-row {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+}
 
 /* Student Cell */
-.student-info { display: flex; align-items: center; gap: 12px; }
-.avatar { 
-  width: 36px; height: 36px; border-radius: 50%; background: #EBEBE8; 
-  display: flex; align-items: center; justify-content: center; 
-  font-weight: 600; color: var(--secondary-color); font-size: 0.9rem;
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.student-info .text { display: flex; flex-direction: column; }
-.name { font-weight: 600; font-size: 0.95rem; }
-.sid { font-size: 0.8rem; color: #999; }
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ebebe8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+}
+.student-info .text {
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.sid {
+  font-size: 0.8rem;
+  color: #999;
+}
 
 /* GPA */
-.gpa-badge { font-weight: 600; color: #555; }
-.gpa-badge.high { color: var(--primary-color); background: rgba(125, 157, 156, 0.1); padding: 2px 6px; border-radius: 4px; }
+.gpa-badge {
+  font-weight: 600;
+  color: #555;
+}
+.gpa-badge.high {
+  color: var(--primary-color);
+  background: rgba(125, 157, 156, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
 
 /* Status Pill */
-.status-pill { padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-transform: capitalize; }
-.status-green { background: #E8F5E9; color: #93bb95; }
-.status-red { background: #FFEBEE; color: #d99999; }
-.status-blue { background: #E3F2FD; color: #7796d8; }
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.status-green {
+  background: #e8f5e9;
+  color: #93bb95;
+}
+.status-red {
+  background: #ffebee;
+  color: #d99999;
+}
+.status-blue {
+  background: #e3f2fd;
+  color: #7796d8;
+}
 
-.btn-text { background: transparent; border: none; color: var(--primary-color); cursor: pointer; font-weight: 500; }
-.btn-text:hover { text-decoration: underline; }
+.btn-text {
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-text:hover {
+  text-decoration: underline;
+}
 
 /* Checkbox */
-.custom-checkbox { width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer; }
+.custom-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
 
 /* --- Floating Action Bar --- */
 .floating-bar {
-  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 100;
 }
 .bar-content {
-  background: #333; color: white; padding: 12px 24px; border-radius: 50px;
-  display: flex; align-items: center; gap: 40px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+  background: #333;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 }
-.selection-info { font-weight: 600; font-size: 0.95rem; }
-.bar-actions { display: flex; gap: 10px; }
+.selection-info {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.bar-actions {
+  display: flex;
+  gap: 10px;
+}
 
 .btn-bar {
-  padding: 8px 20px; border-radius: 20px; border: none; font-weight: 600; 
-  cursor: pointer; display: flex; align-items: center; gap: 6px; transition: transform 0.2s;
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.2s;
 }
-.btn-bar:hover { transform: translateY(-2px); }
-.btn-bar.approve { background: #4CAF50; color: white; }
-.btn-bar.reject { background: #EF5350; color: white; }
+.btn-bar:hover {
+  transform: translateY(-2px);
+}
+.btn-bar.approve {
+  background: #4caf50;
+  color: white;
+}
+.btn-bar.reject {
+  background: #ef5350;
+  color: white;
+}
 
 /* Transition */
-.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translate(-50%, 20px); }
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
 
-.loading-area { text-align: center; padding: 60px; color: #aaa; }
+.loading-area {
+  text-align: center;
+  padding: 60px;
+  color: #aaa;
+}
 </style>

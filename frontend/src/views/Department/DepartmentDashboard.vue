@@ -1,114 +1,108 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import apiClient from '@/api/axios';
-import { useAuthStore } from '@/stores/auth';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue'
+import apiClient from '@/api/axios'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
-
+const router = useRouter()
 
 // 定義資料型別
 interface PendingAchievement {
-  id: number;
-  student: string;
-  student_id: string; 
-  title: string;
-  category: string;   
-  proof_link: string; 
-  date: string;
+  id: number
+  student: string
+  student_id: string
+  title: string
+  category: string
+  proof_link: string
+  date: string
 }
 
 interface MyResource {
-  resource_id: string;
-  title: string;
-  resource_type: string;
-  applied: number;
-  quota: number;
-  status: 'Available' | 'Unavailable' | 'Closed';
-  deadline: string;
+  resource_id: string
+  title: string
+  resource_type: string
+  applied: number
+  quota: number
+  status: 'Available' | 'Unavailable' | 'Closed'
+  deadline: string
 }
 
-const pendingAchievements = ref<PendingAchievement[]>([]);
-const myResources = ref<MyResource[]>([]);
-const showAnimation = ref(false);
-const authStore = useAuthStore();
+const pendingAchievements = ref<PendingAchievement[]>([])
+const myResources = ref<MyResource[]>([])
+const showAnimation = ref(false)
+const authStore = useAuthStore()
 
 onMounted(async () => {
-  const tfa_status = await apiClient.get('/api/auth/2fa/status');
-  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
-  
-  setTimeout(() => showAnimation.value = true, 100);
-  
+  const tfa_status = await apiClient.get('/api/auth/2fa/status')
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled)
+
+  setTimeout(() => (showAnimation.value = true), 100)
+
   try {
-    pendingAchievements.value = (await apiClient.get('/api/department/achievements/list')).data;
-    myResources.value = (await apiClient.get('api/resource/my')).data;
+    pendingAchievements.value = (await apiClient.get('/api/department/achievements/list')).data
+    myResources.value = (await apiClient.get('api/resource/my')).data
     console.log(myResources)
   } catch (error) {
-    console.error(error);
+    console.error(error)
   }
-});
+})
 
 const verifyAchievement = async (id: number, decision: boolean) => {
   try {
     await apiClient.patch(`/api/department/achievements/${id}/review`, {
-      approve: decision
-    });
+      approve: decision,
+    })
 
-    
-    const index = pendingAchievements.value.findIndex(a => a.id === id);
+    const index = pendingAchievements.value.findIndex((a) => a.id === id)
     if (index !== -1) {
-      pendingAchievements.value.splice(index, 1);
+      pendingAchievements.value.splice(index, 1)
     }
-
   } catch (error) {
-    console.error(error);
-    alert('Verification failed.');
+    console.error(error)
+    alert('Verification failed.')
   }
-};
+}
 
 const handle2FA = () => {
-  console.log('Navigating to 2FA verification...');
-  router.push('/2fa'); 
-};
-
+  console.log('Navigating to 2FA verification...')
+  router.push('/2fa')
+}
 </script>
 
 <template>
   <div class="dashboard-wrapper">
-    
     <header class="hero-header">
       <div class="hero-content">
         <div class="user-welcome">
           <span class="sub-greeting">{{ authStore.user?.department_id }} | DEPT</span>
           <h1>{{ authStore.user?.real_name ?? authStore.user?.username }}</h1>
-            <button 
-              v-if="!authStore.user?.is_2fa_enabled" 
-              class="btn-2fa" 
-              @click="handle2FA" 
-              title="啟用/驗證雙重認證"
-            >
-              <span class="icon">⚠️</span> 
-              <span>Enable 2FA</span>
-            </button>
+          <button
+            v-if="!authStore.user?.is_2fa_enabled"
+            class="btn-2fa"
+            @click="handle2FA"
+            title="啟用/驗證雙重認證"
+          >
+            <span class="icon">⚠️</span>
+            <span>Enable 2FA</span>
+          </button>
         </div>
-        
+
         <div class="hero-actions">
-           <button class="btn-primary-icon" @click="$router.push('/resource/create')">
-             <span>+</span> Publish Resource
-           </button>
+          <button class="btn-primary-icon" @click="$router.push('/resource/create')">
+            <span>+</span> Publish Resource
+          </button>
         </div>
       </div>
     </header>
 
     <div class="main-grid">
-      
       <section class="left-panel">
         <div class="dashboard-card full-height">
           <div class="card-header">
             <h3>Pending Performance Verification</h3>
             <span class="badge-count">{{ pendingAchievements.length }} students to be done</span>
           </div>
-          
+
           <div class="table-container">
             <table class="styled-table">
               <thead>
@@ -121,7 +115,9 @@ const handle2FA = () => {
               </thead>
               <tbody>
                 <tr v-if="pendingAchievements.length === 0">
-                  <td colspan="4" class="empty-state">There are currently no projects pending review.</td>
+                  <td colspan="4" class="empty-state">
+                    There are currently no projects pending review.
+                  </td>
                 </tr>
                 <tr v-for="item in pendingAchievements" :key="item.id" class="table-row">
                   <td>
@@ -130,13 +126,15 @@ const handle2FA = () => {
                       <span class="sid">{{ item.student_id }}</span>
                     </div>
                   </td>
-                  <td><span class="category-tag">{{ item.category }}</span></td>
+                  <td>
+                    <span class="category-tag">{{ item.category }}</span>
+                  </td>
                   <td>
                     <div class="achievement-detail">
                       <span class="title">{{ item.title }}</span>
-                      <a 
-                        href="#" 
-                        class="link-proof" 
+                      <a
+                        href="#"
+                        class="link-proof"
                         @click.prevent="$router.push(`/department/achievement/${item.id}`)"
                       >
                         Check Details
@@ -145,8 +143,20 @@ const handle2FA = () => {
                   </td>
                   <td>
                     <div class="action-buttons">
-                      <button class="btn-icon btn-approve" @click="verifyAchievement(item.id, true)" title="Approve">✓</button>
-                      <button class="btn-icon btn-reject" @click="verifyAchievement(item.id, false)" title="Reject">✕</button>
+                      <button
+                        class="btn-icon btn-approve"
+                        @click="verifyAchievement(item.id, true)"
+                        title="Approve"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        class="btn-icon btn-reject"
+                        @click="verifyAchievement(item.id, false)"
+                        title="Reject"
+                      >
+                        ✕
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -165,16 +175,18 @@ const handle2FA = () => {
             <span class="arrow-icon">➭➭➭</span>
           </router-link>
         </div>
-        
+
         <div class="resource-list">
           <div v-for="res in myResources" :key="res.resource_id" class="manage-card">
             <div class="card-top">
-              <span :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"></span>
+              <span
+                :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"
+              ></span>
               <span class="res-type">{{ res.resource_type }}</span>
             </div>
-            
+
             <h4 class="res-title">{{ res.title }}</h4>
-            
+
             <div class="stats-row">
               <div class="stat-item">
                 <span class="label">Quota</span>
@@ -189,8 +201,8 @@ const handle2FA = () => {
 
             <div class="card-actions">
               <span class="date">Deadline: {{ res.deadline }}</span>
-              <button 
-                class="btn-outline-sm" 
+              <button
+                class="btn-outline-sm"
                 @click="$router.push(`/resource/edit/${res.resource_id}`)"
               >
                 Edit
@@ -199,7 +211,6 @@ const handle2FA = () => {
           </div>
         </div>
       </aside>
-
     </div>
   </div>
 </template>
@@ -216,24 +227,30 @@ const handle2FA = () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Hero Header (關鍵 CSS：對齊設定) --- */
 .hero-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #F7F5F2 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f7f5f2 0%, #ffffff 100%);
   padding: 30px 40px;
   border-radius: 24px;
-  border: 1px solid rgba(255,255,255,0.6);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 10px 30px rgba(125, 157, 156, 0.05); /* 極淡的莫蘭迪陰影 */
 }
 
 .hero-content {
   display: flex;
   justify-content: space-between; /* ✅ 關鍵：這會把左邊文字和右邊按鈕推到最兩側 */
-  align-items: center;            /* ✅ 關鍵：垂直置中對齊 */
+  align-items: center; /* ✅ 關鍵：垂直置中對齊 */
   width: 100%;
 }
 
@@ -257,8 +274,8 @@ const handle2FA = () => {
   background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 10px 24px; 
-  border-radius: 12px; 
+  padding: 10px 24px;
+  border-radius: 12px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -272,17 +289,22 @@ const handle2FA = () => {
   background-color: var(--accent-color);
   transform: translateY(-2px);
 }
-.btn-primary-icon span { font-size: 1.2rem; line-height: 1; }
+.btn-primary-icon span {
+  font-size: 1.2rem;
+  line-height: 1;
+}
 
 /* --- Grid Layout --- */
 .main-grid {
   display: grid;
-  grid-template-columns: 4fr 3fr; 
+  grid-template-columns: 4fr 3fr;
   gap: 30px;
 }
 
 @media (max-width: 1024px) {
-  .main-grid { grid-template-columns: 1fr; }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- Common Card --- */
@@ -290,8 +312,8 @@ const handle2FA = () => {
   background: #fff;
   border-radius: 20px;
   padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   height: 100%; /* 填滿高度 */
 }
 
@@ -304,10 +326,14 @@ const handle2FA = () => {
   border-bottom: 1px solid #f5f5f5;
 }
 
-.card-header h3 { margin: 0; color: var(--text-color); font-size: 1.2rem; }
+.card-header h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
 
 .badge-count {
-  background: #EBEBE8;
+  background: #ebebe8;
   color: var(--secondary-color);
   padding: 2px 10px;
   border-radius: 10px;
@@ -316,7 +342,9 @@ const handle2FA = () => {
 }
 
 /* --- Table Styles --- */
-.table-container { overflow-x: auto; }
+.table-container {
+  overflow-x: auto;
+}
 
 .styled-table {
   width: 100%;
@@ -335,15 +363,32 @@ const handle2FA = () => {
   border-bottom: 1px solid #f9f9f9;
   transition: background 0.2s;
 }
-.table-row:last-child { border-bottom: none; }
-.table-row:hover { background-color: #FAFAFA; }
+.table-row:last-child {
+  border-bottom: none;
+}
+.table-row:hover {
+  background-color: #fafafa;
+}
 
-.styled-table td { padding: 15px 10px; vertical-align: middle; }
+.styled-table td {
+  padding: 15px 10px;
+  vertical-align: middle;
+}
 
 /* Student Info */
-.student-info { display: flex; flex-direction: column; }
-.name { font-weight: 600; color: var(--text-color); font-size: 0.95rem; }
-.sid { color: #aaa; font-size: 0.8rem; }
+.student-info {
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+.sid {
+  color: #aaa;
+  font-size: 0.8rem;
+}
 
 /* Category Tag */
 .category-tag {
@@ -356,13 +401,29 @@ const handle2FA = () => {
 }
 
 /* Achievement Detail */
-.achievement-detail { display: flex; flex-direction: column; gap: 4px; }
-.title { color: var(--text-color); font-size: 0.95rem; }
-.link-proof { color: var(--primary-color); font-size: 0.8rem; text-decoration: none; }
-.link-proof:hover { text-decoration: underline; }
+.achievement-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.title {
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+.link-proof {
+  color: var(--primary-color);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.link-proof:hover {
+  text-decoration: underline;
+}
 
 /* Action Buttons */
-.action-buttons { display: flex; gap: 10px; }
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
 
 .btn-icon {
   width: 36px;
@@ -378,19 +439,30 @@ const handle2FA = () => {
 }
 
 .btn-approve {
-  background-color: #E8F5E9;
-  color: #4CAF50;
+  background-color: #e8f5e9;
+  color: #4caf50;
 }
-.btn-approve:hover { background-color: #4CAF50; color: white; transform: scale(1.1); }
+.btn-approve:hover {
+  background-color: #4caf50;
+  color: white;
+  transform: scale(1.1);
+}
 
 .btn-reject {
-  background-color: #FFEBEE;
-  color: #EF5350;
+  background-color: #ffebee;
+  color: #ef5350;
 }
-.btn-reject:hover { background-color: #EF5350; color: white; transform: scale(1.1); }
+.btn-reject:hover {
+  background-color: #ef5350;
+  color: white;
+  transform: scale(1.1);
+}
 
-.empty-state { text-align: center; color: #aaa; padding: 30px; }
-
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 30px;
+}
 
 /* --- Right Panel: Resources --- */
 .section-header-row {
@@ -399,7 +471,11 @@ const handle2FA = () => {
   align-items: center;
   margin-bottom: 15px;
 }
-.section-header-row h3 { margin: 0; color: var(--accent-color); font-size: 1.1rem; }
+.section-header-row h3 {
+  margin: 0;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+}
 
 .btn-view-all {
   margin-left: auto;
@@ -419,20 +495,20 @@ const handle2FA = () => {
 }
 .btn-view-all:hover {
   background: rgba(125, 157, 156, 0.1);
-  transform: translateX(3px); 
+  transform: translateX(3px);
 }
 
 .arrow-icon {
-  font-size: 1.5rem;      
-  line-height: 0.8;       
-  display: flex;          
+  font-size: 1.5rem;
+  line-height: 0.8;
+  display: flex;
   align-items: center;
-  margin-top: -2px;      
+  margin-top: -2px;
 }
 
 .btn-text {
   display: inline-block;
-  padding-top: 2px; 
+  padding-top: 2px;
 }
 .resource-list {
   display: flex;
@@ -444,17 +520,40 @@ const handle2FA = () => {
   background: #fff;
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   transition: transform 0.2s;
 }
-.manage-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+.manage-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
 
-.card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; }
-.dot-green { background-color: #4CAF50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2); }
-.dot-gray { background-color: #ccc; }
-.res-type { font-size: 0.75rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 4px; }
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot-green {
+  background-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+.dot-gray {
+  background-color: #ccc;
+}
+.res-type {
+  font-size: 0.75rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
 .res-title {
   margin: 0 0 20px 0;
   font-size: 1.1rem;
@@ -467,26 +566,44 @@ const handle2FA = () => {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background: #F9FAFB;
+  background: #f9fafb;
   padding: 15px;
   border-radius: 12px;
   margin-bottom: 15px;
 }
 
-.stat-item { display: flex; flex-direction: column; align-items: center; }
-.stat-item .label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; }
-.stat-item .value { font-size: 1.25rem; font-weight: 700; color: var(--text-color); }
-.stat-item .highlight { color: var(--primary-color); }
-.divider { width: 1px; height: 30px; background: #e0e0e0; }
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stat-item .label {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+.stat-item .value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.stat-item .highlight {
+  color: var(--primary-color);
+}
+.divider {
+  width: 1px;
+  height: 30px;
+  background: #e0e0e0;
+}
 
-.card-actions { 
+.card-actions {
   margin-top: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.8rem;
   color: #aaa;
- }
+}
 
 .btn-outline-sm {
   background: transparent;
@@ -497,12 +614,25 @@ const handle2FA = () => {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-outline-sm:hover { background: var(--primary-color); color: white; }
-.btn-action.primary {
-  flex: 1; padding: 6px 0; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
-  background: var(--primary-color); border: 1px solid var(--primary-color); color: white;
+.btn-outline-sm:hover {
+  background: var(--primary-color);
+  color: white;
 }
-.btn-action.primary:hover { opacity: 0.9; box-shadow: 0 4px 10px rgba(125, 157, 156, 0.3); }
+.btn-action.primary {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: white;
+}
+.btn-action.primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 10px rgba(125, 157, 156, 0.3);
+}
 
 .btn-2fa {
   display: flex;

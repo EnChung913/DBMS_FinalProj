@@ -1,110 +1,107 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import apiClient from '@/api/axios';
-import { useStudentStore } from '@/stores/student';
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import apiClient from '@/api/axios'
+import { useStudentStore } from '@/stores/student'
 
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
 
-const resourceId = route.params.id as string;
-const resource = ref<any>(null); // Store the full resource object
-const isLoading = ref(false);
-const isSubmitting = ref(false);
-const uploadFile = ref<File | null>(null);
-const isAgreed = ref(false);
-const student = useStudentStore();
+const resourceId = route.params.id as string
+const resource = ref<any>(null) // Store the full resource object
+const isLoading = ref(false)
+const isSubmitting = ref(false)
+const uploadFile = ref<File | null>(null)
+const isAgreed = ref(false)
+const student = useStudentStore()
 
 onMounted(async () => {
-  isLoading.value = true;
+  isLoading.value = true
   try {
     // Fetch the specific resource details
     // TO DO: [GET] /api/resource/:id
-    const res = await apiClient.get(`/api/resource/${resourceId}`);
-    resource.value = res.data;
+    const res = await apiClient.get(`/api/resource/${resourceId}`)
+    resource.value = res.data
 
     // --- Mock Data ---
-    await new Promise(r => setTimeout(r, 300));
-    if(!resource.value) resource.value = {
-      resource_id: resourceId,
-      title: 'Software Engineer Intern (TSMC)',
-      resource_type: 'Internship',
-      quota: 5,
-      deadline: '2025-05-30',
-      description: 'Join us to build the future of semiconductor technology. Python/Vue.js required.',
-      supplier_name: 'TSMC'
-    };
+    await new Promise((r) => setTimeout(r, 300))
+    if (!resource.value)
+      resource.value = {
+        resource_id: resourceId,
+        title: 'Software Engineer Intern (TSMC)',
+        resource_type: 'Internship',
+        quota: 5,
+        deadline: '2025-05-30',
+        description:
+          'Join us to build the future of semiconductor technology. Python/Vue.js required.',
+        supplier_name: 'TSMC',
+      }
     // -----------------
 
     // Fetch profile if needed (similar to StudentDashboard logic)
     if (!student.hasProfile) {
-      const resInfo = await apiClient.get('/api/student/profile');
-      student.setProfile(resInfo.data);
+      const resInfo = await apiClient.get('/api/student/profile')
+      student.setProfile(resInfo.data)
     }
   } catch (error) {
-    console.error(error);
-    alert('Failed to load resource details.');
-    router.back();
+    console.error(error)
+    alert('Failed to load resource details.')
+    router.back()
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
 const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
+  const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    uploadFile.value = target.files[0] || null;
+    uploadFile.value = target.files[0] || null
   }
-};
+}
 
 const handleSubmit = async () => {
   if (!isAgreed.value) {
-    alert('Please agree to the terms.');
-    return;
+    alert('Please agree to the terms.')
+    return
   }
-  isSubmitting.value = true;
+  isSubmitting.value = true
 
   try {
     // ----------------------------------------------------------------
     // TO DO: [POST] /api/student/application
     // Use FormData for file upload
     // ----------------------------------------------------------------
-    
+
     // const formData = new FormData();
     // formData.append('resource_id', resourceId);
     // if (uploadFile.value) formData.append('file', uploadFile.value);
     // await apiClient.post('/student/application', formData);
 
     // --- Mock Data ---
-    console.log(`[Mock] Applying for ${resourceId}, File: ${uploadFile.value?.name}`);
-    await new Promise(r => setTimeout(r, 1000));
+    console.log(`[Mock] Applying for ${resourceId}, File: ${uploadFile.value?.name}`)
+    await new Promise((r) => setTimeout(r, 1000))
     // -----------------
 
-    alert('Application submitted successfully!');
-    router.push('/student/applications'); 
-
+    alert('Application submitted successfully!')
+    router.push('/student/applications')
   } catch (error) {
-    console.error(error);
-    alert('Application failed.');
+    console.error(error)
+    alert('Application failed.')
   } finally {
-    isSubmitting.value = false;
+    isSubmitting.value = false
   }
-};
+}
 
-const goBack = () => router.back();
+const goBack = () => router.back()
 </script>
 
 <template>
   <div class="page-container">
-    
     <div class="outer-header">
-      <button class="btn-back-outer" @click="goBack">
-        <span class="icon">⮐</span> Back
-      </button>
+      <button class="btn-back-outer" @click="goBack"><span class="icon">⮐</span> Back</button>
     </div>
 
     <div class="card form-card">
-      
       <div class="card-header">
         <div class="header-content">
           <h2>Apply for Resource</h2>
@@ -114,7 +111,6 @@ const goBack = () => router.back();
       <div v-if="isLoading" class="loading-state">Loading details...</div>
 
       <form v-else @submit.prevent="handleSubmit" class="main-form">
-        
         <div class="form-group">
           <label>Title</label>
           <div class="subtitle">{{ resource?.title }}</div>
@@ -153,7 +149,7 @@ const goBack = () => router.back();
         </div>
 
         <div class="form-group checkbox-row">
-          <input type="checkbox" id="agree" v-model="isAgreed" class="custom-checkbox">
+          <input type="checkbox" id="agree" v-model="isAgreed" class="custom-checkbox" />
           <label for="agree" class="checkbox-label">
             I confirm that the information is correct and I agree to the terms.
           </label>
@@ -161,15 +157,10 @@ const goBack = () => router.back();
 
         <div class="form-actions">
           <button type="button" class="btn-cancel" @click="goBack">Cancel</button>
-          <button 
-            type="submit" 
-            class="btn-primary-gradient" 
-            :disabled="!isAgreed || isSubmitting"
-          >
+          <button type="submit" class="btn-primary-gradient" :disabled="!isAgreed || isSubmitting">
             {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
           </button>
         </div>
-
       </form>
     </div>
   </div>
@@ -182,13 +173,13 @@ const goBack = () => router.back();
   padding: 40px 20px;
   min-height: 100vh;
   display: flex;
-  flex-direction: column; 
-  align-items: center;  
+  flex-direction: column;
+  align-items: center;
 }
 
 .outer-header {
   width: 100%;
-  max-width: 700px; 
+  max-width: 700px;
   margin-bottom: 20px;
   display: flex;
   justify-content: flex-start;
@@ -210,7 +201,7 @@ const goBack = () => router.back();
 
 .btn-back-outer:hover {
   color: var(--primary-color);
-  transform: translateX(-5px); 
+  transform: translateX(-5px);
 }
 
 /* Form Card */
@@ -220,13 +211,22 @@ const goBack = () => router.back();
   background: #fff;
   padding: 0; /* Let internal padding handle spacing */
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   overflow: hidden;
   animation: slideUp 0.5s ease-out;
 }
 
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* Card Header */
 .card-header {
@@ -246,7 +246,9 @@ const goBack = () => router.back();
   padding: 40px;
 }
 
-.form-group { margin-bottom: 25px; }
+.form-group {
+  margin-bottom: 25px;
+}
 
 label {
   display: block;
@@ -260,7 +262,7 @@ label {
   font-size: 1rem;
   color: #e7e7e7;
   padding: 10px 15px;
-  background:var(--accent-color);
+  background: var(--accent-color);
   border-radius: 8px;
   border: 1px solid #eee;
 }
@@ -283,13 +285,17 @@ label {
 }
 .custom-file-input {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  opacity: 0; cursor: pointer;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 .file-fake-display {
   width: 100%;
   padding: 14px 16px;
-  border: 2px dashed #e0e0e0; 
+  border: 2px dashed #e0e0e0;
   border-radius: 12px;
   font-size: 1rem;
   background: #fafafa;
@@ -309,16 +315,23 @@ label {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(125, 157, 156, 0.05); 
+  background: rgba(125, 157, 156, 0.05);
   padding: 15px;
   border-radius: 12px;
   margin-top: 10px;
 }
 .custom-checkbox {
-  width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
 }
 .checkbox-label {
-  margin: 0; font-weight: 500; font-size: 0.95rem; color: #555; cursor: pointer;
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #555;
+  cursor: pointer;
 }
 
 /* Actions */
@@ -340,7 +353,10 @@ label {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-cancel:hover { background: #f5f5f5; color: #333; }
+.btn-cancel:hover {
+  background: #f5f5f5;
+  color: #333;
+}
 
 .btn-primary-gradient {
   background: linear-gradient(135deg, var(--primary-color) 0%, #6b8c8b 100%);

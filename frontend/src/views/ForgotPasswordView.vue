@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import apiClient from '@/api/axios'; // 請確保這是設定好 Base URL 的 axios instance
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '@/api/axios' // 請確保這是設定好 Base URL 的 axios instance
 
-const router = useRouter();
+const router = useRouter()
 
 // 流程狀態: 1.輸入Email -> 2.驗證2FA -> 3.設定新密碼 -> 4.成功
-const step = ref<1 | 2 | 3 | 4>(1);
-const isLoading = ref(false);
-const errorMsg = ref('');
+const step = ref<1 | 2 | 3 | 4>(1)
+const isLoading = ref(false)
+const errorMsg = ref('')
 
 // 資料暫存
-const email = ref('');
-const verificationCode = ref('');
-const newPassword = ref('');
-const confirmPassword = ref('');
-const resetToken = ref(''); // 用於保存通過 2FA 驗證後取得的臨時 Token
+const email = ref('')
+const verificationCode = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const resetToken = ref('') // 用於保存通過 2FA 驗證後取得的臨時 Token
 
 /**
  * Step 1: 檢查 Email 並確認用戶開啟了 2FA
@@ -23,30 +23,30 @@ const resetToken = ref(''); // 用於保存通過 2FA 驗證後取得的臨時 T
  */
 const handleCheckEmail = async () => {
   if (!email.value) {
-    errorMsg.value = 'Please enter your email address.';
-    return;
+    errorMsg.value = 'Please enter your email address.'
+    return
   }
-  
-  isLoading.value = true;
-  errorMsg.value = '';
+
+  isLoading.value = true
+  errorMsg.value = ''
 
   try {
     // [修改] 正式呼叫後端 API
     // 注意：路徑取決於你的 axios baseURL 設定，若 baseURL 已包含 /api，則這裡寫 /auth/...
-    await apiClient.post('api/auth/forgot-password/check', { 
-      email: email.value 
-    });
-    
+    await apiClient.post('api/auth/forgot-password/check', {
+      email: email.value,
+    })
+
     // 若無噴錯，代表 User 存在且有開啟 2FA
-    step.value = 2; 
+    step.value = 2
   } catch (err: any) {
-    console.error(err);
+    console.error(err)
     // 顯示後端回傳的錯誤訊息，若無則顯示預設訊息
-    errorMsg.value = err.response?.data?.message || 'Email not found or 2FA is not enabled.';
+    errorMsg.value = err.response?.data?.message || 'Email not found or 2FA is not enabled.'
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 /**
  * Step 2: 驗證 6 位數代碼
@@ -54,31 +54,31 @@ const handleCheckEmail = async () => {
  */
 const handleVerifyCode = async () => {
   if (verificationCode.value.length !== 6) {
-    errorMsg.value = 'Please enter a valid 6-digit code.';
-    return;
+    errorMsg.value = 'Please enter a valid 6-digit code.'
+    return
   }
 
-  isLoading.value = true;
-  errorMsg.value = '';
+  isLoading.value = true
+  errorMsg.value = ''
 
   try {
     // [修改] 正式呼叫後端 API
-    const res = await apiClient.post('api/auth/forgot-password/verify-2fa', { 
-      email: email.value, 
-      code: verificationCode.value 
-    });
+    const res = await apiClient.post('api/auth/forgot-password/verify-2fa', {
+      email: email.value,
+      code: verificationCode.value,
+    })
 
     // 重要：後端驗證通過後會回傳一個暫時的 Token (效期短，專用於重設密碼)
-    resetToken.value = res.data.token;
+    resetToken.value = res.data.token
 
-    step.value = 3; // 進入重設密碼步驟
+    step.value = 3 // 進入重設密碼步驟
   } catch (err: any) {
-    console.error(err);
-    errorMsg.value = err.response?.data?.message || 'Invalid code. Please try again.';
+    console.error(err)
+    errorMsg.value = err.response?.data?.message || 'Invalid code. Please try again.'
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 /**
  * Step 3: 送出新密碼
@@ -86,41 +86,41 @@ const handleVerifyCode = async () => {
  */
 const handleResetPassword = async () => {
   if (newPassword.value.length < 6) {
-    errorMsg.value = 'Password must be at least 6 characters.';
-    return;
+    errorMsg.value = 'Password must be at least 6 characters.'
+    return
   }
   if (newPassword.value !== confirmPassword.value) {
-    errorMsg.value = 'Passwords do not match.';
-    return;
+    errorMsg.value = 'Passwords do not match.'
+    return
   }
 
-  isLoading.value = true;
-  errorMsg.value = '';
+  isLoading.value = true
+  errorMsg.value = ''
 
   try {
     // [修改] 正式呼叫後端 API，帶上 Token 與新密碼
     await apiClient.post('api/auth/forgot-password/reset', {
       token: resetToken.value,
-      newPassword: newPassword.value
-    });
+      newPassword: newPassword.value,
+    })
 
-    step.value = 4; // 顯示成功畫面
+    step.value = 4 // 顯示成功畫面
   } catch (err: any) {
-    console.error(err);
-    errorMsg.value = err.response?.data?.message || 'Failed to reset password. Token may have expired.';
+    console.error(err)
+    errorMsg.value =
+      err.response?.data?.message || 'Failed to reset password. Token may have expired.'
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 const goBackToLogin = () => {
-  router.push('/login');
-};
+  router.push('/login')
+}
 </script>
 <template>
   <div class="auth-wrapper">
     <div class="auth-card">
-      
       <header class="card-header">
         <div class="icon-wrapper">
           <span v-if="step === 4">✅</span>
@@ -142,13 +142,14 @@ const goBackToLogin = () => {
 
       <div v-if="step === 1" class="step-content">
         <p class="description">
-          Enter your account email. We will verify your identity using your Two-Factor Authentication (2FA) app.
+          Enter your account email. We will verify your identity using your Two-Factor
+          Authentication (2FA) app.
         </p>
         <div class="input-group">
-          <input 
-            v-model="email" 
-            type="email" 
-            placeholder="example@ntu.edu.tw" 
+          <input
+            v-model="email"
+            type="email"
+            placeholder="example@ntu.edu.tw"
             class="std-input"
             @keyup.enter="handleCheckEmail"
           />
@@ -160,15 +161,13 @@ const goBackToLogin = () => {
       </div>
 
       <div v-else-if="step === 2" class="step-content">
-        <p class="description">
-          Please enter the 6-digit code from your Google Authenticator app.
-        </p>
+        <p class="description">Please enter the 6-digit code from your Google Authenticator app.</p>
         <div class="input-group">
-          <input 
-            v-model="verificationCode" 
-            type="text" 
-            maxlength="6" 
-            placeholder="000 000" 
+          <input
+            v-model="verificationCode"
+            type="text"
+            maxlength="6"
+            placeholder="000 000"
             class="code-input"
             @keyup.enter="handleVerifyCode"
           />
@@ -176,28 +175,24 @@ const goBackToLogin = () => {
         <button class="btn-primary" @click="handleVerifyCode" :disabled="isLoading">
           {{ isLoading ? 'Verifying...' : 'Verify' }}
         </button>
-        <button class="btn-secondary" @click="step = 1" :disabled="isLoading">
-          Back
-        </button>
+        <button class="btn-secondary" @click="step = 1" :disabled="isLoading">Back</button>
       </div>
 
       <div v-else-if="step === 3" class="step-content">
-        <p class="description">
-          Identity verified. Please create a new password for your account.
-        </p>
+        <p class="description">Identity verified. Please create a new password for your account.</p>
         <div class="input-group">
-          <input 
-            v-model="newPassword" 
-            type="password" 
-            placeholder="New Password" 
+          <input
+            v-model="newPassword"
+            type="password"
+            placeholder="New Password"
             class="std-input"
           />
         </div>
         <div class="input-group">
-          <input 
-            v-model="confirmPassword" 
-            type="password" 
-            placeholder="Confirm Password" 
+          <input
+            v-model="confirmPassword"
+            type="password"
+            placeholder="Confirm Password"
             class="std-input"
             @keyup.enter="handleResetPassword"
           />
@@ -211,11 +206,8 @@ const goBackToLogin = () => {
         <p class="description">
           Your password has been successfully updated. You can now login with your new credentials.
         </p>
-        <button class="btn-primary" @click="goBackToLogin">
-          Back to Login
-        </button>
+        <button class="btn-primary" @click="goBackToLogin">Back to Login</button>
       </div>
-
     </div>
   </div>
 </template>

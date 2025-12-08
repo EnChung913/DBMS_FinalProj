@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import apiClient from '@/api/axios';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '@/api/axios'
 
-const router = useRouter();
-const isLoading = ref(false);
+const router = useRouter()
+const isLoading = ref(false)
 
 // 表單欄位（純文字）
 const formData = ref({
@@ -12,106 +12,98 @@ const formData = ref({
   category: '',
   description: '',
   start_date: '',
-  end_date: ''
-});
+  end_date: '',
+})
 
 // 所選 PDF 檔案
-const selectedFile = ref<File | null>(null);
+const selectedFile = ref<File | null>(null)
 
 // 可選類別
-const categories = [
-  'Competition','Research','Intern','Project','Service','Others'
-];
+const categories = ['Competition', 'Research', 'Intern', 'Project', 'Service', 'Others']
 
 // 處理使用者選擇 PDF
 const onFileSelected = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
+  const input = e.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
 
-  const file = input.files[0];
-  if (!file){
-    selectedFile.value = null;
-    return;
+  const file = input.files[0]
+  if (!file) {
+    selectedFile.value = null
+    return
   }
 
   // 前端限制 PDF + 20MB
   if (file.type !== 'application/pdf') {
-    alert('僅允許上傳 PDF 檔案');
-    input.value = '';
-    return;
+    alert('僅允許上傳 PDF 檔案')
+    input.value = ''
+    return
   }
 
-  if (file.size > 20 * 1024 * 1024) { // 20MB
-    alert('檔案大小不可超過 20MB');
-    input.value = '';
-    return;
+  if (file.size > 20 * 1024 * 1024) {
+    // 20MB
+    alert('檔案大小不可超過 20MB')
+    input.value = ''
+    return
   }
 
-  selectedFile.value = file;
-};
+  selectedFile.value = file
+}
 
 const handleSubmit = async () => {
   console.log(formData)
 
-  if (isLoading.value) return;
-  isLoading.value = true;
+  if (isLoading.value) return
+  isLoading.value = true
 
   try {
     if (!selectedFile.value) {
-      selectedFile.value = null;
+      selectedFile.value = null
     }
 
-    const fd = new FormData();
-    fd.append('title', formData.value.title);
-    fd.append('category', formData.value.category);
-    fd.append('description', formData.value.description);
-    fd.append('start_date', formData.value.start_date || '');
-    fd.append('end_date', formData.value.end_date || '');
-    fd.append('file', selectedFile.value!);
+    const fd = new FormData()
+    fd.append('title', formData.value.title)
+    fd.append('category', formData.value.category)
+    fd.append('description', formData.value.description)
+    fd.append('start_date', formData.value.start_date || '')
+    fd.append('end_date', formData.value.end_date || '')
+    fd.append('file', selectedFile.value!)
 
     await apiClient.post('/api/student/achievement/create', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
 
-    alert('上傳成功！等待系所審核。');
-    router.push('/student/dashboard');
-
+    alert('上傳成功！等待系所審核。')
+    router.push('/student/dashboard')
   } catch (err) {
-    console.error(err);
-    alert('上傳失敗，請稍後再試。');
-
+    console.error(err)
+    alert('上傳失敗，請稍後再試。')
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
-const goBack = () => router.back();
+const goBack = () => router.back()
 </script>
 <template>
   <div class="page-container">
-    
     <!-- 返回鍵 -->
     <div class="outer-header">
-      <button class="btn-back-outer" @click="goBack">
-        <span class="icon">⮐</span> Back
-      </button>
+      <button class="btn-back-outer" @click="goBack"><span class="icon">⮐</span> Back</button>
     </div>
 
     <div class="form-card">
-
       <div class="card-header">
         <h2>Upload Achievement</h2>
       </div>
 
       <form @submit.prevent="handleSubmit" class="main-form">
-
         <!-- Title -->
         <div class="form-group">
           <label>Title</label>
-          <input 
+          <input
             v-model="formData.title"
             type="text"
-            required 
+            required
             placeholder="e.g., 2023 ACM ICPC Asia Regional Contest"
           />
         </div>
@@ -152,34 +144,27 @@ const goBack = () => router.back();
         <!-- PDF Upload -->
         <div class="form-group">
           <label>Upload PDF (max 20MB)</label>
-          <input
-            type="file"
-            accept="application/pdf"
-            @change="onFileSelected"
-            required
-          />
+          <input type="file" accept="application/pdf" @change="onFileSelected" required />
           <small v-if="selectedFile" class="hint">
-            Selected: {{ selectedFile.name }} ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
+            Selected: {{ selectedFile.name }} ({{
+              (selectedFile.size / 1024 / 1024).toFixed(2)
+            }}
+            MB)
           </small>
         </div>
 
         <!-- Buttons -->
         <div class="form-actions">
-          <button type="button" class="btn-cancel" @click="goBack">
-            Cancel
-          </button>
+          <button type="button" class="btn-cancel" @click="goBack">Cancel</button>
 
           <button type="submit" class="btn-primary-gradient" :disabled="isLoading">
             {{ isLoading ? 'Uploading...' : 'Upload' }}
           </button>
         </div>
-
       </form>
-
     </div>
   </div>
 </template>
-
 
 <style scoped>
 @import '@/assets/main.css';
@@ -187,13 +172,13 @@ const goBack = () => router.back();
   padding: 40px 20px;
   min-height: 100vh;
   display: flex;
-  flex-direction: column; 
-  align-items: center;  
+  flex-direction: column;
+  align-items: center;
 }
 
 .outer-header {
   width: 100%;
-  max-width: 700px; 
+  max-width: 700px;
   margin-bottom: 20px;
   display: flex;
   justify-content: flex-start;
@@ -215,7 +200,7 @@ const goBack = () => router.back();
 
 .btn-back-outer:hover {
   color: var(--primary-color);
-  transform: translateX(-5px); 
+  transform: translateX(-5px);
 }
 
 .btn-back-outer .icon {
@@ -230,11 +215,20 @@ const goBack = () => router.back();
   background: #fff;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .card-header {
   background: linear-gradient(135deg, #fff 0%, #fcfcfc 100%);
@@ -248,10 +242,18 @@ const goBack = () => router.back();
   font-size: 1.8rem;
 }
 
-.subtitle { color: #999; font-size: 0.9rem; font-weight: 500; }
+.subtitle {
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
 
-.main-form { padding: 40px; }
-.form-group { margin-bottom: 25px; }
+.main-form {
+  padding: 40px;
+}
+.form-group {
+  margin-bottom: 25px;
+}
 
 label {
   display: block;
@@ -261,45 +263,75 @@ label {
   font-size: 0.95rem;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid #e0e0e0;
   border-radius: 10px;
   font-size: 1rem;
-  background: #FAFAFA;
+  background: #fafafa;
   transition: all 0.3s;
   box-sizing: border-box;
   font-family: inherit;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  background: #FFF;
+  background: #fff;
   box-shadow: 0 0 0 3px rgba(125, 157, 156, 0.1);
 }
 
-textarea { resize: vertical; }
+textarea {
+  resize: vertical;
+}
 
-.hint { display: block; margin-top: 6px; font-size: 0.8rem; color: #aaa; }
+.hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #aaa;
+}
 
 .form-actions {
-  margin-top: 40px; padding-top: 30px; border-top: 1px solid #f5f5f5;
-  display: flex; justify-content: flex-end; gap: 15px;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid #f5f5f5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
 }
 
 .btn-cancel {
-  background: transparent; border: 1px solid #ddd; color: #666;
-  padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer;
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
 }
-.btn-cancel:hover { background: #f5f5f5; }
+.btn-cancel:hover {
+  background: #f5f5f5;
+}
 
 .btn-primary-gradient {
   background: linear-gradient(135deg, var(--primary-color) 0%, #6b8c8b 100%);
-  color: white; border: none; padding: 12px 30px;
-  border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
   box-shadow: 0 4px 15px rgba(125, 157, 156, 0.3);
 }
-.btn-primary-gradient:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(125, 157, 156, 0.4); }
+.btn-primary-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(125, 157, 156, 0.4);
+}
 </style>

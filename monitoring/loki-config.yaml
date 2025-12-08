@@ -2,13 +2,21 @@ auth_enabled: false
 
 server:
   http_listen_port: 3100
+  grpc_listen_port: 9096
 
-ingester:
-  lifecycler:
-    address: 127.0.0.1
-    ring:
-      replication_factor: 1
-  chunk_idle_period: 5m
+# The 'common' block sets up default paths for Ingester, Compactor, and Storage
+# so you don't have to manually configure every single directory.
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /tmp/loki      # <--- All data will be stored here
+  storage:
+    filesystem:
+      chunks_directory: /tmp/loki/chunks
+      rules_directory: /tmp/loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
 
 schema_config:
   configs:
@@ -20,12 +28,7 @@ schema_config:
         prefix: index_
         period: 24h
 
-storage_config:
-  boltdb_shipper:
-    active_index_directory: /tmp/loki/index
-    cache_location: /tmp/loki/cache
-    shared_store: filesystem
-
-limits_config:
-  ingestion_rate_mb: 10
-  ingestion_burst_size_mb: 20
+# We explicitly configure the compactor to use the shared filesystem
+compactor:
+  working_directory: /tmp/loki/compactor
+  shared_store: filesystem

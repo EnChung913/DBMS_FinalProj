@@ -1,42 +1,42 @@
 <!-- src/views/student/StudentDashboard.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import apiClient from '@/api/axios';
-import type { Resource, GPA, Achievement } from '@/types';
-import { useStudentStore } from '@/stores/student';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { ref, onMounted } from 'vue'
+import apiClient from '@/api/axios'
+import type { Resource, GPA, Achievement } from '@/types'
+import { useStudentStore } from '@/stores/student'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter();
+const router = useRouter()
 
 // UI 狀態
-const showAnimation = ref(false);
+const showAnimation = ref(false)
 
 // 資料 Ref（為 Dashboard 本地顯示而存在）
-const studentInfo = ref({ name: '', id: '', dept: '', grade: 0 });
-const gpaRecords = ref<GPA[]>([]);
-const achievements = ref<Achievement[]>([]);
-const recommendedResources = ref<Resource[]>([]);
-const authStore = useAuthStore();
+const studentInfo = ref({ name: '', id: '', dept: '', grade: 0 })
+const gpaRecords = ref<GPA[]>([])
+const achievements = ref<Achievement[]>([])
+const recommendedResources = ref<Resource[]>([])
+const authStore = useAuthStore()
 
-const appCount = ref(0);
+const appCount = ref(0)
 
 onMounted(async () => {
-  setTimeout(() => (showAnimation.value = true), 100);
-  const studentStore = useStudentStore();
-  const resAppCount = await apiClient.get('/api/student/application/count');
-  appCount.value = resAppCount.data;
+  setTimeout(() => (showAnimation.value = true), 100)
+  const studentStore = useStudentStore()
+  const resAppCount = await apiClient.get('/api/student/application/count')
+  appCount.value = resAppCount.data
 
-  console.log('studentStore initialized:', studentStore);
-  
-  const tfa_status = await apiClient.get('/api/auth/2fa/status');
-  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
-  
+  console.log('studentStore initialized:', studentStore)
+
+  const tfa_status = await apiClient.get('/api/auth/2fa/status')
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled)
+
   try {
     // Profile
     if (!studentStore.hasProfile) {
-      const resInfo = await apiClient.get('/api/student/profile');
-      const info = resInfo.data;
+      const resInfo = await apiClient.get('/api/student/profile')
+      const info = resInfo.data
 
       studentStore.setProfile({
         user_id: info.user.user_id,
@@ -45,13 +45,13 @@ onMounted(async () => {
         department_id: info.department_id,
         grade: info.grade,
         is_poor: info.is_poor,
-      });
+      })
     }
 
     // GPA Records
     if (!studentStore.hasGpaRecords) {
-      const resGpa = await apiClient.get('/api/student/gpa');
-      studentStore.setGpaRecords(resGpa.data);
+      const resGpa = await apiClient.get('/api/student/gpa')
+      studentStore.setGpaRecords(resGpa.data)
     }
 
     studentInfo.value = {
@@ -59,13 +59,13 @@ onMounted(async () => {
       id: studentStore.student_id,
       dept: studentStore.department_id,
       grade: studentStore.grade,
-    };
+    }
 
-    gpaRecords.value = studentStore.gpa_records;
-    
+    gpaRecords.value = studentStore.gpa_records
+
     // Achievements
-    const resAchiev = await apiClient.get('/api/student/achievement');
-    achievements.value = resAchiev.data;
+    const resAchiev = await apiClient.get('/api/student/achievement')
+    achievements.value = resAchiev.data
 
     // 推薦資源：優先使用後端推播，失敗時使用 mock
     const mockRecommended: Resource[] = [
@@ -91,57 +91,54 @@ onMounted(async () => {
         supplier_name: 'Prof. Chang',
         match_score: 88,
       },
-    ];
+    ]
 
     try {
-      const resPush = await apiClient.get('/api/push/resource');
-      const data = Array.isArray(resPush.data) ? resPush.data : [];
+      const resPush = await apiClient.get('/api/push/resource')
+      const data = Array.isArray(resPush.data) ? resPush.data : []
 
       if (data.length > 0) {
         recommendedResources.value = data.map((item: any) => {
-          const resource = item.resource ?? item;
-          const rawScore = Number(item?.score ?? resource?.match_score ?? 0);
-          const normalizedScore = Math.round(rawScore > 1 ? rawScore : rawScore * 100);
+          const resource = item.resource ?? item
+          const rawScore = Number(item?.score ?? resource?.match_score ?? 0)
+          const normalizedScore = Math.round(rawScore > 1 ? rawScore : rawScore * 100)
 
           return {
             ...resource,
             match_score: normalizedScore,
             supplier_name: resource?.supplier_name ?? 'Unknown supplier',
-          } as Resource;
-        });
+          } as Resource
+        })
       } else {
-        recommendedResources.value = mockRecommended;
+        recommendedResources.value = mockRecommended
       }
     } catch (err) {
-      console.warn('Failed to fetch recommended resources, using mock instead:', err);
-      recommendedResources.value = mockRecommended;
+      console.warn('Failed to fetch recommended resources, using mock instead:', err)
+      recommendedResources.value = mockRecommended
     }
   } catch (error) {
-    console.error('Failed to fetch dashboard data:', error);
+    console.error('Failed to fetch dashboard data:', error)
   }
-});
+})
 
 // ---------------------------------------------------------
 // UI Helper
 // ---------------------------------------------------------
 const getStatusClass = (status: string) => {
-  if (status === 'recognized') return 'status-ok';
-  if (status === 'rejected') return 'status-err';
-  return 'status-wait';
-};
-
+  if (status === 'recognized') return 'status-ok'
+  if (status === 'rejected') return 'status-err'
+  return 'status-wait'
+}
 
 const handleApply = (resourceId: string) => {
-  router.push(`/student/apply/${resourceId}`);
-};
+  router.push(`/student/apply/${resourceId}`)
+}
 
 const handle2FA = () => {
-  console.log('Navigating to 2FA verification...');
-  router.push('/2fa'); 
-};
-
+  console.log('Navigating to 2FA verification...')
+  router.push('/2fa')
+}
 </script>
-
 
 <template>
   <div class="dashboard-wrapper">
@@ -150,15 +147,15 @@ const handle2FA = () => {
         <div class="user-welcome">
           <span class="sub-greeting">{{ studentInfo.dept }} | {{ studentInfo.id }}</span>
           <h1>{{ studentInfo.name }}</h1>
-            <button 
-              v-if="!authStore.user?.is_2fa_enabled" 
-              class="btn-2fa" 
-              @click="handle2FA" 
-              title="啟用/驗證雙重認證"
-            >
-              <span class="icon">⚠️</span> 
-              <span>Enable 2FA</span>
-            </button>
+          <button
+            v-if="!authStore.user?.is_2fa_enabled"
+            class="btn-2fa"
+            @click="handle2FA"
+            title="啟用/驗證雙重認證"
+          >
+            <span class="icon">⚠️</span>
+            <span>Enable 2FA</span>
+          </button>
         </div>
         <div class="hero-stats">
           <div class="stat-box">
@@ -167,7 +164,7 @@ const handle2FA = () => {
           </div>
           <router-link to="/student/applications" class="stat-box clickable">
             <span class="label">My Applications</span>
-            <span class="value">{{ appCount }}</span> 
+            <span class="value">{{ appCount }}</span>
           </router-link>
         </div>
       </div>
@@ -181,7 +178,10 @@ const handle2FA = () => {
             <div v-for="rec in gpaRecords" :key="rec.semester" class="gpa-row">
               <span class="semester-label">{{ rec.semester }}</span>
               <div class="progress-track">
-                <div class="progress-bar" :style="{ width: showAnimation ? (rec.gpa / 4.3 * 100) + '%' : '0%' }"></div>
+                <div
+                  class="progress-bar"
+                  :style="{ width: showAnimation ? (rec.gpa / 4.3) * 100 + '%' : '0%' }"
+                ></div>
               </div>
               <span class="score-label">{{ rec.gpa }}</span>
             </div>
@@ -189,14 +189,15 @@ const handle2FA = () => {
         </div>
 
         <div class="dashboard-card">
-          <div class="card-header"><h3>Achievements</h3>
-          <button 
-            class="btn-icon-add" 
-            title="新增成就"
-            @click="$router.push('/student/upload-achievement')"
-          >
-            +
-          </button>
+          <div class="card-header">
+            <h3>Achievements</h3>
+            <button
+              class="btn-icon-add"
+              title="新增成就"
+              @click="$router.push('/student/upload-achievement')"
+            >
+              +
+            </button>
           </div>
           <ul class="achieve-list">
             <li v-for="item in achievements" :key="item.achievement_id">
@@ -208,11 +209,14 @@ const handle2FA = () => {
       </aside>
 
       <main class="right-panel">
-        <div class="section-title-row" style="display: flex; justify-content: space-between; align-items: center;">
+        <div
+          class="section-title-row"
+          style="display: flex; justify-content: space-between; align-items: center"
+        >
           <div>
             <h2>Recommended Resources</h2>
           </div>
-    
+
           <router-link to="/student/resources" class="btn-view-all">
             <span class="btn-text">View All</span>
             <span class="arrow-icon">➭➭➭</span>
@@ -226,12 +230,7 @@ const handle2FA = () => {
             <div class="res-content">
               <h3 class="res-title">{{ res.title }}</h3>
               <p class="res-supplier">{{ res.supplier_name }}</p>
-              <button 
-                class="btn-apply" 
-                @click="handleApply(res.resource_id)"
-              >
-                Apply Now !
-              </button>
+              <button class="btn-apply" @click="handleApply(res.resource_id)">Apply Now !</button>
             </div>
           </div>
         </div>
@@ -255,17 +254,23 @@ const handle2FA = () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Hero Header --- */
 .hero-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #F7F5F2 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f7f5f2 0%, #ffffff 100%);
   padding: 30px 40px;
   border-radius: 24px;
-  border: 1px solid rgba(255,255,255,0.6);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 10px 30px rgba(125, 157, 156, 0.05); /* 極淡的莫蘭迪陰影 */
 }
 
@@ -318,7 +323,7 @@ const handle2FA = () => {
 .main-grid {
   display: grid;
   /* 左側固定 360px，右側自動填滿 */
-  grid-template-columns: 360px 1fr; 
+  grid-template-columns: 360px 1fr;
   gap: 30px;
 }
 
@@ -333,15 +338,15 @@ const handle2FA = () => {
   background: #fff;
   border-radius: 20px;
   padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   margin-bottom: 25px;
   transition: transform 0.3s ease;
 }
 
 .dashboard-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
@@ -374,7 +379,7 @@ const handle2FA = () => {
 .progress-track {
   flex: 1;
   height: 10px;
-  background-color: #F0F2F5;
+  background-color: #f0f2f5;
   border-radius: 5px;
   margin: 0 15px;
   overflow: hidden;
@@ -382,7 +387,7 @@ const handle2FA = () => {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #9FB1BC, #7D9D9C); /* 莫蘭迪漸層 */
+  background: linear-gradient(90deg, #9fb1bc, #7d9d9c); /* 莫蘭迪漸層 */
   border-radius: 5px;
   transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1); /* 平滑緩動動畫 */
 }
@@ -407,7 +412,9 @@ const handle2FA = () => {
   justify-content: space-between;
   align-items: center;
 }
-.achieve-list li:last-child { border-bottom: none; }
+.achieve-list li:last-child {
+  border-bottom: none;
+}
 
 .achieve-content {
   display: flex;
@@ -430,9 +437,18 @@ const handle2FA = () => {
   border-radius: 20px;
   font-weight: 600;
 }
-.status-ok { background: rgba(125, 157, 156, 0.15); color: #7D9D9C; }
-.status-wait { background: rgba(159, 177, 188, 0.15); color: #9FB1BC; }
-.status-err { background: rgba(217, 140, 140, 0.15); color: #D98C8C; }
+.status-ok {
+  background: rgba(125, 157, 156, 0.15);
+  color: #7d9d9c;
+}
+.status-wait {
+  background: rgba(159, 177, 188, 0.15);
+  color: #9fb1bc;
+}
+.status-err {
+  background: rgba(217, 140, 140, 0.15);
+  color: #d98c8c;
+}
 
 .btn-icon-add {
   background: var(--input-bg);
@@ -445,8 +461,9 @@ const handle2FA = () => {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-icon-add:hover { background: #dcdcdc; }
-
+.btn-icon-add:hover {
+  background: #dcdcdc;
+}
 
 /* --- Right Panel: Resources --- */
 .section-title-row {
@@ -484,10 +501,11 @@ const handle2FA = () => {
   font-size: 0.9rem;
 }
 
-.tab.active, .tab:hover {
+.tab.active,
+.tab:hover {
   background: #fff;
   color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   font-weight: 500;
 }
 
@@ -504,7 +522,7 @@ const handle2FA = () => {
   padding: 0; /* 內部用 padding */
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -524,16 +542,26 @@ const handle2FA = () => {
   height: 50px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #E6F0F0;
+  border: 2px solid #e6f0f0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   z-index: 2;
 }
-.match-badge .score { font-size: 1rem; font-weight: 800; color: var(--primary-color); line-height: 1; }
-.match-badge .label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; margin-top: 2px; }
+.match-badge .score {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  line-height: 1;
+}
+.match-badge .label {
+  font-size: 0.6rem;
+  color: #aaa;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
 
 .res-content {
   padding: 25px;
@@ -556,7 +584,7 @@ const handle2FA = () => {
   font-weight: 600;
 }
 .tag-quota {
-  background: #F7F5F2;
+  background: #f7f5f2;
   color: var(--text-color);
   padding: 4px 10px;
   border-radius: 6px;
@@ -622,17 +650,17 @@ const handle2FA = () => {
 
 .btn-view-all {
   /* --- 佈局與防換行核心設定 --- */
-  display: inline-flex;    /* 關鍵：讓內容物緊密排列 */
-  align-items: center;     /* 垂直置中 */
-  gap: 8px;                /* 文字與箭頭的間距 */
-  white-space: nowrap;     /* 關鍵：強制文字絕對不准換行 */
-  
+  display: inline-flex; /* 關鍵：讓內容物緊密排列 */
+  align-items: center; /* 垂直置中 */
+  gap: 8px; /* 文字與箭頭的間距 */
+  white-space: nowrap; /* 關鍵：強制文字絕對不准換行 */
+
   /* --- 外觀設定 --- */
   color: var(--primary-color);
   text-decoration: none;
-  font-weight: 700;        /* 加粗一點比較好看 */
+  font-weight: 700; /* 加粗一點比較好看 */
   font-size: 0.95rem;
-  padding: 8px 16px;       /* 增加一點內距，讓按鈕大一點 */
+  padding: 8px 16px; /* 增加一點內距，讓按鈕大一點 */
   border-radius: 8px;
   border: 1px solid transparent; /* 預留邊框位置 */
   transition: all 0.2s ease;
@@ -645,11 +673,11 @@ const handle2FA = () => {
 }
 
 .arrow-icon {
-  font-size: 1.5rem;       /* 在這裡調整箭頭大小 */
-  line-height: 0.8;        /* 縮小行高，避免撐開按鈕高度 */
-  display: flex;           /* 讓箭頭符號本身也保持彈性盒模型，消除怪異間距 */
+  font-size: 1.5rem; /* 在這裡調整箭頭大小 */
+  line-height: 0.8; /* 縮小行高，避免撐開按鈕高度 */
+  display: flex; /* 讓箭頭符號本身也保持彈性盒模型，消除怪異間距 */
   align-items: center;
-  margin-top: -2px;        /* 微調：視字體而定，有時需要往上一點點才視覺置中 */
+  margin-top: -2px; /* 微調：視字體而定，有時需要往上一點點才視覺置中 */
 }
 
 .btn-text {

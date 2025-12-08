@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import apiClient from '@/api/axios';
-import type { AuthResponse, UserRole } from '@/types';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import apiClient from '@/api/axios'
+import type { AuthResponse, UserRole } from '@/types'
 
-const router = useRouter();
-const authStore = useAuthStore();
-const isLoading = ref(false);
+const router = useRouter()
+const authStore = useAuthStore()
+const isLoading = ref(false)
 
-const confirmPassword = ref('');
+const confirmPassword = ref('')
 
 const formData = ref({
   real_name: '',
@@ -17,72 +17,68 @@ const formData = ref({
   username: '',
   password: '',
   nickname: '',
-  role: 'student' as UserRole
-});
+  role: 'student' as UserRole,
+})
 
 const handleRegister = async () => {
-  if (isLoading.value) return;
+  if (isLoading.value) return
 
   // 確認密碼
   if (formData.value.password !== confirmPassword.value) {
-    alert('Passwords do not match');
-    return;
+    alert('Passwords do not match')
+    return
   }
 
-  isLoading.value = true;
-  console.log('Sending payload:', JSON.stringify(formData.value, null, 2));
+  isLoading.value = true
+  console.log('Sending payload:', JSON.stringify(formData.value, null, 2))
 
   try {
     // ---- 呼叫後端註冊 API ----
-    const response = await apiClient.post<AuthResponse>(
-      '/api/auth/register',
-      formData.value,
-      { withCredentials: true }
-    );
+    const response = await apiClient.post<AuthResponse>('/api/auth/register', formData.value, {
+      withCredentials: true,
+    })
 
-    const data = response.data;
-    console.log('status:', response.status);
-    console.log('Registration success:', data);
+    const data = response.data
+    console.log('status:', response.status)
+    console.log('Registration success:', data)
 
     // 設定 user
-    authStore.setUser(data.user);
-    console.log("user: ", data.user); 
+    authStore.setUser(data.user)
+    console.log('user: ', data.user)
 
-    authStore.setNeedProfile(null); // 重設 needProfile 狀態
-    console.log('Need profile setup:', data.needProfile);
+    authStore.setNeedProfile(null) // 重設 needProfile 狀態
+    console.log('Need profile setup:', data.needProfile)
 
     // 註冊後一定要做 profile
     if (authStore.role == 'student' && data.needProfile) {
-      router.push('/setup-profile');
-      return;
+      router.push('/setup-profile')
+      return
+    } else if (authStore.role === 'department') {
+      router.push('/department/dashboard')
+      return
+    } else if (authStore.role === 'company') {
+      router.push('/company/dashboard')
+      return
     }
-    else if (authStore.role === 'department') {
-      router.push('/department/dashboard');
-      return;
-    }    
-    else if (authStore.role === 'company') {
-      router.push('/company/dashboard');
-      return;
-    }
-
   } catch (error: any) {
     if (error.response && error.response.status === 400) {
-      const backendError = error.response.data;
-      console.error('Backend Validation Error Object:', backendError);
+      const backendError = error.response.data
+      console.error('Backend Validation Error Object:', backendError)
       if (backendError.message && Array.isArray(backendError.message)) {
-        alert(`Registration Failed (Validation): ${backendError.message.join('; ')}`);
+        alert(`Registration Failed (Validation): ${backendError.message.join('; ')}`)
       } else {
-        alert(`Registration Failed: ${backendError.message || 'Check your password or username/email.'}`);
+        alert(
+          `Registration Failed: ${backendError.message || 'Check your password or username/email.'}`,
+        )
       }
     } else {
-      alert('Registration failed due to a server error.');
+      alert('Registration failed due to a server error.')
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 </script>
-
 
 <template>
   <div class="container">
@@ -110,14 +106,17 @@ const handleRegister = async () => {
       </div>
       <div class="form-group">
         <label>Confirm Password</label>
-        <input 
-          v-model="confirmPassword" 
-          type="password" 
-          required 
+        <input
+          v-model="confirmPassword"
+          type="password"
+          required
           placeholder="Re-enter your password"
           :class="{ 'error-border': confirmPassword && formData.password !== confirmPassword }"
         />
-        <small v-if="confirmPassword && formData.password !== confirmPassword" style="color: var(--error-color);">
+        <small
+          v-if="confirmPassword && formData.password !== confirmPassword"
+          style="color: var(--error-color)"
+        >
           Passwords do not match
         </small>
       </div>

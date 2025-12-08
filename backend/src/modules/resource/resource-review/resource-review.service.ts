@@ -167,6 +167,8 @@ export class ResourceReviewService {
     // 4. 檢查 Quota (如果是 Approved)
     if (dto.decision === 'approved') {
         // 注意：這裡假設 resource.quota 是「剩餘名額」。如果不足以核准這麼多人，就報錯。
+        console.log('Resource quota:', resource.quota);
+        console.log('Applications to approve:', apps.length);
         if (resource.quota < apps.length) {
              throw new BadRequestException(`Insufficient quota. Remaining: ${resource.quota}, Trying to approve: ${apps.length}`);
         }

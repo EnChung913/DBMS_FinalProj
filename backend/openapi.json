@@ -1074,6 +1074,20 @@
           "Prometheus"
         ]
       }
+    },
+    "/api/scheduler/update-applications": {
+      "post": {
+        "operationId": "SchedulerController_updateExpired",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduler"
+        ]
+      }
     }
   },
   "info": {

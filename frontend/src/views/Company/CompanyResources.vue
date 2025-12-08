@@ -1,89 +1,85 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import apiClient from '@/api/axios';
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '@/api/axios'
 
-const router = useRouter();
-const isLoading = ref(false);
-const myResources = ref<any[]>([]);
-const activeTab = ref('All');
+const router = useRouter()
+const isLoading = ref(false)
+const myResources = ref<any[]>([])
+const activeTab = ref('All')
 
 // 資源類型篩選
 const filteredResources = computed(() => {
-  let list = activeTab.value === 'All'
-    ? myResources.value
-    : myResources.value.filter((r: any) => r.resource_type === activeTab.value);
+  const list =
+    activeTab.value === 'All'
+      ? myResources.value
+      : myResources.value.filter((r: any) => r.resource_type === activeTab.value)
   // console.log(list);
   return list.slice().sort((a: any, b: any) => {
     // 1. Cancelled 一律排最後
-    const aCancelled = a.status === 'Canceled';
-    const bCancelled = b.status === 'Canceled';
-    if (aCancelled && !bCancelled) return 1;
-    if (!aCancelled && bCancelled) return -1;
+    const aCancelled = a.status === 'Canceled'
+    const bCancelled = b.status === 'Canceled'
+    if (aCancelled && !bCancelled) return 1
+    if (!aCancelled && bCancelled) return -1
 
     // 2. 其他按照 deadline 排序
     // 假設 deadline 是可比較的 Date 或 timestamp
-    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-  });
-});
-
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+  })
+})
 
 onMounted(async () => {
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const res = await apiClient.get('api/resource/my');
-    myResources.value = res.data;
+    const res = await apiClient.get('api/resource/my')
+    myResources.value = res.data
 
-    await new Promise(r => setTimeout(r, 300));
-
+    await new Promise((r) => setTimeout(r, 300))
   } catch (error) {
-    console.error(error);
+    console.error(error)
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
-const goBack = () => router.back();
+const goBack = () => router.back()
 
 const handleEdit = (id: string) => {
-  router.push(`/resource/edit/${id}`);
-};
+  router.push(`/resource/edit/${id}`)
+}
 
 const handleViewApplicants = (id: string) => {
-  router.push(`/company/applications?job_id=${id}`); // 範例：帶參數去申請列表
-};
+  router.push(`/company/applications?job_id=${id}`) // 範例：帶參數去申請列表
+}
 
 const handleReview = (id: string) => {
-  router.push(`/company/resource/${id}/review`);
-};
+  router.push(`/company/resource/${id}/review`)
+}
 
 // 處理狀態變更
 const handleStatusChange = async (resource: any, newStatus: string) => {
   try {
-    
-    await apiClient.patch(`api/resource/${resource.resource_id}/status`, { status: newStatus });
-    
-    console.log(`Update status of ${resource.resource_id} to ${newStatus}`);
-    resource.status = newStatus;
-    
+    await apiClient.patch(`api/resource/${resource.resource_id}/status`, { status: newStatus })
+
+    console.log(`Update status of ${resource.resource_id} to ${newStatus}`)
+    resource.status = newStatus
   } catch (e) {
-    alert('Update failed');
+    alert('Update failed')
   }
-};
+}
 </script>
 
 <template>
   <div class="page-container">
-    
     <div class="page-header">
       <div class="title-row">
         <button class="btn-back" @click="goBack">⮐ Back</button>
         <h1>Department Resource Management</h1>
       </div>
-      
+
       <div class="filter-bar">
-        <button 
-          v-for="tab in ['All', 'Scholarship', 'Lab', 'Internship', 'Others']" 
+        <button
+          v-for="tab in ['All', 'Scholarship', 'Lab', 'Internship', 'Others']"
           :key="tab"
           :class="['filter-pill', { active: activeTab === tab }]"
           @click="activeTab = tab"
@@ -97,23 +93,21 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
       <div class="spinner"></div>
       <p>Loading resources...</p>
     </div>
-    
+
     <div v-else class="resource-list">
+      <div v-if="filteredResources.length === 0" class="empty-state">No resources found.</div>
 
-      <div v-if="filteredResources.length === 0" class="empty-state">
-        No resources found.
-      </div>
-
-      <div 
-        v-for="res in filteredResources" 
-        :key="res.id" 
+      <div
+        v-for="res in filteredResources"
+        :key="res.id"
         class="resource-item clickable-card"
         @click="handleReview(res.resource_id)"
       >
-        
         <div class="info-section">
           <div class="info-header">
-            <span :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"></span>
+            <span
+              :class="['status-dot', res.status === 'Available' ? 'dot-green' : 'dot-gray']"
+            ></span>
             <h3 class="res-title">{{ res.title }}</h3>
             <span class="type-badge">{{ res.resource_type }}</span>
 
@@ -125,7 +119,6 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
                 Deadline: {{ res.deadline }}
               </span>
             </div>
-
           </div>
         </div>
 
@@ -142,18 +135,17 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         </div>
 
         <div class="action-section">
-
           <button class="btn-action outline" @click="handleEdit(res.resource_id)">Edit</button>
-          
+
           <div class="status-changer">
-            <select 
-              :value="res.status" 
+            <select
+              :value="res.status"
               @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
               class="select-status"
               :class="{
                 'st-avail': res.status === 'Available',
                 'st-unavail': res.status === 'Unavailable',
-                'st-canceled': res.status === 'Canceled'
+                'st-canceled': res.status === 'Canceled',
               }"
             >
               <option value="Available">Available</option>
@@ -161,15 +153,11 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
               <option value="Canceled">Canceled</option>
             </select>
           </div>
-
         </div>
-
       </div>
     </div>
-
   </div>
 </template>
-
 
 <style scoped>
 @import '@/assets/main.css';
@@ -195,26 +183,48 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   margin-bottom: 25px;
 }
 
-.title-row h1 { grid-column: 2; margin: 0; font-size: 2rem; color: var(--accent-color); }
+.title-row h1 {
+  grid-column: 2;
+  margin: 0;
+  font-size: 2rem;
+  color: var(--accent-color);
+}
 
 .btn-back {
   justify-self: start;
-  background: transparent; border: none; color: var(--secondary-color);
-  font-size: 1rem; cursor: pointer; transition: transform 0.2s;
+  background: transparent;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
-.btn-back:hover { transform: translateX(-5px); color: var(--primary-color); }
+.btn-back:hover {
+  transform: translateX(-5px);
+  color: var(--primary-color);
+}
 
 /* --- Filter Tabs --- */
 .filter-bar {
-  display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .filter-pill {
-  background: #fff; border: 1px solid #ddd; padding: 6px 18px;
-  border-radius: 20px; color: var(--text-color); cursor: pointer;
-  transition: all 0.3s; font-size: 0.9rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 6px 18px;
+  border-radius: 20px;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
 }
 .filter-pill.active {
-  background: var(--primary-color); color: white; border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
   box-shadow: 0 4px 10px rgba(125, 157, 156, 0.4);
 }
 
@@ -231,17 +241,21 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 .resource-item {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
-  border: 1px solid rgba(0,0,0,0.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
   padding: 25px 30px;
   display: grid;
   /* 網格佈局：左(彈性) 中(固定) 右(固定) */
-  grid-template-columns: 1fr auto auto; 
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 40px;
   overflow: hidden;
-  position: relative; overflow: visible;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+  overflow: visible;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
   cursor: pointer; /* 讓使用者知道可以點 */
 }
 
@@ -253,55 +267,137 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 
 /* 左側裝飾線 */
 .resource-item::before {
-  content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 5px;
-  background: linear-gradient(180deg, #9FB1BC, #7D9D9C);
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  background: linear-gradient(180deg, #9fb1bc, #7d9d9c);
   opacity: 0.8;
 }
 
-.empty-state { text-align: center; color: #aaa; padding: 40px; font-size: 1rem; }
-
-/* Info Section */
-.info-section { display: flex; flex-direction: column; gap: 8px; }
-.info-header { display: flex; align-items: center; gap: 12px; }
-
-.type-badge {
-  background: rgba(125, 157, 156, 0.1); color: var(--primary-color);
-  padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 40px;
+  font-size: 1rem;
 }
 
-.res-title { margin: 0; font-size: 1.25rem; color: var(--text-color); font-weight: 700; }
+/* Info Section */
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-.status-dot { width: 8px; height: 8px; border-radius: 50%; }
-.dot-green { background-color: #4CAF50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2); }
-.dot-yellow { background-color: #FFC107; box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2); }
-.dot-red { background-color: #EF5350; box-shadow: 0 0 0 2px rgba(239, 83, 80, 0.2); }
-.dot-gray { background-color: #ccc; }
+.type-badge {
+  background: rgba(125, 157, 156, 0.1);
+  color: var(--primary-color);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
 
-.info-meta { font-size: 0.85rem; color: #888; display: flex; gap: 15px; }
-.meta-status strong { color: var(--accent-color); }
+.res-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot-green {
+  background-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+.dot-yellow {
+  background-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+.dot-red {
+  background-color: #ef5350;
+  box-shadow: 0 0 0 2px rgba(239, 83, 80, 0.2);
+}
+.dot-gray {
+  background-color: #ccc;
+}
+
+.info-meta {
+  font-size: 0.85rem;
+  color: #888;
+  display: flex;
+  gap: 15px;
+}
+.meta-status strong {
+  color: var(--accent-color);
+}
 
 /* Stats Section */
 .stats-section {
-  display: flex; align-items: center; gap: 20px;
-  background: #F9FAFB; padding: 10px 25px; border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #f9fafb;
+  padding: 10px 25px;
+  border-radius: 12px;
 }
-.stat-group { display: flex; flex-direction: column; align-items: center; min-width: 60px; }
-.stat-label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; margin-bottom: 2px; }
-.stat-val { font-size: 1.2rem; font-weight: 700; color: var(--text-color); }
-.stat-val.highlight { color: var(--primary-color); }
-.stat-divider { width: 1px; height: 30px; background: #ddd; }
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+.stat-label {
+  font-size: 0.7rem;
+  color: #aaa;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.stat-val {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.stat-val.highlight {
+  color: var(--primary-color);
+}
+.stat-divider {
+  width: 1px;
+  height: 30px;
+  background: #ddd;
+}
 
 /* Action Section & Dropdown Styles */
-.action-section { 
-  display: flex; 
-  gap: 10px; 
-  align-items: center; 
+.action-section {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .btn-action {
-  padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
-.btn-action.outline:hover { background: var(--primary-color); color: white; }
+.btn-action.outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
 
 /* Status Changer Dropdown (小巧精緻版) */
 .status-changer {
@@ -319,18 +415,27 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   color: #ffffff;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   /* 自訂箭頭 */
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
   background-repeat: no-repeat;
-  background-position: right .7em top 50%;
-  background-size: .65em auto;
+  background-position: right 0.7em top 50%;
+  background-size: 0.65em auto;
 }
 
 /* 根據狀態改變選單顏色 */
-.select-status.st-avail { border-color: #4CAF50; color: #659568; }
-.select-status.st-unavail { border-color: #ccc; color: #848382; }
-.select-status.st-canceled { border-color: #f44336; color: #d17c76; }
+.select-status.st-avail {
+  border-color: #4caf50;
+  color: #659568;
+}
+.select-status.st-unavail {
+  border-color: #ccc;
+  color: #848382;
+}
+.select-status.st-canceled {
+  border-color: #f44336;
+  color: #d17c76;
+}
 
 .select-status:hover {
   filter: brightness(0.95);
@@ -347,32 +452,74 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 }
 
 .btn-action {
-  padding: 8px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 .btn-action.outline {
-  background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
 }
-.btn-action.outline:hover { background: var(--primary-color); color: white; }
+.btn-action.outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
 
 .btn-action.primary {
-  background: var(--primary-color); border: 1px solid var(--primary-color); color: white;
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: white;
 }
-.btn-action.primary:hover { opacity: 0.9; box-shadow: 0 4px 8px rgba(125, 157, 156, 0.3); }
+.btn-action.primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 8px rgba(125, 157, 156, 0.3);
+}
 
 /* RWD */
 @media (max-width: 900px) {
-  .resource-item { grid-template-columns: 1fr; gap: 20px; }
-  .action-section { 
-    flex-direction: row; 
-    justify-content: space-between; 
-    align-items: center; 
+  .resource-item {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .action-section {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
   }
-  .stats-section { justify-content: space-around; width: 100%; box-sizing: border-box; }
+  .stats-section {
+    justify-content: space-around;
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 /* Loading */
-.loading-area { text-align: center; padding: 60px; color: var(--secondary-color); }
-.spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; margin: 0 auto 15px; animation: spin 1s linear infinite; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.loading-area {
+  text-align: center;
+  padding: 60px;
+  color: var(--secondary-color);
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 </style>

@@ -4,8 +4,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { ResourceService } from './resource.service';
 import { CreateResourceDto } from './dto/create-resource.dto';
-import { UpsertResourceConditionDto } from './resource-condition/dto/upsert-resource-condition.dto';
-import { ResourceConditionService } from './resource-condition/resource-condition.service';
 import { ApiTags, ApiResponse, ApiOperation } from '@nestjs/swagger';
 
 @Controller('resource')

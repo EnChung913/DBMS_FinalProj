@@ -124,10 +124,13 @@ You can check the whole change log in diary.md for more details.
 ## To reset the database to a clean state
 
 - remove all docker and start from scratch
-``` bash
-docker compose build --no-cache
-docker compose down
+```bash
 docker volume rm dbms_finalproj_group7_pgdata
+```
+
+``` bash
+docker compose down
+docker compose build --no-cache
 docker compose up -d
 ```
 
