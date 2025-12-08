@@ -3,6 +3,8 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { APP_GUARD } from '@nestjs/core';
+
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -17,6 +19,10 @@ describe('AppController (e2e)', () => {
         get: () => null,
         set: () => null,
         // publish, subscribe, etc
+      })
+      .overrideProvider(APP_GUARD)
+      .useValue({
+        canActivate: () => true, // 所有 AuthGuard 直接通過
       })
       .compile();
 
