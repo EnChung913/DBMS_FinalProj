@@ -2,6 +2,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // 定義資料介面
 interface resource {
@@ -26,9 +30,14 @@ interface Applicant {
 const resources = ref<resource[]>([]);
 const applicants = ref<Applicant[]>([]);
 const showAnimation = ref(false);
+const authStore = useAuthStore();
+const name = authStore.user?.real_name || 'Company';
+
 
 onMounted(async () => {
   setTimeout(() => showAnimation.value = true, 100);
+  const tfa_status = await apiClient.get('/api/auth/2fa/status');
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
 
   try {
     // ----------------------------------------------------------------
@@ -59,6 +68,13 @@ const getStatusClass = (status: string) => {
     default: return 'status-yellow'; // Draft
   }
 };
+
+const handle2FA = () => {
+  console.log('Navigating to 2FA verification...');
+  router.push('/2fa'); 
+};
+
+
 </script>
 
 <template>
@@ -68,7 +84,16 @@ const getStatusClass = (status: string) => {
       <div class="hero-content">
         <div class="header-text">
           <span class="sub-greeting">Company dashboard</span>
-          <h1>某某某公司</h1>
+          <h1>{{ name }}</h1>
+          <button 
+            v-if="!authStore.user?.is_2fa_enabled" 
+            class="btn-2fa" 
+            @click="handle2FA" 
+            title="啟用/驗證雙重認證"
+          >
+            <span class="icon">⚠️</span> 
+            <span>Enable 2FA</span>
+          </button>
         </div>
         <div class="header-actions">
            <button class="btn-primary-large" @click="$router.push('/resource/create')">
@@ -462,5 +487,30 @@ const getStatusClass = (status: string) => {
   border-color: var(--primary-color);
   color: var(--primary-color);
   background: rgba(125, 157, 156, 0.05);
+}
+.btn-2fa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(7, 0, 0, 0.2); /* 半透明背景 */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.btn-2fa:hover {
+  background-color: rgba(74, 222, 128, 0.2); /* 懸停時變為微綠色 */
+  border-color: #4ade80;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-2fa .icon {
+  font-size: 1.1rem;
 }
 </style>

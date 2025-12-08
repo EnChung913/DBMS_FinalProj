@@ -12,7 +12,7 @@ export interface User {
   real_name: string;
   role: UserRole;
   needProfile: boolean;
-
+  is_2fa_enabled: boolean;
   is_admin?: boolean;
   department_id?: string;
   company_id?: string;

@@ -2,6 +2,10 @@
 import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
 
 // 定義資料型別
 interface PendingAchievement {
@@ -18,7 +22,7 @@ interface MyResource {
   resource_id: string;
   title: string;
   resource_type: string;
-  applicants: number;
+  applied: number;
   quota: number;
   status: 'Available' | 'Unavailable' | 'Closed';
   deadline: string;
@@ -30,6 +34,9 @@ const showAnimation = ref(false);
 const authStore = useAuthStore();
 
 onMounted(async () => {
+  const tfa_status = await apiClient.get('/api/auth/2fa/status');
+  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled);
+  
   setTimeout(() => showAnimation.value = true, 100);
   
   try {
@@ -59,6 +66,11 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   }
 };
 
+const handle2FA = () => {
+  console.log('Navigating to 2FA verification...');
+  router.push('/2fa'); 
+};
+
 </script>
 
 <template>
@@ -69,6 +81,15 @@ const verifyAchievement = async (id: number, decision: boolean) => {
         <div class="user-welcome">
           <span class="sub-greeting">{{ authStore.user?.department_id }} | DEPT</span>
           <h1>{{ authStore.user?.real_name ?? authStore.user?.username }}</h1>
+            <button 
+              v-if="!authStore.user?.is_2fa_enabled" 
+              class="btn-2fa" 
+              @click="handle2FA" 
+              title="啟用/驗證雙重認證"
+            >
+              <span class="icon">⚠️</span> 
+              <span>Enable 2FA</span>
+            </button>
         </div>
         
         <div class="hero-actions">
@@ -162,7 +183,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
               <div class="divider"></div>
               <div class="stat-item">
                 <span class="label">Applicants</span>
-                <span class="value highlight">{{ res.applicants }}</span>
+                <span class="value highlight">{{ res.applied }}</span>
               </div>
             </div>
 
@@ -482,4 +503,30 @@ const verifyAchievement = async (id: number, decision: boolean) => {
   background: var(--primary-color); border: 1px solid var(--primary-color); color: white;
 }
 .btn-action.primary:hover { opacity: 0.9; box-shadow: 0 4px 10px rgba(125, 157, 156, 0.3); }
+
+.btn-2fa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(7, 0, 0, 0.2); /* 半透明背景 */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.btn-2fa:hover {
+  background-color: rgba(74, 222, 128, 0.2); /* 懸停時變為微綠色 */
+  border-color: #4ade80;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-2fa .icon {
+  font-size: 1.1rem;
+}
 </style>

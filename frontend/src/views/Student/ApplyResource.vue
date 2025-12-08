@@ -20,12 +20,12 @@ onMounted(async () => {
   try {
     // Fetch the specific resource details
     // TO DO: [GET] /api/resource/:id
-    // const res = await apiClient.get(`/api/resource/${resourceId}`);
-    // resource.value = res.data;
+    const res = await apiClient.get(`/api/resource/${resourceId}`);
+    resource.value = res.data;
 
     // --- Mock Data ---
     await new Promise(r => setTimeout(r, 300));
-    resource.value = {
+    if(!resource.value) resource.value = {
       resource_id: resourceId,
       title: 'Software Engineer Intern (TSMC)',
       resource_type: 'Internship',
@@ -38,8 +38,8 @@ onMounted(async () => {
 
     // Fetch profile if needed (similar to StudentDashboard logic)
     if (!student.hasProfile) {
-      // const resInfo = await apiClient.get('/api/student/profile');
-      // student.setProfile(resInfo.data);
+      const resInfo = await apiClient.get('/api/student/profile');
+      student.setProfile(resInfo.data);
     }
   } catch (error) {
     console.error(error);

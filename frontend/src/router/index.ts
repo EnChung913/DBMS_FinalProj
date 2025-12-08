@@ -19,6 +19,7 @@ import ApplyResource from '../views/Student/ApplyResource.vue';
 import DepartmentResourceReview from '../views/Department/DepartmentResourceReview.vue';
 import CompanyResourceReview from '../views/Company/CompanyResourceReview.vue';
 import AchievementDetail from '../views/Department/AchievementDetail.vue';
+import TwoFactorAuth from '../views/TwoFactorAuth.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -126,6 +127,12 @@ const router = createRouter({
       component: MyApplications,
       meta: { requiresAuth: true, role: 'student', requiresSetup: true }
     },
+    {
+      path: '/2fa',
+      name: 'TwoFactorAuth',
+      component: TwoFactorAuth,
+      meta: { requiresAuth: true, requiresSetup: true }
+    }
   ]
 });
 

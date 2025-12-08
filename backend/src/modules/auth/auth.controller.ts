@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Post, Get, Body, Res, Req, HttpCode } from '@nestjs/common';
+import { Controller, UseGuards, Post, Get, Body, Res, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -6,7 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-
+import { CheckEmailDto, Verify2FaResetDto, ResetPasswordDto } from './dto/forgot-password.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -172,6 +172,14 @@ export class AuthController {
     return res.json({ ok: true });
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa/status')
+  @ApiOperation({ summary: 'Get 2FA status for the current user' })
+  @ApiResponse({ status: 200, description: '2FA status retrieved successfully.' })
+  async get2FAStatus(@Req() req: any) {
+    return this.authService.get2FAStatus(req.user.sub);
+  }
+
   // Step 1: 產生2FA secret + QRCode
   @UseGuards(JwtAuthGuard)
   @Post('2fa/generate')
@@ -199,11 +207,31 @@ export class AuthController {
     return this.authService.unlockAccountBy2FA(req.user.sub, dto.code);
   }
 
-  // User 要 reset password 時 → 需要 2FA
-  // @UseGuards(JwtAuthGuard)
-  // @Post('2fa/verify-for-reset')
-  // async verifyForReset(@Req() req: any, @Body() dto: { code: string }) {
-  //   const user = await this.authService.verifyForPasswordReset(req.user.sub, dto.code);
-  //   return user;
-  // }
+// Step 1: 檢查 Email 是否存在且已啟用 2FA
+  @Post('forgot-password/check')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Step 1: Check if user exists and has 2FA enabled' })
+  @ApiResponse({ status: 200, description: 'User allows 2FA reset.' })
+  @ApiResponse({ status: 404, description: 'User not found or 2FA not enabled.' })
+  async checkUserForReset(@Body() dto: CheckEmailDto) {
+    return this.authService.validateUserFor2FAReset(dto.email);
+  }
+
+  // Step 2: 驗證 2FA 代碼並核發重設 Token
+  @Post('forgot-password/verify-2fa')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Step 2: Verify TOTP and issue reset token' })
+  @ApiResponse({ status: 200, description: 'Returns a temporary reset token.' })
+  async verify2FAForReset(@Body() dto: Verify2FaResetDto) {
+    return this.authService.verify2FAAndGetResetToken(dto.email, dto.code);
+  }
+
+  // Step 3: 使用 Token 重設密碼
+  @Post('forgot-password/reset')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Step 3: Reset password using the token' })
+  @ApiResponse({ status: 200, description: 'Password updated successfully.' })
+  async resetPasswordWithToken(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
 }

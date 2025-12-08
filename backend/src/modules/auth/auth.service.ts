@@ -3,6 +3,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   Inject,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, LineString } from 'typeorm';
@@ -19,6 +20,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 import { StudentProfile } from '../../entities/student-profile.entity';
+import { authenticator } from 'otplib';
 
 @Injectable()
 export class AuthService {
@@ -296,6 +298,15 @@ export class AuthService {
   /* ===========================================================
      2FA modules
      ===========================================================*/
+  async get2FAStatus(userId: string) {
+    const user = await this.userRepo.findOne({ where: { user_id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    return {
+      is_2fa_enabled: user.is_2fa_enabled,
+    };
+  }
+
   // 1. generate secret + QRCode
   async generate2FASecret(userId: string) {
     const user = await this.userRepo.findOne({ where: { user_id: userId } });
@@ -378,6 +389,92 @@ export class AuthService {
     await this.redis.del(`login:fail:${userId}`);
 
     return { unlocked: true };
+  }
+
+/**
+   * Step 1: 驗證用戶是否有資格進行 2FA 重設
+   */
+  async validateUserFor2FAReset(email: string): Promise<{ message: string }> {
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    // 為了安全，通常不應明確告知 "Email不存在"，但此流程必須確認 2FA 狀態
+    // 若找不到使用者 OR 使用者沒開 2FA，統一拒絕
+    if (!user || !user.is_2fa_enabled || !user.otp_secret) {
+      throw new NotFoundException('Account not found or 2FA not enabled.');
+    }
+
+    return { message: 'User is eligible for 2FA reset.' };
+  }
+
+  /**
+   * Step 2: 驗證 2FA 代碼並簽發短效期 Token
+   */
+  async verify2FAAndGetResetToken(email: string, code: string): Promise<{ token: string }> {
+    const user = await this.userRepo.findOne({ where: { email } });
+
+    if (!user || !user.otp_secret) {
+      throw new UnauthorizedException('Invalid request.');
+    }
+
+    // 使用 otplib 驗證代碼
+    const isValid = authenticator.verify({
+      token: code,
+      secret: user.otp_secret,
+    });
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid 2FA code.');
+    }
+
+    // 簽發一個專門用於重設密碼的 Token (非登入 Token)
+    // 設定較短的效期 (e.g., 5-10 分鐘)
+    const payload = { 
+      sub: user.user_id, 
+      type: 'password_reset' // 重要：標記用途，防止拿去做登入或其他壞事
+    };
+
+    const token = this.jwtService.sign(payload, { 
+      expiresIn: '5m', // 只給 5 分鐘操作時間
+      secret: process.env.JWT_SECRET // 確保使用正確的密鑰
+    });
+
+    return { token };
+  }
+
+  /**
+   * Step 3: 驗證 Token 並更新密碼
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    let payload: any;
+    
+    try {
+      // 驗證 Token 合法性與效期
+      payload = this.jwtService.verify(token, { secret: process.env.JWT_SECRET });
+    } catch (e) {
+      throw new UnauthorizedException('Reset token is invalid or expired.');
+    }
+
+    // 檢查 Token 用途 (防止有人拿 Login Token 來改密碼)
+    if (payload.type !== 'password_reset') {
+      throw new UnauthorizedException('Invalid token type.');
+    }
+
+    const userId = payload.sub;
+    const user = await this.userRepo.findOne({ where: { user_id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // 雜湊新密碼
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // 更新資料庫
+    user.password = hashedPassword;
+    await this.userRepo.save(user);
+
+    return { message: 'Password reset successfully.' };
   }
 
   /* ===========================================================
