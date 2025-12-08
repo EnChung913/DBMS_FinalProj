@@ -52,6 +52,29 @@ ORDER BY a.creation_date DESC;
 
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('department')
+	@ApiOperation({ summary: 'Get achievement details' })
+	@ApiResponse({ status: 200, description: 'Achievement details retrieved successfully.' })
+	@Get('achievements/:id')
+	async getAchievementDetails(@Param('id') id: string) {
+		const baseUrl = process.env.API_BASE_URL;
+
+		const achievementDetail = await this.dataSource.query(`
+	SELECT 
+		a.*, 
+		s.real_name AS student_name,
+		'${baseUrl}/api/department/achievements/' || a.achievement_id || '/download' AS proof_link
+	FROM achievement a
+	JOIN student_profile sp ON sp.user_id = a.user_id
+	JOIN "user" s ON s.user_id = a.user_id
+	WHERE achievement_id = $1
+		`, [id]);
+
+		if (achievementDetail.length === 0) throw new NotFoundException('Achievement not found');
+		return achievementDetail[0];
+	}
+
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('department')
 	@ApiOperation({ summary: 'Get achievement attachment file' })
 	@ApiResponse({ status: 200, description: 'Achievement attachment file retrieved successfully.' })
 	@Get('achievements/:id/file')

@@ -11,11 +11,28 @@ import * as fs from 'fs';
 import { applicationMulterOptions } from './storage.config';
 import { extname } from 'path';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { DataSource } from 'typeorm';
 
 @ApiTags('Application')
 @Controller('student/application')
 export class ApplicationController {
-	constructor(private readonly applicationService: ApplicationService) {}
+	constructor(private readonly applicationService: ApplicationService,
+		@InjectDataSource() private readonly dataSource: DataSource) {}
+
+	// get my application number
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles('student')
+	@Get('count')
+	@ApiOperation({ summary: 'Get student applications' })
+	@ApiResponse({ status: 200, description: 'Applications retrieved successfully.' })
+	async get(@Req() req: any) {
+		const userId = await this.dataSource.query(`
+select count(*) as count
+from application
+where user_id = $1
+`, [req.user.sub]);
+		return Number(userId[0].count);
+	}
 
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles('student')

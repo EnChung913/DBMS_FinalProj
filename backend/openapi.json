@@ -250,6 +250,21 @@
         ]
       }
     },
+    "/api/student/application/count": {
+      "get": {
+        "operationId": "ApplicationController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Applications retrieved successfully."
+          }
+        },
+        "summary": "Get student applications",
+        "tags": [
+          "Application"
+        ]
+      }
+    },
     "/api/student/application/my": {
       "get": {
         "operationId": "ApplicationController_getApplications",
@@ -349,6 +364,30 @@
           }
         },
         "summary": "Get pending achievements for department",
+        "tags": [
+          "Department"
+        ]
+      }
+    },
+    "/api/department/achievements/{id}": {
+      "get": {
+        "operationId": "DepartmentController_getAchievementDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement details retrieved successfully."
+          }
+        },
+        "summary": "Get achievement details",
         "tags": [
           "Department"
         ]

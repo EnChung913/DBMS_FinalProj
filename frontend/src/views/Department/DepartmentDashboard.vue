@@ -18,7 +18,7 @@ interface MyResource {
   resource_id: string;
   title: string;
   resource_type: string;
-  applicants: number;
+  applied: number;
   quota: number;
   status: 'Available' | 'Unavailable' | 'Closed';
   deadline: string;
@@ -162,7 +162,7 @@ const verifyAchievement = async (id: number, decision: boolean) => {
               <div class="divider"></div>
               <div class="stat-item">
                 <span class="label">Applicants</span>
-                <span class="value highlight">{{ res.applicants }}</span>
+                <span class="value highlight">{{ res.applied }}</span>
               </div>
             </div>
 

@@ -11,7 +11,7 @@ const activeTab = ref('All');
 const filteredResources = computed(() => {
   let list = activeTab.value === 'All'
     ? myResources.value
-    : myResources.value.filter((r: any) => r.type === activeTab.value);
+    : myResources.value.filter((r: any) => r.resource_type === activeTab.value);
 
   return list.slice().sort((a: any, b: any) => {
     // 1. Cancelled 一律排最後

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { PushController } from './push.controller';
 import { PushService } from './push.service';
 
-import { EventModule } from '../enent/event.module';
+import { EventModule } from '../event/event.module';
 import { RedisModule } from '../redis/redis.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';

@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import apiClient from '@/api/axios';
+import { useAuthStore } from '@/stores/auth';
 
 // 定義資料介面
 interface resource {
@@ -26,6 +27,9 @@ interface Applicant {
 const resources = ref<resource[]>([]);
 const applicants = ref<Applicant[]>([]);
 const showAnimation = ref(false);
+const authStore = useAuthStore();
+const name = authStore.user?.real_name || 'Company';
+
 
 onMounted(async () => {
   setTimeout(() => showAnimation.value = true, 100);
@@ -68,7 +72,7 @@ const getStatusClass = (status: string) => {
       <div class="hero-content">
         <div class="header-text">
           <span class="sub-greeting">Company dashboard</span>
-          <h1>某某某公司</h1>
+          <h1>{{ name }}</h1>
         </div>
         <div class="header-actions">
            <button class="btn-primary-large" @click="$router.push('/resource/create')">
