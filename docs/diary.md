@@ -327,3 +327,6 @@ Now is the pruge and export function.
 [2025-12-9 16:33]
 I finally finished the admin functions (backup and purge). Admin can now backup the whole database to a sql file and download it. Besides, admin can preview the data that would be purged in the next scheduled task run. Next step, perhaps optimize the push recommendation function and set user to admin, remove user, company search student function.
 The recommendation function should involve the course records of the student.
+
+[2025-12-10 00:58]
+I push the image to GHCR, hope they run well.

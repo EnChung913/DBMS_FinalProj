@@ -75,14 +75,14 @@ ORDER BY a.creation_date DESC;
 
     const achievementDetail = await this.dataSource.query(
       `
-	SELECT 
-		a.*, 
-		s.real_name AS student_name,
-		'${baseUrl}/api/department/achievements/' || a.achievement_id || '/download' AS proof_link
-	FROM achievement a
-	JOIN student_profile sp ON sp.user_id = a.user_id
-	JOIN "user" s ON s.user_id = a.user_id
-	WHERE achievement_id = $1
+SELECT 
+  a.*, 
+  s.real_name AS student_name,
+  '${baseUrl}/api/department/achievements/' || a.achievement_id || '/download' AS proof_link
+FROM achievement a
+JOIN student_profile sp ON sp.user_id = a.user_id
+JOIN "user" s ON s.user_id = a.user_id
+WHERE achievement_id = $1
 		`,
       [id],
     );

@@ -1,7 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
+
+// 定義學生介面 (根據 SQL 返回結果推斷)
+interface Student {
+  id: string;
+  real_name: string;
+  department_name?: string; // 對應 SQL 的 department_id 或 join 後的名稱
+  grade: number;
+  current_gpa: number;
+  avg_gpa: number;
+  courses_taken: string[];
+  entry_year: number;
+}
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -9,17 +21,17 @@ const hasSearched = ref(false);
 
 // 搜尋條件
 const filters = ref({
-  department_name: '',
+  department_name: '', // 注意：後端 SQL 變數名為 department_id，若需精確搜尋可能需傳入 ID
   entry_year: null as number | null,
   grade: null as number | null,
   avg_gpa_min: null as number | null,
   current_gpa_min: null as number | null,
-  courses: '', // 使用逗號分隔輸入
+  courses: '', // 使用逗號分隔輸入，例如 "Database, OS"
   limit: 10
 });
 
 // 搜尋結果
-const students = ref<any[]>([]);
+const students = ref<Student[]>([]);
 
 const handleSearch = async () => {
   isLoading.value = true;
@@ -27,30 +39,35 @@ const handleSearch = async () => {
   students.value = [];
 
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [POST] /api/company/search-students
-    // Body: filters.value
-    // ----------------------------------------------------------------
-    // const res = await apiClient.post('/company/search-students', {
-    //   ...filters.value,
-    //   courses: filters.value.courses.split(',').map(c => c.trim()).filter(c => c)
-    // });
-    // students.value = res.data;
+    // 1. 準備 Payload，將前端變數轉換為後端 SearchStudentDto 格式
+    const payload = {
+      // 假設後端 department_id 欄位接受字串，或者這裡其實應該是下拉選單選出的 ID
+      department_id: filters.value.department_name || null, 
+      entry_year: filters.value.entry_year,
+      grade: filters.value.grade,
+      // 欄位名稱轉換: avg_gpa_min -> min_avg_gpa
+      min_avg_gpa: filters.value.avg_gpa_min,
+      // 欄位名稱轉換: current_gpa_min -> min_current_gpa
+      min_current_gpa: filters.value.current_gpa_min,
+      // 課程字串轉陣列: "A, B" -> ["A", "B"]
+      courses_id: filters.value.courses 
+        ? filters.value.courses.split(/[,，]/).map(c => c.trim()).filter(Boolean) 
+        : null,
+      limit: filters.value.limit,
+      offset: 0 // 預設從第一頁開始
+    };
 
-    // --- Mock Data (模擬搜尋結果) ---
-    console.log('[Mock] Searching with:', filters.value);
-    await new Promise(r => setTimeout(r, 800));
-
-    students.value = [
-      { id: 's1', name: '王小明', dept: 'Computer Science', grade: 3, gpa: 4.1, skills: ['Python', 'Vue.js'], courses: ['Database', 'Algorithms'] },
-      { id: 's2', name: '陳雅婷', dept: 'Information Management', grade: 4, gpa: 3.9, skills: ['Java', 'Spring'], courses: ['System Design'] },
-      { id: 's3', name: '李志豪', dept: 'Electrical Engineering', grade: 3, gpa: 4.2, skills: ['C++', 'Embedded'], courses: ['OS', 'Computer Arch'] },
-    ];
-    // -------------------------------
+    // 2. 發送請求 [POST] /company/filter-students
+    const res = await apiClient.post<Student[]>('api/company/filter-students', payload);
+    
+    // 3. 更新結果
+    students.value = res.data;
+    console.log(students.value)
 
   } catch (error) {
-    console.error(error);
-    alert('Search failed. Please try again.');
+    console.error('Search failed:', error);
+    // 這裡可以使用 UI 庫的 Toast 取代 alert
+    alert('Search failed, there\'re no matching students.');
   } finally {
     isLoading.value = false;
   }
@@ -78,8 +95,8 @@ const goBack = () => router.back();
         <form @submit.prevent="handleSearch">
           
           <div class="form-group">
-            <label>Department</label>
-            <input v-model="filters.department_name" type="text" placeholder="e.g. Computer Science" />
+            <label>Department ID</label>
+            <input v-model="filters.department_name" type="text" placeholder="e.g. 5080" />
           </div>
 
           <div class="row">
@@ -106,7 +123,7 @@ const goBack = () => router.back();
 
           <div class="form-group">
             <label>Courses Taken (comma separated)</label>
-            <input v-model="filters.courses" type="text" placeholder="e.g. Database, Algorithms" />
+            <input v-model="filters.courses" type="text" placeholder="Please enter course id(s)" />
           </div>
 
           <div class="form-group">
@@ -130,22 +147,22 @@ const goBack = () => router.back();
         <div v-else-if="students.length > 0" class="results-grid">
           <div v-for="student in students" :key="student.id" class="student-card card">
             <div class="card-header-row">
-              <div class="avatar">{{ student.name.charAt(0) }}</div>
+              <div class="avatar">{{ student.real_name.charAt(0) ?? 'S'}}</div>
               <div class="student-basic">
-                <h4>{{ student.name }}</h4>
-                <span class="dept">{{ student.dept }} | Grade {{ student.grade }}</span>
+                <h4>{{ student.real_name }}</h4>
+                <span class="dept">{{ student.department_name }} | Grade {{ student.grade }}</span>
               </div>
-              <span class="gpa-badge">GPA {{ student.gpa }}</span>
+              <span class="gpa-badge">GPA {{ student.current_gpa }}</span>
             </div>
             
-            <div class="card-body">
+            <!-- <div class="card-body">
               <div class="tags-group">
                 <span class="tag-label">Courses:</span>
                 <div class="tags">
-                  <span v-for="course in student.courses" :key="course" class="tag">{{ course }}</span>
+                  <span v-for="course in student.courses_taken" :key="course" class="tag">{{ course }}</span>
                 </div>
               </div>
-            </div>
+            </div> -->
 
             <div class="card-footer">
               <button class="btn-outline">View Profile</button>

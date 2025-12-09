@@ -4,8 +4,12 @@ import apiClient from '@/api/axios'
 
 // 狀態管理
 const isLoading = ref(false)
-const isSystemProcessing = ref(false) // 專門給系統操作用的 loading 狀態
+const isSystemProcessing = ref(false)
 const activeTab = ref('Users') 
+
+// 新增：手動輸入的綁定變數
+const inputPromoteName = ref('')
+const inputDeleteName = ref('')
 
 // 資料 Ref
 const userList = ref<any[]>([])
@@ -13,28 +17,8 @@ const pendingList = ref<any[]>([])
 
 // 初始化
 onMounted(async () => {
-  isLoading.value = true
-  try {
-    // 1. 獲取 User List (假設你有這個 API，如果沒有可以保留 Mock)
-    // const usersRes = await apiClient.get('/api/admin/users')
-    // userList.value = usersRes.data
-    
-    // --- Mock User Data (若後端還沒好，保留這個) ---
-    userList.value = [
-      { id: 'u1', username: 'student_alex', email: 'alex@ntu.edu.tw', role: 'student', status: 'Active' },
-      { id: 'u2', username: 'tsmc_hr', email: 'hr@tsmc.com', role: 'company', status: 'Active' },
-      { id: 'u3', username: 'cs_office', email: 'office@cs.ntu.edu.tw', role: 'department', status: 'Active' },
-    ]
-
-    // 2. 獲取 Pending List
-    const pendingRes = await apiClient.get('/api/admin/pending-users')
-    pendingList.value = pendingRes.data
-
-  } catch (error) {
-    console.error('Failed to load initial data', error)
-  } finally {
-    isLoading.value = false
-  }
+  
+  
 })
 
 // --- 通用工具：處理檔案下載 ---
@@ -42,15 +26,12 @@ const handleFileDownload = (data: Blob, headers: any, defaultName: string) => {
   const url = window.URL.createObjectURL(new Blob([data]));
   const link = document.createElement('a');
   link.href = url;
-  
-  // 嘗試從 Header 抓檔名
   const contentDisposition = headers['content-disposition'];
   let fileName = defaultName;
   if (contentDisposition) {
     const match = contentDisposition.match(/filename="?(.+)"?/);
     if (match && match[1]) fileName = match[1];
   }
-  
   link.setAttribute('download', fileName);
   document.body.appendChild(link);
   link.click();
@@ -58,34 +39,64 @@ const handleFileDownload = (data: Blob, headers: any, defaultName: string) => {
   window.URL.revokeObjectURL(url);
 }
 
-// --- 功能 1: User 管理 (Mock) ---
-const promoteToAdmin = async (username: string) => {
-  /* ... 保持原本邏輯 ... */ 
-  alert('Feature pending backend implementation')
+// --- 功能 1: User 管理 (改為手動輸入 Username) ---
+
+// 手動晉升
+const handleManualPromote = async () => {
+  const targetName = inputPromoteName.value.trim()
+  if (!targetName) {
+    alert('Please enter a username to promote.')
+    return
+  }
+
+  try {
+    await apiClient.put('api/admin/promote', {
+      username: targetName
+    })
+
+    alert(`User ${targetName} has been promoted to admin.`)
+  } catch (err) {
+    alert('Promotion failed.')
+  }
+
+  inputPromoteName.value = ''
 }
 
-const deleteUser = async (id: string) => {
-  /* ... 保持原本邏輯 ... */
-  if (!confirm('Delete user?')) return
-  userList.value = userList.value.filter((u) => u.id !== id)
+
+// 手動刪除
+const handleManualDelete = async () => {
+  const targetName = inputDeleteName.value.trim()
+  if (!targetName) {
+    alert('Please enter a username to delete.')
+    return
+  }
+
+  if (!confirm(`Are you sure you want to DELETE user: ${targetName}?`)) return
+
+  try {
+    // 後端 delete 必須使用 user.id
+    await apiClient.delete(`api/admin/user/${targetName}`)
+    alert(`User ${targetName} deleted.`)
+  } catch (err) {
+    alert('Delete failed.')
+  }
+
+  inputDeleteName.value = ''
 }
+
 
 // --- 功能 2: Pending 審核 ---
 const processUserReview = async (id: string, status: string) => {
-  // 對話框邏輯
   const promptText = status === 'approved' 
     ? 'Reason for approval (Optional):' 
     : 'Reason for rejection (Required):';
     
   let comment = window.prompt(promptText, "");
 
-  // 如果是拒絕，強制要求填寫原因
   if (status === 'rejected' && (!comment || comment.trim() === "")) {
     alert("Comment is required for rejection.");
     return;
   }
-  
-  // 按下取消
   if (comment === null) return;
 
   try {
@@ -93,11 +104,7 @@ const processUserReview = async (id: string, status: string) => {
       status: status,
       comment: comment || '', 
     });
-    
-    // 移除列表項目
-    // 注意：後端回傳的是 application_id，確保 key 對應正確
     pendingList.value = pendingList.value.filter((u) => u.application_id !== id);
-    
     alert(`User ${status} successfully.`);
   } catch (e: any) {
     console.error(e);
@@ -109,12 +116,8 @@ const processUserReview = async (id: string, status: string) => {
 const handleBackupOnly = async () => {
   if (isSystemProcessing.value) return;
   isSystemProcessing.value = true;
-
   try {
-    const response = await apiClient.get('api/admin/system/backup', {
-      responseType: 'blob' // 關鍵：接收檔案流
-    });
-    
+    const response = await apiClient.get('api/admin/system/backup', { responseType: 'blob' });
     handleFileDownload(response.data, response.headers, 'backup.sql');
     alert('Backup downloaded successfully.');
   } catch (e) {
@@ -125,60 +128,43 @@ const handleBackupOnly = async () => {
   }
 }
 
-// --- 功能 4: 系統維護 (Preview -> Backup -> Cleanup) ---
+// --- 功能 4: 系統維護 ---
 const handleSystemMaintenance = async () => {
   if (isSystemProcessing.value) return;
   isSystemProcessing.value = true;
 
   try {
-    // A. 取得預覽統計
     const { data: stats } = await apiClient.get('/api/admin/system/cleanup-preview');
     const totalToDelete = stats.users + stats.applications + stats.resources;
 
-    // B. 顯示確認視窗
     const message = `
 【System Maintenance Confirmation】
-
-Actions to perform:
-1. Full Database Backup (SQL dump).
-2. PERMANENTLY DELETE old data (> 1 year).
-
------------------------------------
 Data to be deleted:
 👤 Expired Users: ${stats.users}
 📝 Expired Applications: ${stats.applications}
 📦 Expired Resources: ${stats.resources}
------------------------------------
 Total: ${totalToDelete} items will be removed.
-
-Are you sure you want to proceed?
-    `;
+Are you sure?`;
 
     if (!confirm(message)) {
       isSystemProcessing.value = false;
       return;
     }
 
-    // C. 執行維護 (備份並清理)
-    const response = await apiClient.post('/api/admin/system/maintenance', {}, {
-      responseType: 'blob'
-    });
-
-    // D. 下載備份檔
+    const response = await apiClient.post('/api/admin/system/maintenance', {}, { responseType: 'blob' });
     handleFileDownload(response.data, response.headers, 'backup-cleanup.sql');
-
-    // E. 讀取清理結果 Header
+    
     const statsHeader = response.headers['x-cleanup-stats'];
     if (statsHeader) {
        const finalStats = JSON.parse(statsHeader);
-       alert(`Maintenance Complete!\nDeleted: ${finalStats.users} Users, ${finalStats.applications} Apps.`);
+       alert(`Maintenance Complete!\nDeleted: ${finalStats.users} Users.`);
     } else {
-       alert('Maintenance completed and backup downloaded.');
+       alert('Maintenance completed.');
     }
 
   } catch (e) {
     console.error(e);
-    alert('System maintenance failed. Check console for details.');
+    alert('System maintenance failed.');
   } finally {
     isSystemProcessing.value = false;
   }
@@ -216,33 +202,35 @@ Are you sure you want to proceed?
       </div>
 
       <div v-else-if="activeTab === 'Users'" class="list-container">
-        <div v-for="user in userList" :key="user.id" class="admin-card">
-          <div class="card-left">
-            <div class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</div>
-            <div class="user-info">
-              <div class="info-top">
-                <span class="username">{{ user.username }}</span>
-              </div>
-              <span class="email">{{ user.email }}</span>
+        
+        <div class="operations-panel">
+          <div class="op-card promote-theme">
+            <h3>🌟 Promote User</h3>
+            <div class="input-group">
+              <input 
+                v-model="inputPromoteName" 
+                type="text" 
+                placeholder="Enter username" 
+                @keyup.enter="handleManualPromote"
+              />
+              <button @click="handleManualPromote">Promote</button>
             </div>
           </div>
 
-          <div class="card-right">
-            <span :class="['status-text', user.status.toLowerCase()]">{{ user.status }}</span>
-            <div class="action-group">
-              <button
-                class="btn-icon"
-                title="Promote to Admin"
-                @click="promoteToAdmin(user.username)"
-              >
-                🌟
-              </button>
-              <button class="btn-icon delete" title="Delete User" @click="deleteUser(user.id)">
-                🗑
-              </button>
+          <div class="op-card delete-theme">
+            <h3>🗑 Delete User</h3>
+            <div class="input-group">
+              <input 
+                v-model="inputDeleteName" 
+                type="text" 
+                placeholder="Enter username" 
+                @keyup.enter="handleManualDelete"
+              />
+              <button @click="handleManualDelete">Delete</button>
             </div>
           </div>
         </div>
+
       </div>
 
       <div v-else-if="activeTab === 'Pending'" class="list-container">
@@ -270,18 +258,13 @@ Are you sure you want to proceed?
       </div>
 
       <div v-else-if="activeTab === 'System'" class="system-grid">
-        
         <div class="system-card primary-theme">
           <div class="sys-icon-bg">📥</div>
           <div class="sys-content">
             <h3>Database Backup</h3>
             <p>Download full SQL dump without deleting data.</p>
           </div>
-          <button 
-            class="btn-sys primary" 
-            @click="handleBackupOnly" 
-            :disabled="isSystemProcessing"
-          >
+          <button class="btn-sys primary" @click="handleBackupOnly" :disabled="isSystemProcessing">
             {{ isSystemProcessing ? 'Processing...' : 'Export SQL' }}
           </button>
         </div>
@@ -292,20 +275,14 @@ Are you sure you want to proceed?
             <h3>System Maintenance</h3>
             <p>Backup DB & Permanently delete data > 1 year old.</p>
           </div>
-          <button 
-            class="btn-sys warning" 
-            @click="handleSystemMaintenance" 
-            :disabled="isSystemProcessing"
-          >
+          <button class="btn-sys warning" @click="handleSystemMaintenance" :disabled="isSystemProcessing">
              {{ isSystemProcessing ? 'Running...' : 'Start Cleanup' }}
           </button>
         </div>
-        
       </div>
     </div>
   </div>
 </template>
-
 <style scoped>
 /* 補上一些關鍵的樣式以支援上述功能 */
 .pending-card {
@@ -686,4 +663,137 @@ Are you sure you want to proceed?
     transform: rotate(360deg);
   }
 }
+.operations-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.op-card {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.op-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.8rem;
+  color: #444;
+  font-weight: 600;
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.input-group button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.input-group button:hover {
+  opacity: 0.9;
+}
+
+/* Promote Theme */
+.promote-theme {
+  border-left: 4px solid #4ade80;
+}
+.promote-theme button {
+  background-color: #4ade80;
+  color: #064e3b;
+}
+
+/* Delete Theme */
+.delete-theme {
+  border-left: 4px solid #ef4444;
+}
+.delete-theme button {
+  background-color: #ef4444;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0 1rem;
+  color: #999;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #eee;
+}
+.divider span {
+  padding: 0 10px;
+}
+
+/* --- Keep existing styles below --- */
+/* (請保留您原有的 dashboard-wrapper, card 等樣式) */
+.dashboard-wrapper { font-family: 'Inter', sans-serif; background: #f8fafc; min-height: 100vh; }
+.hero-content { max-width: 1000px; margin: 0 auto; }
+.sub-greeting { font-size: 0.85rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+.hero-header h1 { margin: 0.2rem 0 0; font-size: 1.8rem; font-weight: 700; }
+
+.tabs-container { max-width: 1000px; margin: -1.5rem auto 1.5rem; padding: 0 1rem; display: flex; gap: 0.5rem; }
+.tab-btn { background: rgba(255,255,255,0.8); border: none; padding: 0.75rem 1.5rem; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; color: #64748b; transition: all 0.2s; position: relative; }
+.tab-btn.active { background: white; color: #2563eb; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
+.badge-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; }
+
+.content-area { max-width: 1000px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+.list-container { display: flex; flex-direction: column; gap: 1rem; }
+.admin-card { background: white; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+.card-left { display: flex; align-items: center; gap: 1rem; }
+.user-avatar { width: 42px; height: 42px; background: #eff6ff; color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
+.user-info { display: flex; flex-direction: column; }
+.info-top { display: flex; align-items: center; gap: 0.6rem; }
+.username { font-weight: 600; color: #1e293b; }
+.email { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
+.status-text { font-size: 0.85rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 20px; }
+.status-text.active { background: #dcfce7; color: #166534; }
+
+.system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.system-card { background: white; border-radius: 16px; padding: 1.5rem; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start; transition: transform 0.2s; }
+.system-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+.sys-icon-bg { font-size: 1.5rem; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
+.primary-theme .sys-icon-bg { background: #eff6ff; }
+.warning-theme .sys-icon-bg { background: #fef2f2; }
+.sys-content h3 { margin: 0; font-size: 1.1rem; color: #0f172a; }
+.sys-content p { margin: 0.5rem 0 0; font-size: 0.9rem; color: #64748b; line-height: 1.4; }
+.btn-sys { width: 100%; padding: 0.75rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: auto; }
+.btn-sys.primary { background: #3b82f6; color: white; }
+.btn-sys.warning { background: #ef4444; color: white; }
+.btn-sys:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Role Badge & Pending styling */
+.role-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+.role-badge.student { background: #e0f2fe; color: #0369a1; }
+.role-badge.company { background: #f3e8ff; color: #7e22ce; }
+.pending-card { border-left: 4px solid #f59e0b; }
+.pending-icon { font-size: 1.2rem; margin-right: 0.5rem; }
+.meta-date { font-size: 0.8rem; color: #94a3b8; }
+.btn-approve { background: #22c55e; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 8px; }
+.btn-reject { background: #ef4444; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
 </style>

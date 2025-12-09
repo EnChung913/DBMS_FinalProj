@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue' // 加入 watch
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import type { Resource } from '@/types'
@@ -11,14 +11,11 @@ const allResources = ref<Resource[]>([])
 const activeTab = ref('All')
 const student = useStudentStore()
 
-// // --- Modal 相關狀態 (新增) ---
-// const showModal = ref(false);
-// const selectedResource = ref<Resource | null>(null);
-// const uploadFile = ref<File | null>(null);
-// const isAgreed = ref(false);
-// const isSubmitting = ref(false);
+// --- 分頁相關狀態 (新增) ---
+const currentPage = ref(1)
+const itemsPerPage = 20 // 設定每頁顯示 50 筆
 
-// Filter
+// Filter (原始邏輯保留，作為資料來源)
 const filteredResources = computed(() => {
   const list =
     activeTab.value === 'All'
@@ -41,6 +38,33 @@ const filteredResources = computed(() => {
 
   return enriched
 })
+
+// --- 分頁計算邏輯 (新增) ---
+// 計算總頁數
+const totalPages = computed(() => {
+  return Math.ceil(filteredResources.value.length / itemsPerPage)
+})
+
+// 切割出當前頁面要顯示的資料
+const paginatedResources = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredResources.value.slice(start, end)
+})
+
+// 當 Filter 改變時 (例如切換 Tab)，重置回第一頁
+watch(activeTab, () => {
+  currentPage.value = 1
+})
+
+// 換頁函式
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    // 換頁後自動滾動到列表頂部 (增強體驗)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 const meetsCondition = (r: Resource) => {
   const deptOK =
@@ -101,71 +125,6 @@ const goBack = () => router.back()
 const handleApply = (resourceId: string) => {
   router.push(`/student/apply/${resourceId}`)
 }
-
-// // --- Modal 邏輯 (新增) ---
-
-// // 開啟 Modal
-// const openApplicationModal = (resource: Resource) => {
-//   selectedResource.value = resource;
-//   showModal.value = true;
-//   // 重置表單
-//   uploadFile.value = null;
-//   isAgreed.value = false;
-// };
-
-// // 關閉 Modal
-// const closeModal = () => {
-//   showModal.value = false;
-//   selectedResource.value = null;
-// };
-
-// // 處理檔案選擇
-// const handleFileChange = (event: Event) => {
-//   const target = event.target as HTMLInputElement;
-//   const file = target.files?.[0];
-//   if (file) {
-//     uploadFile.value = file;
-//   }
-// };
-
-// // 送出申請
-// const submitApplication = async () => {
-//   console.log("submitApplication called");
-
-//   if (!selectedResource.value) return;
-
-//   if (!isAgreed.value) {
-//     alert('Please agree to the terms to proceed.');
-//     return;
-//   }
-
-//   isSubmitting.value = true;
-
-//   try {
-//     const formData = new FormData();
-//     formData.append('resource_id', selectedResource.value.resource_id);
-
-//     // 檔案是「可選」的
-//     if (uploadFile.value) {
-//       formData.append('file', uploadFile.value);
-//     }
-
-//     await apiClient.post('api/student/application/create', formData, {
-//       headers: {
-//         'Content-Type': 'multipart/form-data',
-//       },
-//     });
-
-//     alert('Application submitted successfully!');
-//     closeModal();
-//   } catch (error: any) {
-//     console.error(error);
-//     const msg = error?.response?.data?.message;
-//     alert(msg || 'Failed to apply.');
-//   } finally {
-//     isSubmitting.value = false;
-//   }
-// };
 </script>
 
 <template>
@@ -193,45 +152,72 @@ const handleApply = (resourceId: string) => {
       <p>Curating resources...</p>
     </div>
 
-    <div v-else class="gallery-grid">
-      <div v-for="res in filteredResources" :key="res.resource_id" class="gallery-card">
-        <div class="card-body">
-          <div class="card-top-row">
-            <span class="type-badge">{{ res.resource_type }}</span>
-            <span v-if="res.eligibility.overall" class="match-badge eligible">Eligible</span>
-            <span v-else class="match-badge not-eligible">Not Eligible</span>
-          </div>
+    <div v-else class="gallery-content">
+      <div class="pagination-info">
+        Showing {{ paginatedResources.length }} of {{ filteredResources.length }} resources
+      </div>
 
-          <h3 class="card-title">{{ res.title }}</h3>
+      <div class="gallery-grid">
+        <div v-for="res in paginatedResources" :key="res.resource_id" class="gallery-card">
+          <div class="card-body">
+            <div class="card-top-row">
+              <span class="type-badge">{{ res.resource_type }}</span>
+              <span v-if="res.eligibility.overall" class="match-badge eligible">Eligible</span>
+              <span v-else class="match-badge not-eligible">Not Eligible</span>
+            </div>
 
-          <div class="card-meta">
-            <span class="supplier">🏢 {{ res.supplier_name }}</span>
-            <span class="deadline">📅 {{ res.deadline }}</span>
-          </div>
-          <div class="card-conditions">
-            <div class="cond-label">Eligibility Conditions</div>
-            <div class="cond-list">
-              <span v-if="res.department_id" class="cond-pill">Dept: {{ res.department_id }}</span>
-              <span v-if="res.avg_gpa !== null" class="cond-pill">Avg GPA ≥ {{ res.avg_gpa }}</span>
-              <span v-if="res.current_gpa !== null" class="cond-pill"
-                >Current GPA ≥ {{ res.current_gpa }}</span
-              >
-              <span v-if="res.is_poor !== null" class="cond-pill">
-                {{ res.is_poor ? 'Economically disadvantaged only' : 'Not limited' }}
-              </span>
+            <h3 class="card-title">{{ res.title }}</h3>
+
+            <div class="card-meta">
+              <span class="supplier">🏢 {{ res.supplier_name }}</span>
+              <span class="deadline">📅 {{ res.deadline }}</span>
+            </div>
+            <div class="card-conditions">
+              <div class="cond-label">Eligibility Conditions</div>
+              <div class="cond-list">
+                <span v-if="res.department_id" class="cond-pill">Dept: {{ res.department_id }}</span>
+                <span v-if="res.avg_gpa !== null" class="cond-pill">Avg GPA ≥ {{ res.avg_gpa }}</span>
+                <span v-if="res.current_gpa !== null" class="cond-pill"
+                  >Current GPA ≥ {{ res.current_gpa }}</span
+                >
+                <span v-if="res.is_poor !== null" class="cond-pill">
+                  {{ res.is_poor ? 'Economically disadvantaged only' : 'Not limited' }}
+                </span>
+              </div>
+            </div>
+            <p class="card-desc">{{ res.description }}</p>
+
+            <div class="card-footer">
+              <button class="btn-explore" @click="handleApply(res.resource_id)">Apply</button>
             </div>
           </div>
-          <p class="card-desc">{{ res.description }}</p>
-
-          <div class="card-footer">
-            <button class="btn-explore" @click="handleApply(res.resource_id)">Apply</button>
-          </div>
         </div>
+      </div>
+
+      <div v-if="totalPages > 1" class="pagination-controls">
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === 1" 
+          @click="changePage(currentPage - 1)"
+        >
+          Prev
+        </button>
+        
+        <span class="page-info">
+          Page {{ currentPage }} / {{ totalPages }}
+        </span>
+        
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === totalPages" 
+          @click="changePage(currentPage + 1)"
+        >
+          Next
+        </button>
       </div>
     </div>
   </div>
 </template>
-
 <style scoped>
 @import '@/assets/main.css';
 
@@ -765,5 +751,48 @@ h1 {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+.pagination-info {
+  margin-bottom: 1rem;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: right;
+  padding: 0 1rem;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.page-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f9f9f9;
+}
+
+.page-info {
+  font-weight: bold;
+  color: #333;
 }
 </style>

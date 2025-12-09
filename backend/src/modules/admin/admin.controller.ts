@@ -1,4 +1,4 @@
-import { Controller, Get, Res, Post, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Res, Post, Param, Body, Put, Delete, UseGuards, Request } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ReviewApplicationDto } from './dto/review-application.dto';
 import type { Response } from 'express';
@@ -10,11 +10,29 @@ import { AdminGuard } from '../../common/guards/admin.guard';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  @Get('users')
+  async getAllUsers() {
+    return this.adminService.getAllUsers();
+  }
+
+  @Delete('user/:id')
+  async deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(id);
+  }
+
+  // -----------------------------------------------------
+  // 2. 晉升為 Admin
+  // -----------------------------------------------------
+  @Put('promote')
+  async promoteAdmin(@Body('username') username: string) {
+    return this.adminService.promoteAdmin(username);
+  }
+
+
   @Get('pending-users')
   async getPendingUsers() {
     return this.adminService.findAllPending();
   }
-
   @Post('pending/:id')
   async reviewApplication(
     @Param('id') id: string,

@@ -233,11 +233,11 @@ ORDER BY a.apply_date DESC;
     await this.dataSource.query(
       `
 			INSERT INTO application
-				(user_id, resource_id, apply_date, review_status, resource_status_at_apply, file_disk_path, file_public_url)
+				(user_id, resource_id, apply_date, review_status, resource_status_at_apply, file_path)
 			VALUES
-				($1, $2, CURRENT_DATE, 'submitted', 'Available', $3, $4)
+				($1, $2, CURRENT_DATE, 'submitted', 'Available', $3)
 			`,
-      [userId, resource_id, diskPath, publicUrl],
+      [userId, resource_id, diskPath],
     );
 
     return {

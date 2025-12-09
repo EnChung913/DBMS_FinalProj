@@ -62,3 +62,5 @@ logs/
 *.class
 *.o
 *.so
+
+db/init/init.sql

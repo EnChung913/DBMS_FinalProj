@@ -51,25 +51,23 @@ export class ResourceReviewService {
 
     const applications = await this.dataSource.query(
       `
-      SELECT 
-        a.user_id,
-        a.apply_date,
-        a.review_status,
+SELECT 
+  a.user_id,
+  a.apply_date,
+  a.review_status,
 
-        u.real_name,
-        s.student_id, -- 這是學號 (e.g. B11901001)
-        s.department_id,
-				ROUND(g.current_gpa::numeric, 2) AS current_gpa,
-				ROUND(g.avg_gpa::numeric, 2) AS avg_gpa
+  u.real_name,
+  s.student_id,
+  s.department_id,
+  ROUND(g.current_gpa::numeric, 2) AS current_gpa,
+  ROUND(g.avg_gpa::numeric, 2) AS avg_gpa
+FROM application a
+JOIN student_profile s ON s.user_id = a.user_id
+JOIN "user" u ON u.user_id = a.user_id
+LEFT JOIN student_gpa_view g ON g.user_id = a.user_id
 
-
-      FROM application a
-      JOIN student_profile s ON s.user_id = a.user_id
-      JOIN "user" u ON u.user_id = a.user_id
-      LEFT JOIN student_gpa_view g ON g.user_id = a.user_id
-
-      WHERE a.resource_id = $1
-      ORDER BY a.apply_date DESC
+WHERE a.resource_id = $1
+ORDER BY a.apply_date DESC
       `,
       [resourceId],
     );

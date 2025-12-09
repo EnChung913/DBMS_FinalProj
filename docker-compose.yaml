@@ -47,6 +47,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: ghcr.io/w-x-dai/backend-app:latest
     container_name: group7_backend
     env_file:
       - ./backend/.env.docker
@@ -73,6 +74,7 @@ services:
   # -----------------------------------------------------------
   frontend:
     build: ./frontend
+    image: ghcr.io/w-x-dai/frontend-app:latest
     container_name: group7_frontend
     ports:
       - "127.0.0.1:5173:80"

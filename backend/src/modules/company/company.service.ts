@@ -26,8 +26,7 @@ export class CompanyService {
       AND ($4::FLOAT IS NULL OR current_gpa >= $4)
       AND ($5::FLOAT IS NULL OR avg_gpa >= $5)
       AND ($6::TEXT[] IS NULL OR courses_taken::TEXT[] && $6::TEXT[])
-      AND ($7::TEXT[] IS NULL OR achievements::TEXT[] && $7::TEXT[])
-      LIMIT $8 OFFSET $9;
+      LIMIT $7 OFFSET $8;
       `,
       [
         dto.department_id ?? null,
@@ -36,7 +35,6 @@ export class CompanyService {
         dto.min_current_gpa ?? null,
         dto.min_avg_gpa ?? null,
         dto.courses_id ?? null,
-        dto.achievements ?? null,
         dto.limit ?? 50,
         dto.offset ?? 0,
       ],

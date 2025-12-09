@@ -254,6 +254,8 @@ export class AuthService {
     const { identifier, password } = dto;
 
     // 1. 先找正式 User 表
+    // 注意：如果你使用 TypeORM 的 @DeleteDateColumn，預設 findOne 會自動過濾掉 deleted_at 有值的資料
+    // 如果你是手動管理的欄位，或者是使用了 withDeleted: true，則需要下方的檢查
     const user = await this.userRepo.findOne({
       where: [{ username: identifier }, { email: identifier }],
     });
@@ -275,11 +277,20 @@ export class AuthService {
       throw new BadRequestException('User not exists');
     }
 
+    // --- [新增邏輯] 檢查 deleted_at ---
+    // 確保 user 存在後，檢查是否已被軟刪除
+    if (user.deleted_at && new Date(user.deleted_at) < new Date()) {
+      // 為了安全起見，通常對外會回傳 "User not exists" 或 "Invalid credentials" 以避免列舉攻擊
+      // 但若是為了明確告知用戶，可以使用 ForbiddenException
+      throw new ForbiddenException('Account has been deactivated');
+    }
+    // --------------------------------
+
     // 3. 檢查 Redis 鎖定 (保持原樣)
     const lockKey = `login:lock:${identifier}`;
     const locked = await this.redis.get(lockKey);
     if (locked) {
-      throw new BadRequestException('Account locked, require 2fa'); // 或其他鎖定訊息
+      throw new BadRequestException('Account locked, require 2fa'); 
     }
 
     // 4. 驗證密碼 (保持原樣)
@@ -308,7 +319,6 @@ export class AuthService {
       needProfile: !profileFilled,
     };
   }
-
   /* ===========================================================
      Refresh（Token Rotation）
      ===========================================================*/

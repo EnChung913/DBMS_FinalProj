@@ -67,19 +67,14 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // ----------------------------------------------------------------
-    // TO DO: [POST] /api/student/application
-    // Use FormData for file upload
-    // ----------------------------------------------------------------
-
-    // const formData = new FormData();
-    // formData.append('resource_id', resourceId);
-    // if (uploadFile.value) formData.append('file', uploadFile.value);
-    // await apiClient.post('/student/application', formData);
+    const formData = new FormData();
+    formData.append('resource_id', resourceId);
+    if (uploadFile.value) formData.append('file', uploadFile.value);
+    await apiClient.post('api/student/application/create', formData);
 
     // --- Mock Data ---
-    console.log(`[Mock] Applying for ${resourceId}, File: ${uploadFile.value?.name}`)
-    await new Promise((r) => setTimeout(r, 1000))
+    console.log(`Applying for ${resourceId}, File: ${uploadFile.value?.name}`)
+    await new Promise((r) => setTimeout(r, 300))
     // -----------------
 
     alert('Application submitted successfully!')
@@ -122,10 +117,6 @@ const goBack = () => router.back()
         <div class="form-group">
           <label>Supplier</label>
           <div class="subtitle">{{ resource?.supplier_name }}</div>
-        </div>
-        <div class="form-group">
-          <label>Quota</label>
-          <div class="subtitle">{{ resource?.quota }}</div>
         </div>
         <div class="form-group">
           <label>Deadline</label>

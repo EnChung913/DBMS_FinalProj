@@ -38,13 +38,13 @@ export class DepartmentService {
     reviewerId: string,
   ) {
     const sql = `
-			SELECT 1
-			FROM achievement a
-			JOIN student_profile sp ON sp.user_id = a.user_id
-			JOIN "user" r ON r.user_id = $2
-			WHERE a.achievement_id = $1
-				AND sp.department_id = r.department_id
-			LIMIT 1
+SELECT 1
+FROM achievement a
+JOIN student_profile sp ON sp.user_id = a.user_id
+JOIN "user" r ON r.user_id = $2
+WHERE a.achievement_id = $1
+  AND sp.department_id = r.department_id
+LIMIT 1
 		`;
     const result = await this.dataSource.query(sql, [
       achievementId,

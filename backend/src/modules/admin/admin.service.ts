@@ -5,6 +5,7 @@ import { ReviewApplicationDto } from './dto/review-application.dto'; // 記得�
 import { Response } from 'express';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { User } from '../../entities/user.entity';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,27 +14,86 @@ import * as util from 'util';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+  ) {}
   private readonly logger = new Logger(AdminService.name);
+
+  async getAllUsers() {
+    const sql = `
+      SELECT 
+        user_id AS id,
+        username,
+        email,
+        role,
+        deleted_at
+      FROM "user"
+      ORDER BY registered_at DESC;
+    `;
+
+    const result = await this.dataSource.query(sql);
+    return result;
+  }
+
+  // ============================================================
+  // 1. 刪除帳號
+  // ============================================================
+  async deleteUser(id: string) {
+
+    const sql = `
+      UPDATE "user"
+      SET deleted_at = NOW()
+      WHERE username = $1
+    `;
+
+    await this.dataSource.query(sql, [id]);
+
+    return { message: 'User soft-deleted successfully' };
+  }
+
+  // ============================================================
+  // 2. 晉升為 admin
+  // ============================================================
+  async promoteAdmin(username: string) {
+    const checkSql = `
+      SELECT user_id, is_admin
+      FROM "user"
+      WHERE username = $1
+    `;
+    const rows = await this.dataSource.query(checkSql, [username]);
+
+    if (rows.length === 0) throw new BadRequestException('User not found');
+    if (rows[0].is_admin === true)
+      throw new BadRequestException('User already admin');
+
+    const sql = `
+      UPDATE "user"
+      SET is_admin = TRUE
+      WHERE username = $1
+    `;
+    await this.dataSource.query(sql, [username]);
+
+    return { message: `User ${username} promoted to admin` };
+  }
 
   // =================================================================
   // 1. Fetch all pending user applications
   // =================================================================
   async findAllPending() {
     const sql = `
-      SELECT 
-        application_id, 
-        real_name, 
-        email, 
-        username, 
-        nickname, 
-        role, 
-        org_name, 
-        registered_at as date, 
-        status 
-      FROM user_application 
-      WHERE status = 'pending' 
-      ORDER BY registered_at ASC
+SELECT 
+  application_id, 
+  real_name, 
+  email, 
+  username, 
+  nickname, 
+  role, 
+  org_name, 
+  registered_at as date, 
+  status 
+FROM user_application 
+WHERE status = 'pending' 
+ORDER BY registered_at ASC
     `;
     
     return this.dataSource.query(sql);

@@ -135,11 +135,12 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         </div>
 
         <div class="action-section">
-          <button class="btn-action outline" @click="handleEdit(res.resource_id)">Edit</button>
+          <button class="btn-action outline" @click.stop="handleEdit(res.resource_id)">Edit</button>
 
           <div class="status-changer">
             <select
               :value="res.status"
+              @click.stop
               @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
               class="select-status"
               :class="{
@@ -152,7 +153,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
               <option value="Unavailable">Unavailable</option>
               <option value="Canceled">Canceled</option>
             </select>
-          </div>
+        </div>
         </div>
       </div>
     </div>

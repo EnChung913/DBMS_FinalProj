@@ -1,4 +1,3 @@
-<!-- src/views/company/Dashboard.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
@@ -7,76 +6,55 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// 定義資料介面
-interface resource {
+// 1. 定義資源介面 (保持不變)
+interface Resource {
   resource_id: string
   title: string
-  resource_type: string // e.g. Intern, Full-time
+  resource_type: string
   quota: number
   applied: number
   status: 'Open' | 'Closed' | 'Draft'
   publish_date: string
 }
 
-interface Applicant {
+// 2. [修改] 定義推薦學生介面 (對應後端 PushService 的回傳結構)
+interface RecommendedStudent {
   user_id: string
-  name: string
-  resource: string
+  real_name: string
+  department_id: string // 顯示系所
   gpa: number
-  date: string
-  status: 'submitted' | 'reviewed' | 'interview'
+  score: number // 推薦分數 (0~1)
+  // 如果後端回傳有包含頭像或其他欄位可加在此
 }
 
-const resources = ref<resource[]>([])
-const applicants = ref<Applicant[]>([])
+const resources = ref<Resource[]>([])
+const recommendedStudents = ref<RecommendedStudent[]>([]) // [修改] 變數名稱
 const showAnimation = ref(false)
 const authStore = useAuthStore()
 const name = authStore.user?.real_name || 'Company'
 
 onMounted(async () => {
   setTimeout(() => (showAnimation.value = true), 100)
-  const tfa_status = await apiClient.get('/api/auth/2fa/status')
-  authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled)
+  
+  // 檢查 2FA 狀態
+  try {
+    const tfa_status = await apiClient.get('/api/auth/2fa/status')
+    authStore.set2FAEnabled(tfa_status.data.is_2fa_enabled)
+  } catch (e) {
+    console.error('2FA check failed', e)
+  }
 
   try {
-    // ----------------------------------------------------------------
-    // TODO: 連接後端 API (Company Dashboard)
-    // ----------------------------------------------------------------
+    const resResources = await apiClient.get('api/resource/my')
+    resources.value = resResources.data
 
-    // 1. [GET] /api/company/resources
-    resources.value = (await apiClient.get('api/resource/my')).data
-    console.log(resources.value)
-    // 2. [GET] /api/company/applications
-    // applicants.value = (await apiClient.get('/company/applications')).data;
+    const resRecommend = await apiClient.get('/api/push/student')
+    
+    recommendedStudents.value = resRecommend.data;
+    console.log('Recommended Students:', recommendedStudents.value)
 
-    applicants.value = [
-      {
-        user_id: 'u1',
-        name: 'Alex Chen',
-        resource: 'Frontend Engineer Intern',
-        gpa: 3.9,
-        date: '2025-02-22',
-        status: 'submitted',
-      },
-      {
-        user_id: 'u2',
-        name: 'Betty Wu',
-        resource: 'Frontend Engineer Intern',
-        gpa: 4.1,
-        date: '2025-02-21',
-        status: 'reviewed',
-      },
-      {
-        user_id: 'u3',
-        name: 'Charlie Lin',
-        resource: 'Backend Developer',
-        gpa: 3.5,
-        date: '2025-02-20',
-        status: 'submitted',
-      },
-    ]
   } catch (error) {
-    console.error(error)
+    console.error('Failed to load dashboard data:', error)
   }
 })
 
@@ -87,13 +65,22 @@ const getStatusClass = (status: string) => {
     case 'Closed':
       return 'status-gray'
     default:
-      return 'status-yellow' // Draft
+      return 'status-yellow'
   }
 }
 
+// 格式化百分比 (e.g. 0.85 -> 85%)
+const formatScore = (score: number) => {
+  return Math.round(score * 100) + '%'
+}
+
 const handle2FA = () => {
-  console.log('Navigating to 2FA verification...')
   router.push('/2fa')
+}
+
+// 跳轉到學生詳細頁面 (需實作該路由)
+const viewStudent = (studentId: string) => {
+  router.push(`/company/student/${studentId}`)
 }
 </script>
 
@@ -126,26 +113,41 @@ const handle2FA = () => {
       <aside class="left-panel">
         <div class="dashboard-card full-height">
           <div class="card-head">
-            <h3>Recommended students</h3>
+            <h3>Recommended Talent</h3>
             <router-link to="/company/search" class="btn-search-talent">
               <span class="icon">🔍</span> Search
             </router-link>
           </div>
 
-          <ul class="applicant-list">
-            <li v-for="app in applicants" :key="app.user_id" class="applicant-item">
-              <div class="avatar">{{ app.name.charAt(0) }}</div>
+          <div v-if="recommendedStudents.length === 0" class="empty-state">
+            Running AI matching...
+          </div>
+
+          <ul v-else class="applicant-list">
+            <li 
+              v-for="student in recommendedStudents" 
+              :key="student.user_id" 
+              class="applicant-item"
+            >
+              <div class="avatar" :class="{'high-match': student.score > 0.8}">
+                {{ student.real_name ? student.real_name.charAt(0).toUpperCase() : 'U' }}
+              </div>
 
               <div class="applicant-info">
                 <div class="info-top">
-                  <span class="name">{{ app.name }}</span>
-                  <span class="gpa-badge">GPA {{ app.gpa }}</span>
+                  <span class="name">{{ student.real_name }}</span>
+                  <span class="match-badge" :title="'AI Match Score: ' + student.score">
+                     {{ formatScore(student.score) }} Match
+                  </span>
                 </div>
-                <span class="resource-target">Recruit: {{ app.resource }}</span>
-                <span class="apply-date">{{ app.date }}</span>
+                
+                <span class="resource-target">{{ student.department_id }}</span>
+                <span class="gpa-text">GPA: {{ student.gpa }}</span>
               </div>
 
-              <button class="btn-review">Open</button>
+              <button class="btn-review" @click="viewStudent(student.user_id)">
+                View
+              </button>
             </li>
           </ul>
         </div>
@@ -186,7 +188,7 @@ const handle2FA = () => {
             </div>
 
             <div class="card-footer">
-              <span class="date">Published on: {{ resource.publish_date }}</span>
+              <span class="date">Published: {{ new Date(resource.publish_date).toLocaleDateString() }}</span>
               <button
                 class="btn-outline-sm"
                 @click="$router.push(`/resource/edit/${resource.resource_id}`)"
