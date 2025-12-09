@@ -127,6 +127,9 @@ const handle2FA = () => {
         <div class="dashboard-card full-height">
           <div class="card-head">
             <h3>Recommended students</h3>
+            <router-link to="/company/search" class="btn-search-talent">
+              <span class="icon">🔍</span> Search
+            </router-link>
           </div>
 
           <ul class="applicant-list">
@@ -615,5 +618,19 @@ const handle2FA = () => {
 
 .btn-2fa .icon {
   font-size: 1.1rem;
+}
+
+.btn-search-talent {
+  margin-left: auto; /* 將這組按鈕推到右邊 (如果 btn-view-all 也有 auto，兩者會擠在右邊) */
+  margin-right: 15px; /* 與 View All 保持距離 */
+  
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff; border: 1px solid var(--primary-color);
+  color: var(--primary-color); padding: 6px 12px; border-radius: 20px;
+  text-decoration: none; font-size: 0.85rem; font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-search-talent:hover {
+  background: var(--primary-color); color: white;
 }
 </style>
