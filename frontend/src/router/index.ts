@@ -20,6 +20,7 @@ import DepartmentResourceReview from '../views/Department/DepartmentResourceRevi
 import CompanyResourceReview from '../views/Company/CompanyResourceReview.vue'
 import AchievementDetail from '../views/Department/AchievementDetail.vue'
 import TwoFactorAuth from '../views/TwoFactorAuth.vue'
+import StudentSearch from '../views/Company/StudentSearch.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,7 +40,7 @@ const router = createRouter({
       path: '/admin/dashboard',
       name: 'AdminDashboard',
       component: AdminDashboard,
-      meta: { requiresAuth: true, role: ['company', 'admin'] },
+      meta: { requiresAuth: true, role: ['admin'] },
       // meta: { requiresAuth: true, role: 'admin' }
     },
     {
@@ -95,6 +96,12 @@ const router = createRouter({
       name: 'CompanyResources',
       component: CompanyResources,
       meta: { requiresAuth: true, role: 'company', requiresSetup: true },
+    },
+    {
+      path: '/company/search',
+      name: 'StudentSearch',
+      component: StudentSearch,
+      meta: { requiresAuth: true, role: 'company' }
     },
     {
       path: '/company/resource/:id/review',
