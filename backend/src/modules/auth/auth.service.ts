@@ -75,12 +75,12 @@ export class AuthService {
       secret: process.env.JWT_SECRET,
       // For development use longer expiry
       // TODO: Change to 15m in production
-      expiresIn: '10d',
+      expiresIn: '15m',
     });
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: '70d',
+      expiresIn: '7d',
     });
 
     // refresh token hash
