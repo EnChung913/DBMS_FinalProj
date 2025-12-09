@@ -4,6 +4,8 @@ import {
   UnauthorizedException,
   Inject,
   NotFoundException,
+  ForbiddenException,
+
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, LineString } from 'typeorm';
@@ -22,6 +24,8 @@ import { LoginDto } from './dto/login.dto';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { authenticator } from 'otplib';
 
+import { UserApplication } from '../../entities/user-application.entity';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -29,6 +33,10 @@ export class AuthService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
+    // 👇 新增這段注入
+    @InjectRepository(UserApplication)
+    private readonly userApplicationRepo: Repository<UserApplication>,
 
     private readonly jwtService: JwtService,
 
@@ -157,22 +165,63 @@ export class AuthService {
     return false;
   }
 
+  
+
   /* ===========================================================
      Register + auto login
      ===========================================================*/
   async register(dto: RegisterDto) {
-    const { username, email, password, role, real_name, nickname } = dto;
+    const { username, email, password, role, real_name, nickname, org_name } = dto;
 
-    const existed = await this.userRepo.findOne({
+    // 1. 檢查 User 表是否存在 (正式用戶)
+    const existingUser = await this.userRepo.findOne({
       where: [{ email }, { username }],
     });
-    if (existed) {
-      console.log('Existed user tried to register:', username, email);
+    if (existingUser) {
       throw new BadRequestException('Email or username already exists');
     }
 
+    // 2. 檢查 UserApplication 表是否存在且狀態為 pending (避免重複申請)
+    const existingApp = await this.userApplicationRepo.findOne({
+      where: [
+        { email, status: 'pending' },
+        { username, status: 'pending' }
+      ]
+    });
+    if (existingApp) {
+      throw new BadRequestException('Application is already under review');
+    }
+
+    // 3. 加密密碼 (共用步驟)
     const hashedPw = await bcrypt.hash(password, 10);
 
+    // =========================================================
+    // 分流邏輯：需要審核的角色 (Company, Department)
+    // =========================================================
+    if (['company', 'department'].includes(role)) {
+      const application = this.userApplicationRepo.create({
+        username,
+        email,
+        password: hashedPw, // 存入加密後的密碼
+        realName: real_name, // 注意 Entity 欄位名稱對應 (snake_case vs camelCase)
+        nickname,
+        role,
+        orgName: org_name || '', 
+        status: 'pending',
+      });
+      
+      await this.userApplicationRepo.save(application);
+
+      // 申請制不需要回傳 token，只回傳訊息
+      return {
+        message: 'Registration application submitted. Please wait for admin approval.',
+        status: 'pending'
+      };
+    }
+
+    // =========================================================
+    // 分流邏輯：不需要審核的角色 (Student) - 保持原有邏輯
+    // =========================================================
     const user = await this.dataSource.transaction(async (manager) => {
       const entity = manager.create(User, {
         username,
@@ -188,54 +237,71 @@ export class AuthService {
     });
 
     const tokens = await this.generateTokens(user);
-
     const { password: _, ...safeUser } = user;
-    const profileFilled = await this.checkProfileFilled(user);
-
+    
+    // 對於直接註冊成功的學生，檢查是否需要填寫 profile (假設邏輯)
+    // 注意：如果是剛建立的 user，has_filled_profile 肯定是 false
     return {
       user: safeUser,
       ...tokens,
-      needProfile: !profileFilled,
+      needProfile: true, 
+      message: 'Registration successful'
     };
   }
 
-  /* ===========================================================
-     Login（加入節流 + 清除舊 sessions）
-     ===========================================================*/
+
   async login(dto: LoginDto) {
     const { identifier, password } = dto;
 
+    // 1. 先找正式 User 表
     const user = await this.userRepo.findOne({
       where: [{ username: identifier }, { email: identifier }],
     });
 
-    if (!user) throw new BadRequestException('User not exists');
+    // 2. 如果 User 表找不到，檢查是否為「審核中」的申請者
+    if (!user) {
+      const pendingApp = await this.userApplicationRepo.findOne({
+        where: [
+            { username: identifier, status: 'pending' },
+            { email: identifier, status: 'pending' }
+        ]
+      });
 
-    const lockKey = `login:lock:${identifier}`;
-    const locked = await this.redis.get(lockKey);
-
-    if (locked) {
-      throw new BadRequestException('Account locked, require 2fa');
+      if (pendingApp) {
+        throw new ForbiddenException('Account is under review, please wait for admin approval.');
+      }
+      
+      // 如果也不是審核中，才拋出 User not exists
+      throw new BadRequestException('User not exists');
     }
 
+    // 3. 檢查 Redis 鎖定 (保持原樣)
+    const lockKey = `login:lock:${identifier}`;
+    const locked = await this.redis.get(lockKey);
+    if (locked) {
+      throw new BadRequestException('Account locked, require 2fa'); // 或其他鎖定訊息
+    }
+
+    // 4. 驗證密碼 (保持原樣)
     const pwMatches = await bcrypt.compare(password, user.password);
     if (!pwMatches) {
       await this.addLoginFail(identifier);
       throw new BadRequestException('Invalid credentials');
     }
 
+    // 5. 登入成功處理 (保持原樣)
     await this.clearLoginFail(identifier);
-
     await this.clearOldSessions(user.user_id);
 
     const tokens = await this.generateTokens(user);
 
     const { password: _, ...safeUser } = user;
     const profileFilled = await this.checkProfileFilled(user);
+
     console.log(
       `User ${user.user_id} logged in successfully at ${new Date().toISOString()}`,
     );
-    console.log('Profile filled status:', profileFilled);
+
     return {
       user: safeUser,
       ...tokens,

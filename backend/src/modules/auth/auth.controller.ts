@@ -44,8 +44,20 @@ export class AuthController {
     description: 'Email or username already exists.',
   })
   async register(@Body() dto: RegisterDto, @Res() res: Response) {
-    const { user, accessToken, refreshToken, needProfile } =
-      await this.authService.register(dto);
+    // 1. 先獲取完整的結果物件，不要直接解構
+    const result = await this.authService.register(dto);
+
+    // 2. 判斷結果類型：如果結果中沒有 accessToken，代表是「進入審核流程」
+    // 使用 'accessToken' in result 這種寫法是 TypeScript 的 Type Guard
+    if (!('accessToken' in result)) {
+      // 這時候 result 只包含 { message, status }
+      // 不需要設定 Cookie，直接回傳訊息給前端
+      return res.status(200).json(result);
+    }
+
+    // 3. 如果程式跑到這裡，代表 result 包含 accessToken (直接註冊成功)
+    // 這時候再解構才是安全的
+    const { user, accessToken, refreshToken, needProfile } = result;
 
     const isProd = process.env.NODE_ENV === 'production';
 
@@ -65,6 +77,7 @@ export class AuthController {
       path: '/',
     });
 
+    // 回傳使用者資訊
     return res.json({
       user,
       needProfile,

@@ -23,24 +23,25 @@ CREATE TABLE "user" (
 
 
 CREATE TABLE user_application (
-     application_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-     real_name VARCHAR(50) NOT NULL,
-     email VARCHAR(50) NOT NULL,
-     username VARCHAR(50) NOT NULL,
-     password VARCHAR(128) NOT NULL,
-     nickname VARCHAR(50) NOT NULL,
-     role VARCHAR(20) CHECK(role IN ('department','company')) NOT NULL,
-     registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	application_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+	real_name VARCHAR(50) NOT NULL,
+	email VARCHAR(50) NOT NULL,
+	username VARCHAR(50) NOT NULL,
+	password VARCHAR(128) NOT NULL,
+	nickname VARCHAR(50) NOT NULL,
+	role VARCHAR(20) CHECK(role IN ('department','company')) NOT NULL,
+	facility_name VARCHAR(100) NOT NULL,
+	registered_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
 
-     status VARCHAR(20)
-	 CHECK(status IN ('pending','approved','rejected'))
-     DEFAULT 'pending',
+	status VARCHAR(20)
+	CHECK(status IN ('pending','approved','rejected'))
+	DEFAULT 'pending',
 
-     submit_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-     review_time TIMESTAMPTZ,
-     reviewed_by UUID REFERENCES "user"(user_id),
-     review_comment TEXT
+	submit_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	review_time TIMESTAMPTZ,
+	reviewed_by UUID REFERENCES "user"(user_id),
+	review_comment TEXT
 );
 
 

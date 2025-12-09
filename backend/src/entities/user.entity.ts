@@ -30,6 +30,9 @@ export class User {
   @Column({ type: 'varchar', length: 50, nullable: true })
   department_id: string | null;
 
+  @Column({ name: 'org_name', length: 100, nullable: true }) 
+  org_name: string;
+
   @Column({ default: false })
   is_admin: boolean;
 

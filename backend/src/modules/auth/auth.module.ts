@@ -12,6 +12,7 @@ import { User } from '../../entities/user.entity';
 import { StudentProfile } from '../../entities/student-profile.entity';
 import { DepartmentProfile } from '../../entities/department-profile.entity';
 import { CompanyProfile } from '../../entities/company-profile.entity';
+import { UserApplication } from '../../entities/user-application.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CompanyProfile } from '../../entities/company-profile.entity';
       StudentProfile,
       DepartmentProfile,
       CompanyProfile,
+      UserApplication
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret',
