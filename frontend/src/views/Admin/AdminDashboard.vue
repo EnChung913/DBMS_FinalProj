@@ -17,7 +17,8 @@ const pendingList = ref<any[]>([])
 
 // 初始化
 onMounted(async () => {
-  pendingList.value = await apiClient.get('api/admin/pending-users')
+  const res = await apiClient.get('api/admin/pending-users')
+  pendingList.value = res.data // 記得要 .data
   console.log('Pending Users:', pendingList.value)
 })
 
