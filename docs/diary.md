@@ -323,3 +323,7 @@ Now I'm striving to finish the user application function. Now it's done 80%, I'l
 [2025-12-9 15:14]
 I finished the user application function. Now users can apply for a company or department account. Admin can review these applications in the admin dashboard. 
 Now is the pruge and export function.
+
+[2025-12-9 16:33]
+I finally finished the admin functions (backup and purge). Admin can now backup the whole database to a sql file and download it. Besides, admin can preview the data that would be purged in the next scheduled task run. Next step, perhaps optimize the push recommendation function and set user to admin, remove user, company search student function.
+The recommendation function should involve the course records of the student.

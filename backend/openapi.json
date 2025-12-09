@@ -1054,6 +1054,48 @@
         ]
       }
     },
+    "/api/admin/system/cleanup-preview": {
+      "get": {
+        "operationId": "AdminController_getCleanupPreview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/system/backup": {
+      "get": {
+        "operationId": "AdminController_backupSystem",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/system/maintenance": {
+      "post": {
+        "operationId": "AdminController_performMaintenance",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/common/departments": {
       "get": {
         "operationId": "CommonController_getDepartments",
