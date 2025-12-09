@@ -17,8 +17,8 @@ const pendingList = ref<any[]>([])
 
 // 初始化
 onMounted(async () => {
-  
-  
+  pendingList.value = await apiClient.get('api/admin/pending-users')
+  console.log('Pending Users:', pendingList.value)
 })
 
 // --- 通用工具：處理檔案下載 ---

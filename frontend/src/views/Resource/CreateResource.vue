@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue' // 移除了 onMounted，因為不需要預先抓系所資料了
 import { useRouter } from 'vue-router'
 import apiClient from '@/api/axios'
 import { useAuthStore } from '@/stores/auth'
@@ -16,20 +16,10 @@ const formData = ref({
   description: '',
 })
 
-interface Condition {
-  department_id: string // Empty string means 'All Departments'
-  avg_gpa?: number
-  current_gpa?: number
-  is_poor?: boolean
-}
-const conditions = ref<Condition[]>([])
-
-const departmentOptions = ref<any[]>([])
-
 const isCompany = authStore.role === 'company'
 const pageTitle = 'Publish New Resource'
 
-//'Scholarship','Internship','Lab','Competition','Others'
+// 'Scholarship','Internship','Lab','Competition','Others'
 const resourceTypes = [
   { value: 'Scholarship', label: 'Scholarship' },
   { value: 'Internship', label: 'Internship' },
@@ -38,49 +28,26 @@ const resourceTypes = [
   { value: 'Others', label: 'Others' },
 ]
 
-onMounted(async () => {
-  departmentOptions.value = (await apiClient.get('api/common/departments')).data
-  addCondition() // no condition at beginning
-})
-
-const addCondition = () => {
-  conditions.value.push({
-    department_id: '',
-    avg_gpa: undefined,
-    current_gpa: undefined,
-    is_poor: false,
-  })
-}
-
-const removeCondition = (index: number) => {
-  conditions.value.splice(index, 1)
-}
-
 const handleSubmit = async () => {
   if (isLoading.value) return
   isLoading.value = true
 
   try {
-    // 1. 建立資源
-    const res = await apiClient.post('/resource/create', formData.value)
-    const resourceId = res.data.resource_id || 'mock-id' // 確保後端回傳 ID
+    // 單純建立資源，不再處理條件
+    const res = await apiClient.post('api/resource/create', formData.value)
+    
+    // 如果後端有回傳 ID，你可以考慮導向到「編輯頁面」去新增條件
+    // const newResourceId = res.data.resource_id 
 
-    // 2. 建立條件 (逐筆新增)
-    // 雖然效率較差，但符合目前的 API 設計 (addCondition)
-    for (const cond of conditions.value) {
-      // 過濾空值
-      const payload: any = { ...cond }
-      if (!payload.department_id) delete payload.department_id // 後端若接受 undefined 代表全校
-
-      await apiClient.put(`api/resource/${resourceId}/condition`, payload)
-    }
-
-    alert('Upload sucess!')
+    alert('Resource created successfully!')
+    
+    // 導回 Dashboard
     if (isCompany) router.push('/company/dashboard')
     else router.push('/department/dashboard')
+    
   } catch (error: any) {
     console.error(error)
-    alert('Upload failed')
+    alert('Upload failed: ' + (error.response?.data?.message || 'Unknown error'))
   } finally {
     isLoading.value = false
   }
@@ -142,81 +109,10 @@ const goBack = () => router.back()
           ></textarea>
         </div>
 
-        <hr class="divider" />
-
-        <div class="form-section">
-          <div class="section-head-row">
-            <label>Eligibility Conditions</label>
-            <button type="button" class="btn-add-cond" @click="addCondition">+ New rules</button>
-          </div>
-          <p class="hint-text">
-            You can set multiple sets of rules. Students can apply if they meet any set of rules.
-          </p>
-
-          <div v-for="(cond, index) in conditions" :key="index" class="condition-box">
-            <div class="cond-header">
-              <span class="cond-index">Rule #{{ index + 1 }}</span>
-              <button
-                type="button"
-                class="btn-remove"
-                @click="removeCondition(index)"
-                v-if="conditions.length > 1"
-              >
-                Remove
-              </button>
-            </div>
-
-            <div class="row">
-              <div class="form-group col">
-                <label>Department</label>
-                <select v-model="cond.department_id">
-                  <option value="">All Departments</option>
-                  <option v-for="dept in departmentOptions" :key="dept.id" :value="dept.id">
-                    {{ dept.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group col">
-                <label>Low Income</label>
-                <div class="checkbox-wrapper">
-                  <input class="" type="checkbox" v-model="cond.is_poor" :id="`poor-${index}`" />
-                  <label :for="`poor-${index}`" class="inline-label">限清寒學生</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="form-group col">
-                <label>Min Avg GPA</label>
-                <input
-                  v-model.number="cond.avg_gpa"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="4.3"
-                  placeholder="Unrestricted"
-                />
-              </div>
-              <div class="form-group col">
-                <label>Min Current GPA</label>
-                <input
-                  v-model.number="cond.current_gpa"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="4.3"
-                  placeholder="Unrestricted"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="form-actions">
           <button type="button" class="btn-cancel" @click="goBack">Cancel</button>
           <button type="submit" class="btn-primary-gradient" :disabled="isLoading">
-            {{ isLoading ? 'Uploading...' : 'Upload' }}
+            {{ isLoading ? 'Creating...' : 'Create Resource' }}
           </button>
         </div>
       </form>

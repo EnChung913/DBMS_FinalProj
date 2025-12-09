@@ -8,12 +8,13 @@ const isLoading = ref(false)
 const myResources = ref<any[]>([])
 const activeTab = ref('All')
 
+// 資源類型篩選
 const filteredResources = computed(() => {
   const list =
     activeTab.value === 'All'
       ? myResources.value
       : myResources.value.filter((r: any) => r.resource_type === activeTab.value)
-
+  // console.log(list);
   return list.slice().sort((a: any, b: any) => {
     // 1. Cancelled 一律排最後
     const aCancelled = a.status === 'Canceled'
@@ -32,7 +33,7 @@ onMounted(async () => {
   try {
     const res = await apiClient.get('api/resource/my')
     myResources.value = res.data
-    // console.log(res.data);
+
     await new Promise((r) => setTimeout(r, 300))
   } catch (error) {
     console.error(error)
@@ -47,16 +48,20 @@ const handleEdit = (id: string) => {
   router.push(`/resource/edit/${id}`)
 }
 
-const handleReview = (id: string) => {
-  router.push(`/department/resource/${id}/review`)
+const handleViewApplicants = (id: string) => {
+  router.push(`/company/applications?job_id=${id}`) // 範例：帶參數去申請列表
 }
 
+const handleReview = (id: string) => {
+  router.push(`/company/resource/${id}/review`)
+}
+
+// 處理狀態變更
 const handleStatusChange = async (resource: any, newStatus: string) => {
   try {
     await apiClient.patch(`api/resource/${resource.resource_id}/status`, { status: newStatus })
 
     console.log(`Update status of ${resource.resource_id} to ${newStatus}`)
-
     resource.status = newStatus
   } catch (e) {
     alert('Update failed')
@@ -94,7 +99,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
 
       <div
         v-for="res in filteredResources"
-        :key="res.resource_id"
+        :key="res.id"
         class="resource-item clickable-card"
         @click="handleReview(res.resource_id)"
       >
@@ -105,6 +110,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
             ></span>
             <h3 class="res-title">{{ res.title }}</h3>
             <span class="type-badge">{{ res.resource_type }}</span>
+
             <div class="info-meta">
               <span
                 class="meta-date"
@@ -129,10 +135,12 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
         </div>
 
         <div class="action-section">
-          <button class="btn-action outline" @click="handleEdit(res.resource_id)">Edit</button>
+          <button class="btn-action outline" @click.stop="handleEdit(res.resource_id)">Edit</button>
+
           <div class="status-changer">
             <select
               :value="res.status"
+              @click.stop
               @change="handleStatusChange(res, ($event.target as HTMLSelectElement).value)"
               class="select-status"
               :class="{
@@ -145,7 +153,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
               <option value="Unavailable">Unavailable</option>
               <option value="Canceled">Canceled</option>
             </select>
-          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -173,7 +181,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .title-row h1 {
@@ -202,6 +210,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   display: flex;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .filter-pill {
   background: #fff;
@@ -220,6 +229,7 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   box-shadow: 0 4px 10px rgba(125, 157, 156, 0.4);
 }
 
+/* --- List Container --- */
 /* --- List Container --- */
 .resource-list {
   display: flex;
@@ -241,26 +251,19 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   align-items: center;
   gap: 40px;
   overflow: hidden;
-  cursor: pointer; /* ✅ 讓鼠標變成手指 */
+  position: relative;
+  overflow: visible;
   transition:
     transform 0.2s,
     box-shadow 0.2s,
     border-color 0.2s;
-  position: relative; /* 為了 hover 效果 */
+  cursor: pointer; /* 讓使用者知道可以點 */
 }
 
 .resource-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(125, 157, 156, 0.15);
-  border-color: var(--primary-color); /* ✅ 懸浮時邊框變色，暗示可點擊 */
-}
-
-/* 當滑鼠移上去，且螢幕夠寬時顯示提示 */
-@media (min-width: 1024px) {
-  .resource-item:hover::after {
-    opacity: 1;
-    right: 15px;
-  }
+  transform: translateX(5px);
+  box-shadow: 0 8px 25px rgba(125, 157, 156, 0.1);
+  border-color: var(--primary-color); /* 懸浮時邊框變色 */
 }
 
 /* 左側裝飾線 */
@@ -275,13 +278,19 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   opacity: 0.8;
 }
 
-/* --- Section 1: Info --- */
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 40px;
+  font-size: 1rem;
+}
+
+/* Info Section */
 .info-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .info-header {
   display: flex;
   align-items: center;
@@ -313,6 +322,14 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   background-color: #4caf50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
+.dot-yellow {
+  background-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+.dot-red {
+  background-color: #ef5350;
+  box-shadow: 0 0 0 2px rgba(239, 83, 80, 0.2);
+}
 .dot-gray {
   background-color: #ccc;
 }
@@ -323,96 +340,8 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   display: flex;
   gap: 15px;
 }
-
-/* --- Section 2: Stats --- */
-.stats-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  background: #f9fafb;
-  padding: 10px 25px;
-  border-radius: 12px;
-}
-
-.stat-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 60px;
-}
-.stat-label {
-  font-size: 0.7rem;
-  color: #aaa;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.stat-val {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-color);
-}
-.stat-val.highlight {
-  color: var(--primary-color);
-}
-.stat-divider {
-  width: 1px;
-  height: 30px;
-  background: #ddd;
-}
-
-/* --- Section 3: Action --- */
-.action-section {
-  min-width: 100px;
-}
-
-.btn-action {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-}
-.btn-action.outline {
-  background: transparent;
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-}
-.btn-action.outline:hover {
-  background: var(--primary-color);
-  color: white;
-}
-
-/* --- RWD --- */
-@media (max-width: 768px) {
-  .resource-item {
-    grid-template-columns: 1fr; /* 手機版變單欄 */
-    gap: 20px;
-  }
-  .stats-section {
-    justify-content: space-around;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .action-section {
-    width: 100%;
-  }
-}
-
-/* Loading */
-.loading-area {
-  text-align: center;
-  padding: 60px;
-  color: var(--secondary-color);
-}
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--primary-color);
-  border-radius: 50%;
-  margin: 0 auto 15px;
-  animation: spin 1s linear infinite;
+.meta-status strong {
+  color: var(--accent-color);
 }
 
 /* Stats Section */
@@ -513,6 +442,79 @@ const handleStatusChange = async (resource: any, newStatus: string) => {
   filter: brightness(0.95);
 }
 
+/* Action Section */
+.action-section {
+  min-width: 100px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.btn-action.outline {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+}
+.btn-action.outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-action.primary {
+  background: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  color: white;
+}
+.btn-action.primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 8px rgba(125, 157, 156, 0.3);
+}
+
+/* RWD */
+@media (max-width: 900px) {
+  .resource-item {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .action-section {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .stats-section {
+    justify-content: space-around;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Loading */
+.loading-area {
+  text-align: center;
+  padding: 60px;
+  color: var(--secondary-color);
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  animation: spin 1s linear infinite;
+}
 @keyframes spin {
   0% {
     transform: rotate(0deg);

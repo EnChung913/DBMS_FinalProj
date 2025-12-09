@@ -50,7 +50,6 @@ adm# UniConnect - 大學生學習表現與資源媒合平台
 
 ```text
 .
-├── all_tables_csv/         # 原始資料 CSV (供 Python 腳本讀取生成 SQL)
 ├── backend/                # NestJS 後端原始碼
 ├── frontend/               # Vue 3 前端原始碼
 ├── db/                     # 資料庫相關
@@ -68,9 +67,11 @@ adm# UniConnect - 大學生學習表現與資源媒合平台
 
 ### 先決條件
 - Docker & Docker Compose
-- Python 3 (用於生成測試資料)
+
+請先去[此處](https://drive.google.com/drive/folders/1Sy7CGcHjWhhI_Idi095-tI2h8IE3kr96?usp=sharing)下載所需的 `backup.sql` 檔案，並放置於專案根目錄db/init下。
 
 ### 1. 啟動服務
+請在專案根目錄下執行以下指令，
 使用 Docker Compose 一鍵建置並啟動所有服務 (Backend, Frontend, DB, Redis, pgAdmin)。
 
 ```bash
@@ -82,39 +83,6 @@ docker compose up --build -d
 ```bash
 docker compose down
 ```
-
-## 💾 資料庫初始化 (Database Setup)
-
-若為首次執行，資料庫內可能無資料。請依照以下步驟生成並匯入測試資料。
-
-### 1. 生成 SQL 腳本
-本專案提供 Python 腳本，讀取 all_tables_csv 下的 CSV 檔案並轉換為 SQL 插入語句。
-
-```bash
-cd db/init
-python light.py
-```
-執行後，將會在該目錄下生成一系列 `.sql` 檔案 (如 `insert_user_data.sql`, `insert_resource.sql` 等)。
-
-### 2. 匯入資料至 PostgreSQL
-您可以透過 pgAdmin 或指令列將生成的 SQL 匯入。
-
-**方法 A: 使用指令列 (推薦)**
-假設您已進入 Docker 容器或本地有 `psql` 工具：
-
-```bash
-# 進入 postgres 容器 (假設容器名稱為 db-container，請依實際 docker ps 結果調整)
-docker exec -it <db_container_name> psql -U postgres -d group_7
-
-# 在 psql 內執行 SQL 檔案 (需先將 sql 檔案掛載或複製進容器，或直接貼上內容)
-# 或者在宿主機執行：
-cat db/init/insert_user_data.sql | docker exec -i <db_container_name> psql -U postgres -d group_7
-```
-
-**方法 B: 使用 pgAdmin**
-1. 登入 pgAdmin (網址見下節)。
-2. 連線至伺服器 (Host: db, Username/Password 參考 docker-compose.yaml)。
-3. 開啟 Query Tool，將生成的 SQL 內容貼上並執行。
 
 ## 🔧 開發與維護指令 (Operations)
 
@@ -141,6 +109,39 @@ sudo docker compose build backend
 sudo docker compose up -d
 ```
 
+## 以上遇到困難？
+
+請進入frontend或backend目錄，使用以下指令安裝相依套件：
+```bash
+# 進入 frontend 目錄
+cd frontend
+# 安裝相依套件
+npm install
+# 回到專案根目錄
+cd ..   
+# 進入 backend 目錄
+cd backend
+# 安裝相依套件
+npm install
+# 回到專案根目錄
+cd ..
+```
+
+接下來手動啟動服務
+
+```bash
+# 啟動後端服務
+cd backend
+npm run start:dev
+```
+開啟另一個終端機視窗
+
+```bash
+# 啟動前端服務
+cd frontend
+npm run dev
+```                                                                                                                 
+
 ## 🌐 服務存取
 
 服務啟動後，可透過以下網址存取：
@@ -148,14 +149,14 @@ sudo docker compose up -d
 | 服務 | 網址 | 說明 |
 |------|------|------|
 | **Frontend** | [http://localhost:5173](http://localhost:5173) | 使用者操作介面 |
-| **Backend API** | [http://localhost:3000](http://localhost:3000) | Swagger API 文件 (若有開啟) 或 API 入口 |
+| **Prometheus** | [http://localhost:3001](http://localhost:3001) | 監控視窗 |
 | **pgAdmin** | [http://localhost:5050](http://localhost:5050) | 資料庫管理介面 |
 
 ## 📖 文件
 
 更多詳細資訊請參考 docs 資料夾：
 
-- **API 手冊**: api_manual.md - 詳細的後端 API 路由與參數說明。
+- **API 手冊**: backend/openapi.json - 詳細的後端 API 路由與參數說明。
 - **常用 SQL**: usefulsql.sql - 包含常用的資料庫查詢語句，如查詢學生成績、資源申請狀況等。
 - **開發筆記**: note.md - 紀錄開發過程中的指令與備忘。
 
