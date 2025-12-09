@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { RedisModule } from '../redis/redis.module';
+import { DataSource } from 'typeorm'
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -22,7 +23,8 @@ import { UserApplication } from '../../entities/user-application.entity';
       StudentProfile,
       DepartmentProfile,
       CompanyProfile,
-      UserApplication
+      UserApplication,
+      DataSource,
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret',

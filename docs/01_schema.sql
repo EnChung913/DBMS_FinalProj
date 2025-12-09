@@ -38,7 +38,6 @@ CREATE TABLE user_application (
 	CHECK(status IN ('pending','approved','rejected'))
 	DEFAULT 'pending',
 
-	submit_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	review_time TIMESTAMPTZ,
 	reviewed_by UUID REFERENCES "user"(user_id),
 	review_comment TEXT

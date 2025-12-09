@@ -45,23 +45,23 @@ onMounted(async () => {
         status: 'Suspended',
       },
     ]
-
-    pendingList.value = [
-      {
-        id: 'p1',
-        username: 'new_startup',
-        email: 'contact@startup.com',
-        role: 'company',
-        date: '2025-03-01',
-      },
-      {
-        id: 'p2',
-        username: 'ee_dept',
-        email: 'office@ee.ntu.edu.tw',
-        role: 'department',
-        date: '2025-02-28',
-      },
-    ]
+    pendingList.value = await apiClient.get('api/admin/pending-users').then((res) => res.data)
+    // pendingList.value = [
+    //   {
+    //     id: 'p1',
+    //     username: 'new_startup',
+    //     email: 'contact@startup.com',
+    //     role: 'company',
+    //     date: '2025-03-01',
+    //   },
+    //   {
+    //     id: 'p2',
+    //     username: 'ee_dept',
+    //     email: 'office@ee.ntu.edu.tw',
+    //     role: 'department',
+    //     date: '2025-02-28',
+    //   },
+    // ]
   } catch (error) {
     console.error(error)
   } finally {
@@ -98,14 +98,33 @@ const deleteUser = async (id: string) => {
   }
 }
 
-// 3. 審核通過
-const approveUser = async (id: string) => {
+// pending
+const processUserReview = async (id: string, status: string) => {
+  
+
+  const comment = window.prompt(`Fill in the reason why you ${status}:`, "");
+  if (comment === null || comment.trim() === "" || comment.length > 200 || comment === undefined) {
+    alert("Invalid comment. Please provide a valid reason.")
+    return ;
+  }
+
   try {
-    // await apiClient.post(`/admin/approve/${id}`);
-    console.log(`[Mock] Approved user ${id}`)
-    pendingList.value = pendingList.value.filter((u) => u.id !== id)
-  } catch (e) {
-    alert('Failed to approve')
+    // 4. 發送 API
+    await apiClient.post(`/api/admin/pending/${id}`, {
+      status: status,
+      comment: comment || '', 
+    });
+    
+    console.log(`Successfully ${status} user ${id}`);
+    
+    // 5. 更新前端列表
+    pendingList.value = pendingList.value.filter((u) => u.application_id !== id);
+    
+    alert(`User ${status} successfully`);
+    
+  } catch (e: any) {
+    console.error(e);
+    alert(e.response?.data?.message || `Failed to ${status}`);
   }
 }
 
@@ -217,8 +236,8 @@ const exportCsv = async () => {
             </div>
           </div>
           <div class="card-right">
-            <button class="btn-approve" @click="approveUser(user.id)">Approve</button>
-            <button class="btn-reject">Reject</button>
+            <button class="btn-approve" @click="processUserReview(user.application_id, 'approved')">Approve</button>
+            <button class="btn-reject" @click="processUserReview(user.application_id, 'rejected')">Reject</button>
           </div>
         </div>
       </div>

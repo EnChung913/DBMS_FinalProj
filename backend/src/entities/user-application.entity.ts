@@ -33,9 +33,6 @@ export class UserApplication {
   @Column({ length: 20, default: 'pending' })
   status: string; // 'pending' | 'approved' | 'rejected'
 
-  @CreateDateColumn({ name: 'submit_time', type: 'timestamptz' })
-  submitTime: Date;
-
   @Column({ name: 'review_time', type: 'timestamptz', nullable: true })
   reviewTime: Date;
 

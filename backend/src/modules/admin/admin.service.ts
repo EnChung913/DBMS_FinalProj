@@ -1,98 +1,137 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { UserApplication } from '../../entities/user-application.entity';
-import { User } from '../../entities/user.entity';
-import { ReviewApplicationDto } from './dto/review-application.dto';
+import { DataSource } from 'typeorm';
+import { ReviewApplicationDto } from './dto/review-application.dto'; // 記得建立這個 DTO
 
 @Injectable()
 export class AdminService {
-  constructor(
-    @InjectRepository(UserApplication)
-    private userApplicationRepo: Repository<UserApplication>,
-    private dataSource: DataSource, // 用於交易處理
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  // 1. 取得所有待審核名單
+  // =================================================================
+  // 1. Fetch all pending user applications
+  // =================================================================
   async findAllPending() {
-    return this.userApplicationRepo.find({
-      where: { status: 'pending' },
-      order: { submitTime: 'ASC' }, // 依照申請時間排序，先申請的先審
-      // 如果你想看是誰審核的，可以 select 相關欄位，但在 pending 狀態通常還沒人審
-    });
+    const sql = `
+      SELECT 
+        application_id, 
+        real_name, 
+        email, 
+        username, 
+        nickname, 
+        role, 
+        org_name, 
+        registered_at as date, 
+        status 
+      FROM user_application 
+      WHERE status = 'pending' 
+      ORDER BY registered_at ASC
+    `;
+    
+    return this.dataSource.query(sql);
   }
 
-  // 2. 審核邏輯 (Approved / Rejected)
+  // =================================================================
+  // 2. Review
+  // =================================================================
   async reviewApplication(id: string, dto: ReviewApplicationDto, adminId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 步驟 A: 鎖定並取得該申請單
-      const application = await queryRunner.manager.findOne(UserApplication, {
-        where: { applicationId: id },
-      });
+      // Step A: Lock the application
+      const apps = await queryRunner.query(
+        `SELECT * FROM user_application WHERE application_id = $1 FOR UPDATE`,
+        [id],
+      );
+      const app = apps[0];
 
-      if (!application) {
-        throw new NotFoundException('Application not found');
-      }
+      if (!app) throw new NotFoundException('Application not found');
+      if (app.status !== 'pending') throw new BadRequestException('Application already processed');
 
-      if (application.status !== 'pending') {
-        throw new BadRequestException('This application has already been processed');
-      }
+      // Step B: upd application status
+      await queryRunner.query(
+        `UPDATE user_application 
+         SET status = $1, review_time = NOW(), reviewed_by = $2, review_comment = $3 
+         WHERE application_id = $4`,
+        [dto.status, adminId, dto.comment || null, id],
+      );
 
-      // 步驟 B: 更新申請單狀態
-      application.status = dto.status;
-      application.reviewTime = new Date();
-      application.reviewedById = adminId; // 紀錄是哪位 Admin 審核的
-      application.reviewComment = dto.comment ?? '';
-
-      await queryRunner.manager.save(application);
-
-      // 步驟 C: 如果是 "approved"，將資料複製到正式 User 表
+      // Step C: 如果是 "approved"，執行 User 建立流程
       if (dto.status === 'approved') {
-        // C-1: 最後防線，再次檢查 Email/Username 是否衝突
-        const existingUser = await queryRunner.manager.findOne(User, {
-          where: [
-              { email: application.email }, 
-              { username: application.username }
-          ]
-        });
+        const { username, email, password, real_name, nickname, role, org_name } = app;
 
-        if (existingUser) {
-           throw new ConflictException('User with this email or username already exists in the active users table.');
+        // C-1: 檢查 User 表是否衝突
+        const conflictCheck = await queryRunner.query(
+          `SELECT 1 FROM "user" WHERE email = $1 OR username = $2`,
+          [email, username],
+        );
+        if (conflictCheck.length > 0) {
+          throw new ConflictException('User email or username already exists in active users');
         }
 
-        // C-2: 建立正式使用者
-        const newUser = queryRunner.manager.create(User, {
-          username: application.username,
-          email: application.email,
-          password: application.password, // 這是已經 hash 過的密碼
-          real_name: application.realName,
-          nickname: application.nickname,
-          role: application.role,
-          // 👇 關鍵：記得把公司/系所名稱帶過去
-          // 請確認你的 User Entity 有 org_name 或 orgName 欄位
-          org_name: application.orgName, 
-          
-          has_filled_profile: false, // 剛審核過，當然還沒填 profile
-          // created_at 會自動生成
-        });
+        // =================================================================
+        // C-2: 核心修改 - 根據 org_name 查找現有的 company_id 或 department_id
+        // =================================================================
+        let targetCompanyId = null;
+        let targetDepartmentId = null;
 
-        await queryRunner.manager.save(newUser);
+        if (role === 'company') {
+          // 假設 company_profile 的名稱欄位是 company_name
+          const compRes = await queryRunner.query(
+            `SELECT company_id FROM company_profile WHERE company_name = $1`,
+            [org_name]
+          );
+
+          if (compRes.length === 0) {
+            throw new NotFoundException(`Company '${org_name}' not found in profile. Cannot approve user.`);
+          }
+          targetCompanyId = compRes[0].company_id;
+
+        } else if (role === 'department') {
+          // 假設 department_profile 的名稱欄位是 department_name
+          const deptRes = await queryRunner.query(
+            `SELECT department_id FROM department_profile WHERE department_name = $1`,
+            [org_name]
+          );
+
+          if (deptRes.length === 0) {
+            throw new NotFoundException(`Department '${org_name}' not found in profile. Cannot approve user.`);
+          }
+          targetDepartmentId = deptRes[0].department_id;
+        }
+
+        // =================================================================
+        // C-3: 建立 User (直接帶入查到的 ID)
+        // =================================================================
+        const insertUserSql = `
+          INSERT INTO "user" (
+            real_name, email, username, password, nickname, role,
+            company_id, department_id, 
+            is_admin, is_2fa_enabled
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, true)
+        `;
+
+        await queryRunner.query(insertUserSql, [
+          real_name, 
+          email, 
+          username, 
+          password, 
+          nickname, 
+          role, 
+          targetCompanyId,    // 如果是公司角色，這裡會有 UUID，否則為 NULL
+          targetDepartmentId  // 如果是系所角色，這裡會有 ID，否則為 NULL
+        ]);
       }
 
-      // 提交交易
+      // Step D: 提交交易
       await queryRunner.commitTransaction();
-
+      
       return { 
-        message: `Application has been ${dto.status}`, 
+        message: `Application ${dto.status} successfully`, 
         applicationId: id 
       };
 
     } catch (err) {
-      // 發生錯誤，回滾所有操作
       await queryRunner.rollbackTransaction();
       throw err;
     } finally {

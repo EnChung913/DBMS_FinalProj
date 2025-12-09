@@ -312,9 +312,14 @@ I still need to implement the user application function. Besides, the view of de
 
 [2025-12-8 22:27]
 I'm trying to connect the apis for department review application. Finish! Besides, the containers are running well on docker now. 
+
 I've finished the scheduler module and optimized the push recommendation function.
 Next step would be the user application function and place event apis to functions.
 I found some test tools for nestjs and vuejs, I'll try to write some test cases later.
 
 [2025-12-9 11:25]
 Now I'm striving to finish the user application function. Now it's done 80%, I'll test it later. 
+
+[2025-12-9 15:14]
+I finished the user application function. Now users can apply for a company or department account. Admin can review these applications in the admin dashboard. 
+Now is the pruge and export function.

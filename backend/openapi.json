@@ -1007,6 +1007,53 @@
         ]
       }
     },
+    "/api/admin/pending-users": {
+      "get": {
+        "operationId": "AdminController_getPendingUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/pending/{id}": {
+      "post": {
+        "operationId": "AdminController_reviewApplication",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/common/departments": {
       "get": {
         "operationId": "CommonController_getDepartments",
@@ -1180,6 +1227,10 @@
         "properties": {}
       },
       "UpsertResourceConditionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewApplicationDto": {
         "type": "object",
         "properties": {}
       }
